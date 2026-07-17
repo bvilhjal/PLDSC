@@ -145,6 +145,18 @@ Important failure modes are:
    derivation, a demonstrably better estimator, or substantially better
    software and validation.
 
+For complete fixed covariates, the first implementation uses residual rank
+\(\nu=N-\operatorname{rank}([\mathbf{1},C])\) and the adjustment
+
+\[
+\widetilde r^2=r^2-\frac{1-r^2}{\nu-1}. \tag{7}
+\]
+
+With only an intercept, Equation (7) reduces to the usual \(N-2\)
+denominator. It is a finite-sample adjustment, not a universal unbiasedness
+claim: PCs estimated from the same genotype matrix make the fixed-design
+argument approximate, and missing data require pair-specific treatment.
+
 ## 6. Falsification-first validation plan
 
 **Table 2. Minimum simulation gates before real-data claims**
