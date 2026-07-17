@@ -15,8 +15,9 @@ not yet provide a production-ready estimator.
 3. Treat the legacy GRM-whitening and aggregated PC-score methods as
    experimental comparators, not established estimators.
 
-See [the scientific idea review](docs/IDEA_REVIEW.md) for the rationale,
-failure modes, and validation gates.
+See [the scientific idea review](docs/IDEA_REVIEW.md) for the rationale and
+failure modes, and [the development plan](docs/DEVELOPMENT_PLAN.md) for the
+derived mixed-model moment, milestone gates, and commit sequence.
 
 ## First numerical slice
 

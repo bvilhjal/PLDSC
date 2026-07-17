@@ -46,8 +46,9 @@ Both hypotheses are plausible. Neither is validated by the legacy code.
 ## 3. What is already established
 
 Let \(X\in\mathbb{R}^{N\times M}\) be standardized genotypes and let
-\(C\in\mathbb{R}^{N\times K}\) contain the centered covariates used by the
-GWAS. Covariate-adjusted LDSC uses the residual-forming matrix
+\(C\in\mathbb{R}^{N\times K}\) be the complete fixed-effect design used by
+the GWAS, including the intercept. Covariate-adjusted LDSC uses the
+residual-forming matrix
 
 \[
 P_C = I-C(C^T C)^+C^T, \qquad \widetilde X=P_CX. \tag{1}
@@ -68,11 +69,11 @@ moment is
 E[\chi_j^2]\approx 1+Na+\frac{Nh_g^2}{M}\ell_j^{(C)}. \tag{3}
 \]
 
-Luo et al. derived and evaluated this approach as cov-LDSC in 2021. A separate
-2025 study by Bercovich et al. gives a population-genetic justification for LD
-based on genotype residuals and shows that it removes structure-induced LD in
-pooled and admixed samples. Thus, residualized LD is the correct baseline, not
-a novel PLDSC claim.
+Luo et al. derived and evaluated this approach as cov-LDSC in 2021. Under its
+modeled adjustment assumptions, a separate 2025 study by Bercovich et al.
+supports measuring LD from genotype residuals and shows reduced
+structure-induced LD in pooled and admixed samples. Thus, residualized LD is
+the correct baseline to test, not a novel PLDSC claim or a universal guarantee.
 
 The legacy PC-score idea also overlaps PC-loading regression. The important
 difference is that PC-loading regression uses **signed** SNP loadings and
@@ -108,11 +109,20 @@ r_{jk}^{(P_c)}=
 {\sqrt{(x_j^TP_cx_j)(x_k^TP_cx_k)}}. \tag{6}
 \]
 
-Equation (6) is a **research hypothesis**, not yet a PLDSC estimator. The next
-scientific task is to derive the corresponding expectation of \(\chi_j^2\),
-including how the fitted variance components, LOCO construction, causal-effect
-model, and finite-sample correction enter. Simulations must then try to break
-that derivation.
+Equation (6) gives the null correlation between oracle score statistics. It is
+**not by itself the LDSC regressor**. Under a homoscedastic random-effect model,
+the exact conditional moment also contains
+\(q_k=x_k^TP_cx_k\), giving a candidate score proportional to
+\(\sum_k q_k\{r_{jk}^{(P_c)}\}^2\). The \(q_k\) terms disappear only after a
+justified normalization. The [development plan](DEVELOPMENT_PLAN.md) derives
+this distinction and makes it the first go/no-go milestone.
+
+The fitted variance components, LOCO construction, and causal-effect model
+remain research questions. The exact conditional moment uses raw in-sample
+cross-products; inserting Equation (7)'s adjusted \(r^2\) would break that
+identity. A finite-sample correction for a population or reference-LD estimand
+would need its own derivation. Simulations must try to break the resulting
+moment before PLDSC exposes a mixed-model estimator.
 
 ## 5. Technical assessment
 
@@ -120,10 +130,10 @@ that derivation.
 
 | Component | Legacy approach | Restart decision |
 |---|---|---|
-| Structure-adjusted LD | Cholesky factor of a pseudoinverse LOCO GRM | Use covariate residualization as the baseline; derive Equation (6) for the mixed-model track |
-| PC contribution | Eigenvalue-weighted sum of squared SNP-PC correlations | Export signed per-PC loadings; evaluate signed PC-loading regression separately |
-| Regression | Binned and unbinned ordinary least squares | Use LDSC weights and block jackknife inference |
-| Reference data | External 1000 Genomes panel with a fixed population mixture | Require study-matched in-sample data or a documented random subsample for adjusted scores |
+| Structure-adjusted LD | Cholesky factor of a pseudoinverse LOCO GRM | Use covariate residualization as the baseline; derive the full conditional moment associated with Equation (6) for the mixed-model track |
+| PC contribution | Eigenvalue-weighted sum of squared SNP-PC correlations | Defer signed PC-loading regression to a separate experiment after the mixed-model core |
+| Regression | Binned and unbinned ordinary least squares | Derive or empirically validate weights and block-resampling inference for the new regressor |
+| Reference data | External 1000 Genomes panel with a fixed population mixture | Require full study-matched data for the exact mixed-model score; test any fixed-covariate subsampling approximation separately |
 | Windows | Fixed 1 cM and an adjusted-r-squared threshold | Make window convergence an empirical diagnostic; do not threshold by default |
 | Software | Python 2 scripts with hard-coded cluster paths | Reimplement array-first in Python 3; add file formats only after numerical validation |
 
@@ -136,8 +146,8 @@ Important failure modes are:
 3. **Unstable whitening.** A pseudoinverse plus a nearly singular Cholesky
    transform is sensitive to regularization and factor orientation.
 4. **Wrong heritability interpretation.** In admixed populations, directional
-   LD can make LDSC estimate genic variance rather than total genetic variance;
-   the gap can exist without environmental confounding.
+   LD covariance can make a random-effect estimate differ from total realized
+   genetic variance; the gap can exist without environmental confounding.
 5. **PC-score nonidentifiability.** A generic squared loading score cannot
    identify the phenotype-specific direction of stratification.
 6. **Overstated novelty.** Covariate-adjusted LD scores and PC-loading
@@ -146,16 +156,18 @@ Important failure modes are:
    software and validation.
 
 For complete fixed covariates, the first implementation uses residual rank
-\(\nu=N-\operatorname{rank}([\mathbf{1},C])\) and the adjustment
+\(\nu=N-\operatorname{rank}(C)\) and the adjustment
 
 \[
 \widetilde r^2=r^2-\frac{1-r^2}{\nu-1}. \tag{7}
 \]
 
 With only an intercept, Equation (7) reduces to the usual \(N-2\)
-denominator. It is a finite-sample adjustment, not a universal unbiasedness
-claim: PCs estimated from the same genotype matrix make the fixed-design
-argument approximate, and missing data require pair-specific treatment.
+denominator. It is a finite-sample adjustment for the fixed-covariate baseline,
+not part of the exact mixed-model moment and not a universal unbiasedness claim:
+PCs estimated from the same genotype matrix make the fixed-design argument
+approximate. Current numerical kernels reject missing values; pair-specific
+handling would require a separate correction.
 
 ## 6. Falsification-first validation plan
 
@@ -163,13 +175,13 @@ argument approximate, and missing data require pair-specific treatment.
 
 | Scenario | Required result |
 |---|---|
-| Homogeneous population, ordinary least squares GWAS | Adjusted and ordinary LD scores agree within Monte Carlo error; heritability bias is below 5% |
+| Homogeneous population, ordinary least squares GWAS | Adjusted and ordinary LD scores agree within Monte Carlo error; bias in the named M0 estimand is below 5% |
 | Structured population with no within-population LD | Adjusted cross-chromosome LD centers on its finite-sample null while pooled ordinary LD does not |
-| Admixed polygenic trait with matched PC adjustment | Covariate-adjusted LDSC improves absolute bias over ordinary LDSC and remains below 10% bias |
-| Environmental effect aligned with ancestry | The intercept absorbs null inflation without a material slope shift |
-| LOCO mixed-model GWAS | Equation (6)-based scores outperform both ordinary and fixed-covariate scores across variance-component settings |
+| Admixed polygenic trait with matched PC adjustment | Under the cov-LDSC random-effect generative model, covariate-adjusted LDSC improves absolute bias over ordinary LDSC and remains below 10% bias |
+| Environmental effect aligned with ancestry | Test whether inflation correlates with the proposed score; a material slope shift falsifies intercept-only correction |
+| LOCO mixed-model GWAS | The exact moment calibrates first; fitted scores improve paired RMSE in preregistered structured settings and coincide with simpler methods in their limiting cases |
 | Directional LD or ancestry-correlated effects | PLDSC reports the estimand gap and does not label genic variance as total heritability |
-| Mismatched covariates or ancestry composition | Bias is quantified and the software emits a clear incompatibility diagnostic |
+| Mismatched covariates or ancestry composition | Known metadata mismatch fails before fitting; ancestry/reference sensitivity is quantified |
 
 The first executable milestone should use tiny deterministic genotype matrices
 and simulated phenotypes. Real 1000 Genomes I/O, summary-statistic munging, and
@@ -178,15 +190,17 @@ an equation it never actually specified. A classic research-software hobby.
 
 ## 7. Recommended project scope
 
-The first PLDSC release should contain:
+The first mixed-model research release should contain:
 
 1. covariate projection and residualized correlations;
 2. standard and covariate-adjusted local LD scores;
-3. signed per-PC SNP loadings;
-4. a LOCO mixed-model score-correlation prototype based on Equation (6);
-5. deterministic simulations and explicit estimand checks;
-6. weighted regression and block-jackknife inference only after the numerical
-   kernels pass those checks.
+3. a dense LOCO mixed-model moment oracle using the required variant weights;
+4. deterministic simulations and explicit estimand checks;
+5. derived regression weights and validated resampling inference only after the
+   numerical kernels pass those checks.
+
+Signed PC-loading regression and legacy whitening remain optional comparison
+experiments, not release blockers.
 
 It should not initially contain genotype-format plumbing, phenotype-specific
 dictionaries, plotting dashboards, or claims that the method removes all
