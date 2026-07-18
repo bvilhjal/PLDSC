@@ -223,18 +223,28 @@ until the M-spike and the M3 moment gate pass.
 
 | Milestone | Deliverable | Gate before proceeding |
 |---|---|---|
-| M4. Quantify fitted-component error | Predeclared GEMMA score-test protocol with a supplied LOCO kinship; import fitted null variance components, construct \(\widehat P_c\), compare with the known-\(V_c\) oracle; PLDSC does not implement REML | Conditional-moment error meets its preregistered gate or a correction/scope limit is documented; GEMMA fitting mode, allele scaling, and score output field are reproduced exactly |
+| M4. Quantify fitted-component error | Import fitted null variance components, construct \(\widehat P_c\), compare with the known-\(V_c\) oracle; PLDSC does not implement REML. Fitted-component *science* validated via a local REML (`experiments/m4_fitted_vc.py`, `m5_inference.py`); external GEMMA byte-parity specified in [GEMMA_PARITY.md](GEMMA_PARITY.md) and deferred to a Linux environment (no Windows GEMMA build) | Conditional-moment error meets its preregistered gate or a correction/scope limit is documented; GEMMA fitting mode, allele scaling, and score output field are reproduced exactly |
 | M5. Add regression and inference (`v0.3`) | M0-derived weights and resampling scheme, explicit estimand labels, provenance/compatibility schema, machine-readable results; compare ordinary LDSC, cov-LDSC, and optional legacy scores | Synthetic slope/intercept bias and interval coverage pass; resampling matches a direct oracle and achieves calibrated coverage; incompatible adjustment metadata fails before fitting |
 | M6a. Block local products | Blocked evaluation of full and windowed candidate scores | Dense and blocked results agree at `rtol=1e-10`, `atol=1e-12`; memory grows with active blocks/windows rather than chromosome-wide pair count |
 | M6b. Add scalable solves | Matrix-free \(P_cx\), iterative-solver diagnostics, preconditioning | Operator results agree with the dense oracle under condition-aware tolerances; convergence failures are explicit and reproducible |
 | M6c. Interoperate (`v0.4`) | PLINK 2 adapter, minimal CLI, provenance sidecars, only scientifically justified LDSC-format output | One end-to-end PGEN fixture passes; optional dependencies stay isolated; output round-trips with all required count metadata |
 | M7. Validate and release (`v1.0`) | Synthetic phenotypes on real genotypes, independent reproduction, stable schemas/API, archival release, limited real-trait analyses | Every preregistered gate passes; conclusions survive ancestry, window, GRM, and approximation sensitivity analyses; all headline results reproduce from committed configurations |
 
-Current status: the fixed-covariate kernel and five deterministic tests exist,
-so M1 is partly complete. The next action is the **M-spike**, which decides
-whether the estimator is worth building at all; M0 is a short write-up that can
-proceed in parallel. The remaining M1 packaging (CI, tolerance fix, added tests)
-may proceed independently.
+Current status (2026-07-18): the MVP arc is built and validated end-to-end.
+The **M-spike** passed (`experiments/m_spike_kill_or_continue.py`): Eq (3)
+confirmed numerically and PLDSC calibrates where ordinary LDSC does not. **M0**
+is written (`docs/METHOD.md`). **M1** is hardened: CI workflow, `rtol=0`
+tolerance gate, dependency floor raised, invariance/guard tests added. **M2**
+landed as the tested `pldsc/_lmm.py` oracle (with `pldsc/simulate.py`); **M3**
+(`experiments/m3_relatedness_admixture.py`) shows PLDSC beats cov-LDSC
+specifically under relatedness; **M4** fitted-component science is validated by a
+local REML (intercept `1.010 ± 0.078`), with external GEMMA byte-parity
+specified in [GEMMA_PARITY.md](GEMMA_PARITY.md) and deferred to Linux; **M5**
+(`pldsc/regression.py` + `experiments/m5_inference.py`) provides block-jackknife
+inference and quantifies the fitted-`V_c` intercept-SE requirement. 29 tests
+pass. Remaining: propagate variance-component uncertainty in the M5 estimator at
+scale, run the GEMMA cross-check on Linux, and the Phase-2 scale/interop work
+(M6).
 
 GEMMA is the first external association benchmark (Phase 2) because it implements
 an exact LMM suitable for checking a dense implementation
