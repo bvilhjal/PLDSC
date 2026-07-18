@@ -83,11 +83,16 @@ summary-stat angle). The only unruled-out regime — heterogeneous pedigrees on 
 genome-wide intercept — is already owned by Sib-Regression (Visscher 2006) and RDR
 (Young et al. 2018).
 
-**Live options (post-kill-test):** (a) within-family is **closed**; the honest
-choices are (b) publish a clean theory/methods note (the decomposition +
-unification + identifiability limit) without a differentiated summary-statistics
-application, or (c) stop. Do **not** pursue LDSC-application angles (\(h^2\),
-\(r_g\), the intercept) as PLDSC differentiators.
+**Decision (2026-07-19): (c) STOP / archive.** After the within-family kill-test
+(option (a)) failed, a full adversarial prior-art sweep (PRIOR_ART.md) showed the
+theory-note niche is thin-but-defensible-at-best (the GLS operator is Mangin 2012,
+the aliasing corollary is Huang 2025), and a structured contribution-ideation pass
+(15 candidates, adversarially vetted) surfaced only one high-death-prior long-shot.
+The project is archived as an honest record (see README "Status: CONCLUDED"). The
+exposition note (former option (b)) remains available if revived
+([NOTE_OUTLINE.md](NOTE_OUTLINE.md)) but was not pursued. Do **not** re-open the
+LDSC-application angles (\(h^2\), \(r_g\), the intercept), the within-family angle,
+or the killed `q_j` / effective-N / portability ideas as PLDSC differentiators.
 
 ### 1.2 Minimum viable deliverable (status: the original MVP was tested)
 

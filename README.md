@@ -4,11 +4,44 @@ PLDSC is a clean restart of the 2017 `newldsc` research prototype. The project
 studies LD Score regression when GWAS samples contain population structure or
 when association statistics come from covariate-adjusted or mixed models.
 
-The central idea is a **local/non-local decomposition of the LD score**, with the
-structure component and its diagnostics as the contribution. It is a
-framework/synthesis project, not a production estimator.
+## Status: CONCLUDED / archived (2026-07-19)
 
-## Status (2026-07-18)
+**Outcome: the machinery is correct and well-tested, but an exhaustive search
+found no differentiated contribution, so the project is archived as an honest
+record rather than pursued to publication.** What the search covered and found:
+
+- The **LMM-matched LD score as a new estimator** reduces to cov-LDSC in the
+  summary-statistics LDSC setting (structure is what biases LDSC, and cov-LDSC
+  already fixes it; relatedness does not reach the windowed regression). See
+  [docs/METHOD.md](docs/METHOD.md) §13, [map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py).
+- The **within-family / sib-GWAS** angle was kill-tested and failed: the surviving
+  within-family genetic covariance is a homoscedastic scale (`M_B R M_B = 0.5 M_B`)
+  that a standard sib-GWAS's cluster-robust / effective-N SE already removes
+  ([within_family_killtest.py](experiments/within_family_killtest.py)).
+- The **theory** (local/non-local decomposition, unification, identifiability
+  limit) is real but textbook-adjacent and largely occupied: the identity is a GRM
+  quadratic form; the GLS operator is Mangin 2012; the aliasing corollary is
+  Huang 2025 / Sotoudeh 2026; unification-of-estimators is MQS/GEMMA. Full
+  adversarial prior-art sweep in [docs/PRIOR_ART.md](docs/PRIOR_ART.md).
+- A structured **contribution-ideation** pass (15 candidates, adversarially
+  vetted) produced one high-death-prior long-shot (a within-sample
+  local-adaptation test for wild-population studies) and otherwise confirmed the
+  wall. The decision was to stop.
+
+**Durable value of this repo:** (1) a small, tested, CI-green implementation of the
+mixed-model residual-precision operator `P_c` and the LD-score decomposition
+(`pldsc/`, 29 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
+including the adversarially-checked structure-aliasing remark in §14); (3) an
+unusually candid **negative-results and prior-art record** (`experiments/`,
+[docs/PRIOR_ART.md](docs/PRIOR_ART.md), [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),
+[docs/NOTE_OUTLINE.md](docs/NOTE_OUTLINE.md)) documenting precisely where a natural
+idea does and does not buy anything. If revived, the honest ceiling is a short
+clarifying/negative-results note ([docs/NOTE_OUTLINE.md](docs/NOTE_OUTLINE.md)),
+crediting Mangin 2012 / Huang 2025 / cov-LDSC / de Vlaming 2017 throughout.
+
+---
+
+## The science (record)
 
 **Central idea: the LD score decomposes into linkage + structure.** The LD score
 splits as `ℓ_j = ℓ_j^local + ℓ_j^struct` — recombination-driven linkage plus a
