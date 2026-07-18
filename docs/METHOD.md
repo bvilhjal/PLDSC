@@ -10,6 +10,12 @@ The identity in Section 4 has been derived independently three times and
 confirmed numerically by the M-spike (`experiments/m_spike_kill_or_continue.py`;
 Section 11).
 
+**Organizing framework (reframed 2026-07-18).** These results are best read
+through the local/non-local decomposition of the LD score in **Section 14**: the
+LD score splits into a linkage component and a structure component, the latter
+equal to the PC score, and every structure-correction below (cov-LDSC, WhiLD,
+the PC score, \(P_c\)) is an operation on that decomposition.
+
 ## 1. Model and notation
 
 Fix a target chromosome \(c\). Let
@@ -306,6 +312,62 @@ relatedness is definitional and exactly known, so \(P_c\) is exact (no
 fitted-\(V_c\) fragility, no reference-panel approximation). That direction is
 proposed, not yet validated. This section records the honest scope so the theory
 (correct and clean) is not overstated as a practical LDSC replacement.
+
+## 14. The local/non-local decomposition (organizing framework)
+
+Reframed 2026-07-18. The results above are organized by a single decomposition of
+the LD score into a linkage (local) and a structure (non-local) component:
+
+\[
+\ell_j=\sum_k r_{jk}^2\;\approx\;
+\underbrace{\ell_j^{\text{local}}}_{\sum_k (r_{jk}^{(P_c)})^2}
++\underbrace{\ell_j^{\text{struct}}}_{\text{structure}},
+\]
+
+where \(r_{jk}^{(P_c)}\) is the structure-whitened correlation (Sections 2, 7).
+Writing \(r_{jk}=r_{jk}^{(P_c)}+r_{jk}^{\text{struct}}\) with
+\(r_{jk}^{\text{struct}}\approx\sum_p\gamma_{jp}\gamma_{kp}\) (shared PC loadings)
+and using approximate cross-SNP orthonormality of loadings, the non-local
+component equals the eigenvalue-weighted **PC score**:
+
+\[
+\ell_j^{\text{struct}}\;\approx\;s_j=\sum_p\frac{\lambda_p}{\lambda_t}
+\operatorname{corr}(g_j,\mathrm{PC}_p)^2 .
+\]
+
+**Validation** (`experiments/ld_decomposition.py`): genome-wide,
+\(\operatorname{corr}(\ell^{\text{struct}},s)=0.988\), with an additive split
+(\(\ell^{\text{ord}}\,4.20=\ell^{\text{local}}\,2.12+\ell^{\text{struct}}\,2.08\))
+and structure \(\approx50\%\) of the genome-wide LD score but only \(\approx5\%\)
+within a local window.
+
+**Unification.** Every structure-correction is an operation on this
+decomposition: cov-LDSC (\(V_c=\sigma^2 I\)) and \(P_c\) compute
+\(\ell^{\text{local}}\); the legacy WhiLD score is the special case of Section 8;
+the PC score is \(\ell^{\text{struct}}\) itself. Standard LDSC's structure bias is
+the conflation of \(\ell^{\text{local}}\) (heritability) with
+\(\ell^{\text{struct}}\) (confounding); because \(\ell^{\text{struct}}\) is a small
+fraction of a *local* window it surfaces mainly in the intercept and long-range
+LD, not the windowed slope (consistent with Sections 10-11 and
+`map_ldsc_miscalibration.py`).
+
+**Applications (diagnostics).** Decomposing \(\ell^{\text{struct}}=\sum_p(\cdot)\)
+gives a per-PC inflation spectrum (`detect_pc_inflation.py`); adding
+\(\ell^{\text{struct}}\)/squared PC loadings as an S-LDSC annotation gives a
+structure-robustness test for functional enrichment (`sldsc_pc_annotation.py`).
+
+**Identifiability limit (a stated result).** Genuine ancestry-aligned polygenic
+signal and structure confounding both load on the same PCs (both enter
+\(\ell^{\text{struct}}/s_j\)). Hence no method using only \(\ell^{\text{struct}}\)
+or the PC axes can separate them: the diagnostics *flag*, they do not *prove*, and
+the S-LDSC annotation attenuates genuine ancestry-correlated enrichment along with
+confounding.
+
+**Positioning.** The qualitative concept (LD has a structure component) is
+established (cov-LDSC; Bhatia et al. 2016; Price et al. 2008; Bercovich et al.
+2025); the contribution here is the explicit identity
+\(\ell^{\text{struct}}=s_j\), the unification, and the diagnostics plus the limit.
+See [PRIOR_ART.md](PRIOR_ART.md).
 
 ## References
 

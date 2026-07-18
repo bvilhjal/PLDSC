@@ -4,32 +4,48 @@ PLDSC is a clean restart of the 2017 `newldsc` research prototype. The project
 studies LD Score regression when GWAS samples contain population structure or
 when association statistics come from covariate-adjusted or mixed models.
 
-The core theory is derived, validated, and tested; the open question is whether
-it has a differentiated application. It does not provide a production-ready
-estimator.
+The central idea is a **local/non-local decomposition of the LD score**, with the
+structure component and its diagnostics as the contribution. It is a
+framework/synthesis project, not a production estimator.
 
 ## Status (2026-07-18)
 
-**Theory: done and validated.** The LD score matched to a leave-one-chromosome-
-out mixed-model score statistic is derived in [docs/METHOD.md](docs/METHOD.md)
-(the `P_c` operator and the exact moment `E[z_j^2] = 1 + Σ_k τ_k² q_k
-r_jk^(P_c)²`), unit-tested (`pldsc/_lmm.py`), and numerically confirmed across a
-full experiment arc (`experiments/`): it reduces to cov-LDSC and ordinary LDSC,
-calibrates exactly, beats cov-LDSC on relatedness *in the association step*, and
-survives a REML-fitted `V_c`.
+**Central idea: the LD score decomposes into linkage + structure.** The LD score
+splits as `ℓ_j = ℓ_j^local + ℓ_j^struct` — recombination-driven linkage plus a
+population-structure component — and the non-local component **is the "PC score"**
+(the eigenvalue-weighted sum of squared SNP–PC loadings), validated at
+**corr = 0.99 genome-wide** ([experiments/ld_decomposition.py](experiments/ld_decomposition.py);
+structure is ~50% of the genome-wide LD score but only ~5% within a local window).
+One identity **unifies the existing structure-corrections**: covariate-adjusted
+LDSC (cov-LDSC), the legacy whitened-LD (WhiLD) score, the PC score, and the
+mixed-model residual-precision operator `P_c` are all ways of removing or
+measuring `ℓ^struct`. Standard LDSC's structure bias is exactly the conflation of
+`ℓ^local` (heritability) with `ℓ^struct` (confounding). See
+[docs/METHOD.md](docs/METHOD.md).
 
-**Application: the LDSC-application niche reduces to cov-LDSC.** A direct test
-([map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py)) showed
-the miscalibration of LDSC on mixed-model summary statistics is a *structure*
-effect that cov-LDSC (Luo et al. 2021) already corrects; relatedness — PLDSC's
-one edge — does not propagate into the local LD-score regression. So PLDSC offers
-no differentiated advantage in LDSC application. Its remaining candidate niche is
-**within-family / sib-GWAS designs** (the association step), which is proposed
-but not yet validated. See [docs/METHOD.md](docs/METHOD.md) §13 and
-[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) §1.1 for the honest scope.
+**Applications — structure diagnostics** (all prototyped in `experiments/`):
+a per-PC inflation spectrum that maps a GWAS's confounding to specific axes
+([detect_pc_inflation.py](experiments/detect_pc_inflation.py)); a
+structure-robust S-LDSC enrichment test via PC-loading annotations
+([sldsc_pc_annotation.py](experiments/sldsc_pc_annotation.py)); and a map of when
+LDSC on mixed-model sumstats is affected
+([map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py)). All share
+one **stated limit**: structure confounding and genuine ancestry-aligned signal
+load on the same PCs, so no structure-only method can separate them.
 
-The legacy GRM-whitening (WhiLD) and PC-score methods are treated as named
-comparators, not established estimators; see
+**Honest positioning.** Framework/synthesis, not a new estimator. The qualitative
+concept is established (cov-LDSC, Bhatia 2016, Price 2008, Bercovich 2025); the
+novel slices are the explicit decomposition identity, the unification, and the
+diagnostics + identifiability limit. See [docs/PRIOR_ART.md](docs/PRIOR_ART.md).
+
+**Validated machinery.** The `P_c` operator, the exact moment, the reductions to
+cov-LDSC/ordinary LDSC, and the diagnostics are derived in
+[docs/METHOD.md](docs/METHOD.md), unit-tested (`pldsc/_lmm.py`), and confirmed
+across the `experiments/` arc. The earlier "LMM-matched LD score as a new
+*estimator*" angle was tested and reduces to cov-LDSC in LDSC application
+([docs/METHOD.md](docs/METHOD.md) §13); the decomposition reframing is what
+survives and now organizes the project. The legacy WhiLD and PC-score methods are
+special cases of the decomposition, not standalone estimators; see
 [the scientific idea review](docs/IDEA_REVIEW.md).
 
 ## First numerical slice

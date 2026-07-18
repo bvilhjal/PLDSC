@@ -16,6 +16,22 @@ the use-case has been tested directly: the LDSC-application niche
 **reduces to cov-LDSC** (Section 1.1), so PLDSC's differentiated value, if any,
 is upstream. Read Section 1.1 before the roadmap.
 
+**Reframing (2026-07-18): the central idea is the local/non-local LD-score
+decomposition.** \(\ell = \ell^{\text{local}} + \ell^{\text{struct}}\), with the
+non-local component equal to the PC score (validated corr = 0.99 genome-wide; see
+[METHOD.md](METHOD.md) §14 and `experiments/ld_decomposition.py`). This one
+identity unifies cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\)
+operator as ways of removing or measuring \(\ell^{\text{struct}}\), and pins
+standard-LDSC structure bias to conflating \(\ell^{\text{local}}\) (\(h^2\)) with
+\(\ell^{\text{struct}}\) (confounding). The project is now organized as a
+**framework/synthesis + diagnostics** effort, not a new estimator: theory = the
+decomposition + unification + identifiability limit; applications = the structure
+diagnostics (per-PC inflation spectrum, structure-robust S-LDSC enrichment, the
+miscalibration map). Honest prior-art positioning is in [PRIOR_ART.md](PRIOR_ART.md)
+— the qualitative concept is established (cov-LDSC, Bhatia 2016, Price 2008,
+Bercovich 2025); the novel slices are the explicit identity, the unification, and
+the diagnostics.
+
 ### 1.1 Use-case: the intended deliverable and its empirical verdict
 
 The intended deliverable was a calibration/confounding **diagnostic**. PLDSC's
