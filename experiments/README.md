@@ -240,4 +240,45 @@ result and the applications analysis), not LDSC application. A useful negative
 result that redirects effort away from a paper whose "corrected LD score" is
 already the standard tool.
 
+## `sldsc_pc_annotation.py` — PC loadings as S-LDSC annotations
+
+Tests using the squared PC loading (the 2017 "PC score", LOCO) as an annotation
+in stratified LDSC. Rationale: structure inflates `chi^2` by `~ b^2 gamma_{j,1}^2`
+(Bhatia et al.), which is *linear in the squared loading* — so a squared-loading
+annotation is the natural chi^2-scale sponge for structure confounding. Two-
+population cohort (N=500, fst=0.12), a functional annotation that is enriched for
+heritability, ordinary (OLS) GWAS, WLS S-LDSC, 40 paired replicates. Compares
+standard S-LDSC (base+func) vs +PC-loading, with the functional annotation either
+correlated with or independent of ancestry.
+
+**Functional annotation correlated with ancestry:** standard S-LDSC inflates the
+functional coefficient up to **×3.5** at b=1 (structure misread as enrichment);
+adding the PC-loading annotation removes the inflation entirely (stable ×1.0),
+absorbing it into the PC coefficient. **But** at b=0 the PC annotation already
+cuts the functional coefficient to **0.51×** — it is collinear with the
+ancestry-correlated functional annotation and cannibalizes genuine enrichment.
+
+**Functional annotation independent of ancestry (control):** standard S-LDSC is
+*not* inflated (structure hurts power, deflating it) and the PC annotation costs
+nothing (B/A at b=0 = 1.03).
+
+### Verdict: a conservative structure de-confounder for enrichment
+
+The PC-loading annotation cleanly removes structure-driven *false* enrichment for
+ancestry-correlated categories, but **cannot separate genuine ancestry-correlated
+enrichment from confounding** (they are collinear), so it attenuates real
+enrichment too. Best used as a **sensitivity analysis**: enrichment that survives
+adding a PC-loading annotation is robust to structure; enrichment that vanishes is
+either confounded or genuinely ancestry-correlated (indistinguishable here). As a
+primary estimator it is biased toward the null for ancestry-correlated categories.
+
+Why it matters: this is an *enrichment / robustness* application, not h²/intercept
+— so it sidesteps the "reduces to cov-LDSC/REML" problem that sank the other
+angles, and it gives the 2017 "PC score" a concrete home. Caveats: overlaps
+Bhatia et al. (signed PC-loading regression on beta-hat; this is the squared,
+chi^2-scale, S-LDSC-native analog) so **prior art must be checked** before
+claiming novelty; and the S-LDSC here is crude (small M, negative intercepts show
+the fit needs proper constrained/weighted S-LDSC over many SNPs), so numbers are
+directional.
+
 
