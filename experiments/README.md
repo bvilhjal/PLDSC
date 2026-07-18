@@ -196,4 +196,48 @@ but is a large-`M`/at-scale effect, and the fix (propagate `V̂_c` uncertainty,
 e.g. via `dIntercept/dh^2 x SE(h_hat^2)` added in quadrature) is now a concrete,
 quantified requirement for the M5 estimator.
 
+## `map_ldsc_miscalibration.py` — when is LDSC miscalibrated on LMM sumstats?
+
+Investigates the paper angle *"LDSC is miscalibrated for mixed-model GWAS
+summary statistics — here's the corrected LD score, and a map of when it
+matters."* An LMM GWAS produces the exact moment `E[z_j^2] = 1 + tau^2 L_j^(P_c)`;
+a practitioner regresses `chi^2` on a conventional LD score (ordinary /
+cov-LDSC, in-sample / external). We regress the *analytic* moment (no MC) on each
+candidate LD score, holding N=400 and true `tau^2` fixed, averaging over 6
+genotype realizations (single realizations are too noisy — an early run showed a
+spurious relatedness "effect" that averaged away). Two readouts: intercept
+(target 1) and h² drift = slope(regime)/slope(clean) (target 1).
+
+**Structure sweep (unrelated, vary fst): a clean, strong effect.**
+
+| fst | ordinary in-sample | cov-LDSC 2PC | PLDSC oracle |
+|---|---|---|---|
+| 0.05 | drift 1.08, int 1.05 | 1.08 / 1.05 | 1.01 / 1.06 |
+| 0.10 | drift 0.88, int 1.09 | 1.01 / 1.06 | 0.97 / 1.07 |
+| 0.15 | **drift 0.69**, int **1.13** | **1.00** / 1.06 | **1.02** / 1.05 |
+
+**Relatedness sweep (homogeneous, vary sib-pairs at fixed N): no effect.** Even
+with 180/200 sib-pairs, h² drift and intercepts stay ~1.0 for *every* method,
+ordinary LDSC included.
+
+### Verdict: the angle does NOT differentiate PLDSC
+
+1. **The miscalibration is a structure effect, not a relatedness effect.**
+   Ordinary LDSC underestimates h² by ~30% and inflates the intercept as `fst`
+   grows; relatedness — already handled by the LMM in the GWAS — does not
+   propagate into the *local* (windowed) LD-score regression (Wall 1, confirmed).
+   So PLDSC's one edge over cov-LDSC (relatedness) is invisible here; it lives in
+   the association step, not the LD-reference step.
+2. **cov-LDSC already fixes the structure effect** (Luo 2021, by design). PLDSC
+   matches it but adds nothing in the LDSC-application setting.
+3. The structure result largely **reproduces Luo 2021** (standard LDSC
+   underestimates h² in structured samples; cov-LDSC corrects it), plus a *null*
+   result on relatedness — thin for a standalone paper and not a new-method one.
+
+Conclusion: this paper angle reduces to "use cov-LDSC," which exists. PLDSC's
+genuine niche is the **association / within-family step** (see the M3 relatedness
+result and the applications analysis), not LDSC application. A useful negative
+result that redirects effort away from a paper whose "corrected LD score" is
+already the standard tool.
+
 
