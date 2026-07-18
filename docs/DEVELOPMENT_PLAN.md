@@ -297,7 +297,36 @@ cov-LDSC already fixes, and relatedness does not reach the local LD-score
 regression (Section 1.1). Remaining, contingent on the Section 1.1 decision: the
 within-family kill-test; else a theory note. Deferred regardless: the GEMMA
 cross-check on Linux, at-scale `V_c`-uncertainty propagation, and Phase-2
-scale/interop (M6).
+scale/interop (M6). **After two external reviews (2026-07-18):** the decomposition
+was restated *exactly* as the GRM spectral identity (not an empirical discovery)
+and the honest windowed ~5% figure led; one **non-circular** robustness result was
+added (`experiments/misspecified_background.py`: the null intercept is robust to a
+sparse/directional off-chromosome background); and **Bercovich 2025 was read in
+full** — it is a pairwise-\(r^2\) QC method (pruning/clumping/FST/PCA) with a hard
+rank-K projection and no heritability content, so it does not collide with the
+heritability-facing claims (see [PRIOR_ART.md](PRIOR_ART.md)).
+
+### 3.1 Forward roadmap (decomposition-framed paper)
+
+Tables 1a/1b document the **completed estimator-MVP foundation** — the proved
+moment (Eq 3), the dense \(P_c\) oracle, the calibration/relatedness experiments,
+and the inference layer. That foundation stands and is reused, but the framing has
+moved (Section 1) from "a new LMM-matched estimator" to a **framework/synthesis +
+diagnostics** paper built on the local/non-local decomposition. Forward
+deliverables and status:
+
+| Deliverable | Track | Status |
+|---|---|---|
+| D1. Theory: exact spectral decomposition \(\ell=\ell^{local}+\ell^{struct}\); PC score as its leading-eigenvector truncation; unification of cov-LDSC/WhiLD/PC-score/\(P_c\); identifiability-limit theorem | theory | METHOD §14 written; identity stated exactly; limit stated, not yet a formal proof |
+| D2. Diagnostics: per-PC inflation spectrum; structure-robust S-LDSC enrichment (PC-loading annotation); the miscalibration map | applications | prototyped (`detect_pc_inflation`, `sldsc_pc_annotation`, `map_ldsc_miscalibration`) with honest caveats; not yet real-data |
+| D3. Prior-art positioning | positioning | Bercovich 2025 gate **closed** (full read); broader landscape sweep still to re-run |
+| D4. One non-circular robustness result | validation | **done** (`misspecified_background.py`): null intercept robust to sparse/directional off-chr background |
+| D5. Real-data survey / efficient decomposition engine | efficiency + empirics | scoped ([REAL_DATA_SURVEY.md](REAL_DATA_SURVEY.md)); gated on an efficient \(P_c\) engine; not started |
+| D6. Alternative differentiated application: within-family matched covariance | application | proposed kill-test (Sections 1.1/1.2); not started |
+
+The honest gate for the paper: is D1 + D3 + D2/D4 a clarifying contribution on its
+own, or does it need a differentiated application (D6) to land? That decision
+(Section 1.1's options (a)/(b)/(c)) is the project's central open question.
 
 GEMMA is the first external association benchmark (Phase 2) because it implements
 an exact LMM suitable for checking a dense implementation
