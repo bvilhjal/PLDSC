@@ -385,11 +385,17 @@ confounding.
 
 **Positioning.** The qualitative concept (LD has a structure component) is
 established (cov-LDSC; Bhatia et al. 2016; Price et al. 2008; Bercovich et al.
-2025); the exact spectral identity itself is textbook algebra. The contribution
-here is using it as the *organizing* device that ties cov-LDSC / WhiLD / PC-score
-/ \(P_c\) onto one ladder, the honest negative theorem of practice (relatedness
-does not propagate into windowed LDSC), and the diagnostics plus the stated
-identifiability limit. See [PRIOR_ART.md](PRIOR_ART.md).
+2025); the exact spectral identity itself is textbook algebra. Note that the
+published structure-corrected-LD operators are *hard rank-K projections* off the
+top-PC subspace — Bercovich 2025 (full read) uses \(I-Q(Q^{\top}Q)^{-1}Q^{\top}\)
+on *pairwise* \(r^2\) for pruning/clumping (no heritability content; originating
+with Mangin et al. 2012), and cov-LDSC uses the same projection on LD *scores*
+for heritability. \(P_c\) is the eigenvalue-weighted GLS generalization of that
+projection, of which the hard cut is a limiting case. The contribution here is
+using the spectral identity as the *organizing* device that ties cov-LDSC / WhiLD
+/ PC-score / \(P_c\) onto one ladder, the honest negative theorem of practice
+(relatedness does not propagate into windowed LDSC), and the diagnostics plus the
+stated identifiability limit. See [PRIOR_ART.md](PRIOR_ART.md).
 
 ## References
 
