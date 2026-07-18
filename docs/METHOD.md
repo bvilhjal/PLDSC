@@ -376,12 +376,72 @@ gives a per-PC inflation spectrum (`detect_pc_inflation.py`); adding
 \(\ell^{\text{struct}}\)/squared PC loadings as an S-LDSC annotation gives a
 structure-robustness test for functional enrichment (`sldsc_pc_annotation.py`).
 
-**Identifiability limit (a stated result).** Genuine ancestry-aligned polygenic
-signal and structure confounding both load on the same PCs (both enter
-\(\ell^{\text{struct}}/s_j\)). Hence no method using only \(\ell^{\text{struct}}\)
-or the PC axes can separate them: the diagnostics *flag*, they do not *prove*, and
-the S-LDSC annotation attenuates genuine ancestry-correlated enrichment along with
-confounding.
+**Remark (structure aliasing — the identifiability limit).** Take marginal,
+structure-*uncorrected* per-SNP statistics \(z_j=x_j^\top y/\sqrt N\) under
+\(y=Xb+\sum_{p\in S}u_p\gamma_p+e\): an isotropic polygenic background
+(\(E[bb^\top]=\tau^2 I\)); structure-aligned coefficients
+\(\gamma_p=\gamma_p^{\mathrm{gen}}+\gamma_p^{\mathrm{env}}\) — a genuine
+ancestry-differentiated *directional* genetic effect plus environmental
+stratification along axis \(p\), variances \(V_p^{\mathrm{gen}},V_p^{\mathrm{env}}\);
+mutually independent \(b,\gamma,e\); \(\sigma_e^2=1\). Using
+\(x_j^\top u_p=\sqrt N\,\operatorname{corr}(x_j,u_p)\) (which needs \(x_j\)
+standardized and \(\bar u_p=0\) — both guaranteed by column-centering, since then
+\(K\mathbf 1=0\)) and the spectral identity above,
+\[
+E[z_j^2]=1+\underbrace{\tau^2 N\,\ell_j}_{\text{ordinary-LDSC signal}}
++\sum_{p\in S}\bigl(V_p^{\mathrm{gen}}+V_p^{\mathrm{env}}\bigr)\operatorname{corr}(x_j,u_p)^2,
+\]
+and the ordinary term *already* deposits genuine heritability on every structure
+axis: \(\tau^2 N\ell_j=\tau^2 M\sum_p\lambda_p\operatorname{corr}(x_j,u_p)^2\), so
+the full coefficient on \(\operatorname{corr}(x_j,u_p)^2\) is
+\(\tau^2 M\lambda_p+V_p^{\mathrm{gen}}+V_p^{\mathrm{env}}\) (numerically confirmed:
+an isotropic-only background inflates \(E[z_j^2]\) along the top PC at exactly this
+rate). The confounding \(V_p^{\mathrm{env}}\) and the *directional* genetic
+variance \(V_p^{\mathrm{gen}}\) enter every \(z_j\) through the identical realized
+scalar \(\gamma_p\); they are therefore **exactly aliased**, not merely collinear
+— no moment, joint distribution, sample size \(N\), or SNP count \(M\) of
+structure-only statistics separates them.
+
+**Scope.** The aliasing binds only the *rank-1, axis-directional* component. Two
+genuine-signal channels stay identifiable and must not be claimed as lost:
+(i) the isotropic footprint \(\tau^2 M\lambda_p\) is pinned by the local LDSC
+slope \(\tau^2\); (ii) a *heteroscedastic-along-axis* architecture (per-SNP
+\(h^2\) elevated for high-loading SNPs) rides on local LD and leaves a
+\(\operatorname{corr}(x_j,u_p)^2\times\ell_j^{\mathrm{local}}\) interaction that a
+fixed environmental axis shift does not. So the honest statement is
+*non-identifiability from the second moments of structure-only statistics*,
+confined to the directional component.
+
+**Corollary.** Every structure-only correction (cov-LDSC, \(P_c\), PC-score
+subtraction, an S-LDSC PC annotation, Bercovich residualization) removes the whole
+\(\operatorname{corr}(x_j,u_p)^2\) contribution — so it removes the *directional*
+genuine heritability \(V_p^{\mathrm{gen}}\) (and the aligned share of
+\(\tau^2 M\lambda_p\)) together with \(V_p^{\mathrm{env}}\). It is conservative:
+it de-confounds only by co-attenuating real directional ancestry-aligned \(h^2\);
+the LD-borne heritability survives. Diagnostics therefore *flag* axes with
+\((V_p^{\mathrm{gen}}+V_p^{\mathrm{env}})>0\); they cannot *certify* confounding.
+
+**What breaks it.** Only external information. Within-family designs do **not**
+recover \(V_p^{\mathrm{gen}}\): the axis is shared between sibs (\(u_p\) lies in the
+family span), so family-mean-centering annihilates it — exactly the
+\(M_BRM_B=0.5\,M_B\) of `within_family_killtest.py` — nulling the aligned genetic
+*and* environmental parts together and estimating a strictly smaller,
+confound-robust *within-family* heritability that omits \(V_p^{\mathrm{gen}}\)
+(this is why within-family \(h^2<\) population \(h^2\)). Genuine separation of
+direct genetic from stratification needs cross-population replication or parental
+genotypes (transmitted/non-transmitted, [Kong et al. 2018]; RDR,
+[Young et al. 2018]).
+
+**Positioning.** This is a *formalization*, in the LD-score metric, of the
+long-known polygenic-signal-vs-stratification confounding — the senior author's
+own "genetic background correlated with structure" point
+([Vilhjálmsson & Nordborg 2013](https://doi.org/10.1038/nrg3382)) and the
+polygenic-selection debate (Berg & Coop 2014; Berg 2019; Sohail 2019; Zaidi &
+Mathieson 2020, adjacent); Bhatia 2016 is the *first-moment* (signed) analogue.
+It is **not** a new impossibility result. The only new articulation is the single
+per-PC coefficient tied to the exact \(\ell^{\text{struct}}\) decomposition, and
+the explicit statement that the whole LD-score correction family inherits the same
+conservatism.
 
 **Positioning.** The qualitative concept (LD has a structure component) is
 established (cov-LDSC; Bhatia et al. 2016; Price et al. 2008; Bercovich et al.
@@ -405,3 +465,15 @@ stated identifiability limit. See [PRIOR_ART.md](PRIOR_ART.md).
    tissue-specific gene sets in admixed populations](https://doi.org/10.1093/hmg/ddab130).
 3. Huang et al. (2025), [Interpreting SNP heritability in admixed
    populations](https://doi.org/10.1093/genetics/iyaf100).
+4. Vilhjálmsson & Nordborg (2013), [The nature of confounding in genome-wide
+   association studies](https://doi.org/10.1038/nrg3382) (the qualitative origin
+   of the structure-aliasing remark: the confounder is environment *and* the
+   genetic background correlated with structure).
+5. Bhatia et al. (2016), [Subtle stratification confounds estimates of
+   heritability from polygenic models](https://doi.org/10.1101/048181) (the
+   first-moment / signed PC-loading analogue of the §14 remark).
+6. Young et al. (2018), [Relatedness disequilibrium regression estimates
+   heritability without environmental bias](https://doi.org/10.1038/s41588-018-0178-9)
+   (RDR — an external anchor that breaks the aliasing).
+7. Kong et al. (2018), [The nature of nurture: effects of parental genotypes](https://doi.org/10.1126/science.aan6877)
+   (transmitted/non-transmitted — the other external anchor).

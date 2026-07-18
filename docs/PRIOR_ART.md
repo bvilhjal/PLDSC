@@ -110,8 +110,21 @@ new — that belongs to Mangin/Bercovich (r²) and cov-LDSC (LD scores).
 - **Luo et al. 2021** — cov-LDSC; PC-residualized **LD scores** for heritability —
   the direct application competitor
   ([10.1093/hmg/ddab130](https://doi.org/10.1093/hmg/ddab130)).
+- **Vilhjálmsson & Nordborg 2013** — "The nature of confounding in GWAS"; the
+  qualitative origin of the identifiability limit (the confounder is environment
+  *and* the genetic background correlated with structure) — and, notably, by the
+  project's own senior author, so the natural lineage to own
+  ([10.1038/nrg3382](https://doi.org/10.1038/nrg3382)). The §14 structure-aliasing
+  remark is its LD-score-second-moment formalization.
 - **Bhatia et al. 2016** — PC-loading regression; per-PC stratification detection
-  ([bioRxiv 10.1101/076133](https://doi.org/10.1101/076133)).
+  — but on the *first-moment* (signed) scale, framing the aligned component as
+  confounding to be subtracted (the opposite stance to the aliasing remark's "it
+  also contains genuine V_p^gen") ([bioRxiv 10.1101/076133](https://doi.org/10.1101/076133)).
+- **Young et al. 2018 (RDR)** and **Kong et al. 2018 (transmitted/non-transmitted)**
+  — external anchors (relatedness disequilibrium; parental genotypes) that *break*
+  the structure-only aliasing; polygenic-selection debate (Berg & Coop 2014;
+  Berg 2019; Sohail 2019; Zaidi & Mathieson 2020, adjacent) is the empirical
+  backdrop.
 - Bulik-Sullivan et al. 2015 (LDSC, [10.1038/ng.3211](https://doi.org/10.1038/ng.3211));
   Finucane et al. 2015 (S-LDSC, [10.1038/ng.3404](https://doi.org/10.1038/ng.3404));
   Gazal et al. 2017 (baseline-LD).
