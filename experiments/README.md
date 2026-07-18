@@ -413,3 +413,29 @@ needs a per-meiosis-recombination simulator this repo lacks. This closes candida
 option (a) of DEVELOPMENT_PLAN §1.1.
 
 
+## `identifiability_aliasing.py` — the structure-aliasing limit, illustrated
+
+Backs the METHOD §14 "structure aliasing" remark (adversarially verified). Marginal
+uncorrected `z_j = x_jᵀy/√N` under three phenotype models that all load variance on
+the same top structure axis `u₁`; regress `z_j²` on `[1, corr(x_j,u₁)²,
+corr(x_j,u₁)²·(ℓ_j^local − mean)]` (centered local factor to orthogonalize).
+
+| model | mean χ² | b[corr²] | t[corr²×local] |
+|---|---|---|---|
+| (A) environmental axis shift | 2.49 | 28.73 | 5.29 |
+| (B) directional genetic (rank-1) | 2.49 | 28.73 | 5.29 |
+| (C) heteroscedastic-along-axis | 2.50 | 20.26 | 8.48 |
+
+### Verdict: aliasing is exact for the directional component, not the LD-borne one
+
+(A) and (B) are **identical to 2 dp** — a genuine *genetic* effect producing a
+phenotype along the ancestry axis is indistinguishable from an *environmental* shift
+along it (the shared nonzero interaction is a finite-sample orthogonalization
+residual, identical in both, so not a distinguishing feature). (C) heteroscedastic
+genetic signal loads less on pure `corr²` and leaves a larger `corr²×ℓ^local`
+interaction — it rides on local LD, so that part *is* identifiable via the local
+channel. This is the exact scope of the limit: the rank-1 directional component is
+aliased (every structure-only correction co-attenuates it); the LD-borne component
+is not.
+
+
