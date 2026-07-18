@@ -111,5 +111,54 @@ Mean null chi^2 (want 1.000):
 
 This is the result that justifies the mixed-model-matched score over cov-LDSC:
 the win is **relatedness**, exactly the regime mixed models exist for. Still
-oracle `V_c` only; fitted-`V_c` (M4) remains untested.
+oracle `V_c` only; fitted-`V_c` (M4) is tested below.
+
+## `m4_fitted_vc.py` — does calibration survive a FITTED `V_c`?
+
+M-spike and M3 used an oracle `V_c`. Real use estimates the variance
+components, so this experiment quantifies the plug-in error on an
+admixture+relatedness cohort (N=400, true `sigma_g^2=0.7`, `sigma_e^2=0.3`,
+`h^2=0.70`). It uses the tested `pldsc._lmm` oracle and `pldsc.simulate`
+generators; the REML fit is local to the experiment (the package ships no
+REML — it stands in for the fitted null components M4 would import from GEMMA).
+`P_c` depends on `V_c` through its scale and its `h^2` ratio, and REML fits both.
+
+**M4a — deliberate misspecification sweep** (true `V_c` fixed, vary assumed `h^2`):
+
+| assumed h^2 | mean null chi^2 |
+|---|---|
+| 0.00 (= cov-LDSC) | 2.341 |
+| 0.50 | 0.727 |
+| 0.60 | 0.813 |
+| **0.70 (truth)** | **1.000** |
+| 0.80 | 1.427 |
+| 0.90 | 2.824 |
+
+The intercept passes exactly through 1 at the true `h^2` and is a steep,
+monotone function of it: a ±0.1 error in `h^2` moves the intercept ~20–40%.
+This is the calibration-diagnostic curve (`docs/METHOD.md` M9) — and it says the
+intercept genuinely depends on an accurate `V_c`.
+
+**M4b — REML-fitted plug-in error** (300 null replicates, fit `V_c` from each):
+
+- REML recovery is unbiased: `sigma_g^2 = 0.700 ± 0.105`, `h^2 = 0.697 ± 0.040`.
+- **Fitted-`P_c` intercept: mean 1.010, sd 0.078, [5%,95%] = [0.89, 1.15]** — versus
+  the oracle 1.000 and cov-LDSC 2.341.
+
+### Verdict: calibration survives fitting, with a caveat to carry into M5
+
+With REML-fitted components the intercept is nearly unbiased (1.01) and far
+better than cov-LDSC (2.34), so the M3 advantage is not an oracle artifact.
+**But** the intercept inherits the sampling uncertainty of `V_hat_c` (sd 0.078
+here at N=400, driven by the ±0.04 `h^2` error through the steep M4a curve).
+Consequences to act on:
+
+- The intercept's standard error must **propagate variance-component
+  uncertainty**, not just the LD-score regression residual — a concrete
+  requirement for the M5 inference/resampling design.
+- Plug-in error shrinks as REML precision improves with N, so the biobank regime
+  is more favorable than this N=400 probe.
+- Fitted-`V_c` parity against GEMMA's actual null components (rather than this
+  local REML) remains the full M4 deliverable.
+
 
