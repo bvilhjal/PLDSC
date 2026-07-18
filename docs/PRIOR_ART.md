@@ -1,14 +1,38 @@
 # Prior-art positioning
 
-Date: 2026-07-18
+Date: 2026-07-19
 
-**Status: Bercovich 2025 now read in full** (Oxford HTML + PDF, cross-checked
-term census); the novelty-decisive gate flagged by the external review is closed.
-The *broader* landscape verdict is still from ~6 targeted web searches plus the
-applications-panel findings — the six-cluster subagent workflow
-(`workflows/scripts/pldsc-prior-art-*.js`) hit a session usage limit and should be
-re-run for a fully source-checked sweep. Treat the Bercovich-specific conclusions
-below as verified and the rest as provisional.
+**Status: FULL 5-cluster prior-art sweep now run** (`workflows/scripts/pldsc-prior-art-sweep.js`,
+6 agents, ~721k tokens, adversarial — searchers tried to *refute* novelty via live
+web + PubMed/bioRxiv/Consensus). Verdict below. Bercovich 2025 read in full
+(unchanged). **Overall: thin-but-defensible — as a clarifying/unifying exposition
+only, not as novel contributions.** See the sweep section for the corrections it
+forced.
+
+## Sweep verdict (2026-07-19)
+
+Positioned as *four novel contributions* the note **overclaims on all four**;
+positioned as an **honest organizing map + two thin technical tiles** it clears the
+bar for a methods/clarification note. Per claim:
+
+| Claim | Sweep verdict | Closest prior art |
+|---|---|---|
+| DECOMP (spectral LD-score identity as organizing device) | **partial** (textbook + adjacent) | de Vlaming et al. 2017 (GRM-PC view of LDSC, [10.1101/211821](https://doi.org/10.1101/211821)); LDER (Song 2022, spectral LDSC, [10.1016/j.ajhg.2022.03.013](https://doi.org/10.1016/j.ajhg.2022.03.013)) |
+| UNIF (cov-LDSC/WhiLD/PC-score/`P_c` as one ladder) | **partial**; premise falsified | **Mangin 2012 is already a GLS/mixed-model-whitened operator**, not a hard projection ([10.1038/hdy.2011.73](https://doi.org/10.1038/hdy.2011.73); confirmed Lin & Chang 2012, [10.1038/hdy.2012.34](https://doi.org/10.1038/hdy.2012.34)); unification-of-estimators precedent = MQS/GEMMA (Zhou 2017, [10.1214/17-AOAS1052](https://doi.org/10.1214/17-AOAS1052)) |
+| ALIAS (LD-correction family co-attenuates real ancestry-aligned h²) | **OCCUPIED** | **Huang et al. 2025** states it in print for cov-LDSC/GREML/HE ([10.1093/genetics/iyaf100](https://doi.org/10.1093/genetics/iyaf100)); Sotoudeh et al. 2026 first-moment version ([10.1073/pnas.2525790123](https://doi.org/10.1073/pnas.2525790123)) |
+| GLS-OP (`P_c` LD-score whitener matched to a LOCO-LMM score) | **partial** | exact construction not in print (cov-LDSC leaves it as future work) but Mangin 2012 pre-empts the operator; g-LDSC (Xiong 2024, [10.1016/j.xhgg.2024.100272](https://doi.org/10.1016/j.xhgg.2024.100272)) pre-empts generic GLS-LDSC |
+
+**The two thin tiles that are genuinely unpublished:** (a) carrying Mangin's GLS
+operator from pairwise `r²` to LD *scores* with a LOCO-LMM-matched covariance
+(caveat: collapses to ≈cov-LDSC in the windowed regime); (b) the exact marginal
+second-moment single-regressor aliasing identity (but the *corollary* is Huang
+2025's). **Corrections forced:** re-credit Mangin 2012 as the GLS-operator ancestor
+(not hard-projection); promote Huang 2025 to the primary ALIAS predecessor; credit
+MQS/GEMMA (unification-of-estimators), de Vlaming 2017 (GRM-PC view of LDSC), and
+the WhiLD/Mahalanobis heritability lineage (Mathew 2018 [10.1038/s41437-017-0011-8](https://doi.org/10.1038/s41437-017-0011-8);
+Ma & Dicker 2019, arXiv:1901.02936).
+
+## Headline (superseded by the sweep verdict above; kept for the lineage)
 
 ## Headline
 

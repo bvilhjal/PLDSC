@@ -438,24 +438,42 @@ own "genetic background correlated with structure" point
 ([Vilhjálmsson & Nordborg 2013](https://doi.org/10.1038/nrg3382)) and the
 polygenic-selection debate (Berg & Coop 2014; Berg 2019; Sohail 2019; Zaidi &
 Mathieson 2020, adjacent); Bhatia 2016 is the *first-moment* (signed) analogue.
-It is **not** a new impossibility result. The only new articulation is the single
-per-PC coefficient tied to the exact \(\ell^{\text{struct}}\) decomposition, and
-the explicit statement that the whole LD-score correction family inherits the same
-conservatism.
+It is **not** a new impossibility result — and, per the prior-art sweep
+(PRIOR_ART.md), **not even the corollary is new**: [Huang et al.
+2025](https://doi.org/10.1093/genetics/iyaf100) already state in print that
+structure/PC correction and cov-LDSC (by name) co-attenuate genuine
+ancestry-aligned genetic variance, and [Sotoudeh et al.
+2026](https://doi.org/10.1073/pnas.2525790123) give a first-moment version (PC
+adjustment diminishes direct genetic effects). The only thin genuinely-new tile
+is the *exact marginal single-regressor* form — writing the second-moment
+coefficient on \(\operatorname{corr}(x_j,u_p)^2\) as one aliased sum — and even
+that is exposition; Huang 2025 must be the primary predecessor, not a footnote.
 
-**Positioning.** The qualitative concept (LD has a structure component) is
-established (cov-LDSC; Bhatia et al. 2016; Price et al. 2008; Bercovich et al.
-2025); the exact spectral identity itself is textbook algebra. Note that the
-published structure-corrected-LD operators are *hard rank-K projections* off the
-top-PC subspace — Bercovich 2025 (full read) uses \(I-Q(Q^{\top}Q)^{-1}Q^{\top}\)
-on *pairwise* \(r^2\) for pruning/clumping (no heritability content; originating
-with Mangin et al. 2012), and cov-LDSC uses the same projection on LD *scores*
-for heritability. \(P_c\) is the eigenvalue-weighted GLS generalization of that
-projection, of which the hard cut is a limiting case. The contribution here is
-using the spectral identity as the *organizing* device that ties cov-LDSC / WhiLD
-/ PC-score / \(P_c\) onto one ladder, the honest negative theorem of practice
-(relatedness does not propagate into windowed LDSC), and the diagnostics plus the
-stated identifiability limit. See [PRIOR_ART.md](PRIOR_ART.md).
+**Positioning (revised after the prior-art sweep, PRIOR_ART.md).** The qualitative
+concept (LD has a structure component) is established (cov-LDSC; Bhatia et al.
+2016; Price et al. 2008; Bercovich et al. 2025); the exact spectral identity is
+textbook algebra (a GRM quadratic form; [de Vlaming et al.
+2017](https://doi.org/10.1101/211821) already put LDSC and the GRM eigen-spectrum
+in one frame, and [LDER, Song et al. 2022](https://doi.org/10.1016/j.ajhg.2022.03.013)
+is a spectral LDSC reformulation). **Correction the sweep forced:** the published
+structure-corrected-LD operators are *not* all hard projections. Bercovich 2025
+and cov-LDSC are hard rank-K projections, but **[Mangin et al.
+2012](https://doi.org/10.1038/hdy.2011.73) is already an eigenvalue-weighted
+GLS / mixed-model-whitened operator** (\(V^{-1/2}\) with a \(K+Q\) covariance,
+pseudoinverse-projected) matched to LMM association-test power — operator-identical
+to \(P_c\) at the pairwise level. So \(P_c\) is *not* the first GLS generalization;
+the genuinely-thin new tile is only **carrying that GLS operator from pairwise
+\(r^2\) to LD *scores* (row sums) with a LOCO covariance matched to a LOCO-LMM
+score statistic** — and even that collapses to \(\approx\)cov-LDSC in the windowed
+regime (Section 13). The unification-of-estimators move itself also has a precedent
+([MQS/GEMMA, Zhou 2017](https://doi.org/10.1214/17-AOAS1052), fusing HE regression
+and LDSC). **Honest contribution:** an *organizing map* — one LD-score spectral
+decomposition under which cov-LDSC, Mangin's \(r^2_{VS}\), the WhiLD/Mahalanobis
+whitened GRM, the PC score, and a LOCO-LMM-matched \(P_c\) appear as choices of
+*metric* (identity → hard projection → eigenvalue-weighted GLS) × *target*
+(pairwise \(r^2\) → LD-score row sum) — plus the honest negative results. This is a
+clarifying/unifying exposition, not a set of novel contributions. See
+[PRIOR_ART.md](PRIOR_ART.md).
 
 ## References
 

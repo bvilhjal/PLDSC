@@ -1,8 +1,19 @@
 # Theory/methods note — outline (working draft)
 
-Date: 2026-07-18. Direction chosen by the user after the within-family kill-test
-came back negative: **(b) a clean theory/methods note** (no differentiated
-application). Working title candidates:
+Date: 2026-07-18 (sweep verdict added 2026-07-19). Direction chosen by the user
+after the within-family kill-test came back negative: **(b) a clean theory/methods
+note** (no differentiated application).
+
+> **PRIOR-ART SWEEP VERDICT (2026-07-19, PRIOR_ART.md): thin-but-defensible.**
+> All four claims are at most *partial*, and the ALIAS corollary is **occupied**
+> (Huang 2025). The note is defensible ONLY as an honest *clarifying/unifying
+> exposition* (an organizing map) + two thin technical tiles (GLS operator carried
+> to LD scores; the exact marginal aliasing identity) — NOT as novel contributions.
+> It must re-credit Mangin 2012 (GLS operator ancestor), Huang 2025 (aliasing
+> corollary), MQS/GEMMA, de Vlaming 2017, g-LDSC, LDER. If a stronger contribution
+> is wanted, this note does not clear that bar — see the decision at the end.
+
+Working title candidates:
 
 - "The local/non-local decomposition of the LD score, and what structure-only
   corrections can and cannot do."
@@ -19,9 +30,14 @@ application). Working title candidates:
    part.
 2. **Unification.** cov-LDSC, the legacy WhiLD score, the PC score, and the
    mixed-model operator `P_c` are all operations on this decomposition (removing
-   or measuring `ell^struct`); the published structure-corrected-LD operators
-   (Mangin 2012 / Bercovich 2025 on r^2, cov-LDSC on LD scores) are *hard rank-K
-   projections*, and `P_c` is their eigenvalue-weighted GLS generalization.
+   or measuring `ell^struct`), as choices of *metric* (identity → hard projection
+   → eigenvalue-weighted GLS) × *target* (pairwise `r²` → LD-score row sum).
+   **CORRECTED by the sweep:** the operators are NOT all hard projections —
+   **Mangin 2012 is already an eigenvalue-weighted GLS / mixed-model-whitened
+   operator** (Bercovich 2025 / cov-LDSC are the hard-projection ones), so `P_c`
+   is *not* the first GLS generalization; and MQS/GEMMA (Zhou 2017) is a prior
+   unification-of-estimators. The map-as-a-single-unit is unpublished; the
+   *ingredients and the moves* are not.
 3. **Identifiability limit (the intellectual core) — VERIFIED + corrected.**
    Formalized and adversarially verified (3 lenses; see METHOD §14 "structure
    aliasing" remark). Corrected statement: in the marginal `E[z_j^2]` the
@@ -39,8 +55,12 @@ application). Working title candidates:
    Young 2018; transmitted/non-transmitted Kong 2018). Within-family does NOT
    separate them — it *sidesteps* the shared axis (why within-family h² < pop h²;
    the repo's own `M_B R M_B = 0.5 M_B`). **Lineage to own:** Vilhjálmsson &
-   Nordborg 2013 (the senior author's own paper) is the qualitative origin; state
-   this as a named *remark*, a formalization, not a new impossibility.
+   Nordborg 2013 (the senior author's own paper) is the qualitative origin.
+   **CORRECTED by the sweep:** the *corollary is OCCUPIED* — Huang et al. 2025
+   (Genetics) states the co-attenuation for cov-LDSC/GREML/HE in print, and
+   Sotoudeh et al. 2026 (PNAS) gives a first-moment version. So only the exact
+   marginal single-regressor *identity* is a thin new articulation; Huang 2025 is
+   the primary predecessor. State as a named remark, a formalization, not new.
 
 **Explicitly does NOT claim:** a new estimator; a novel structure-corrected LD
 (that is Mangin/Bercovich/cov-LDSC); a differentiated LDSC application (the
