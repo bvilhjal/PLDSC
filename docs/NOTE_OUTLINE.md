@@ -77,12 +77,11 @@ result (the identifiability limit formalizes a known confounding).
       corrected; the "structure aliasing" remark). The most defensible genuinely-new
       slice is the **corollary** (the whole LD-score correction family inherits the
       conservatism) — foreground it; frame the rest as formalizing V&N 2013.
-- [ ] A clean numerical illustration of the *scoped* limit: (a) directional-gen vs
-      env produce indistinguishable structure-only statistics (aliased), while
-      (b) a heteroscedastic-along-axis architecture leaves a `corr²×ℓ^local`
-      interaction env lacks (identifiable) — this is the honest, scoped figure.
-      (Corrected moment coefficient `τ²Mλ_p` already numerically confirmed,
-      corr 0.998.)
+- [x] A clean numerical illustration of the *scoped* limit — DONE
+      (`experiments/identifiability_aliasing.py`): directional-gen and env are
+      identical to 2 dp (exact aliasing); heteroscedastic-along-axis leaves a
+      larger `corr²×ℓ^local` interaction (identifiable via the local channel).
+      Corrected moment coefficient `τ²Mλ_p` separately confirmed (corr 0.998).
 - [ ] Decide venue/length (short methods note / preprint vs a Genetics-style
       perspective) — user call.
 - [ ] Full prior-art landscape sweep to confirm the unification niche is
