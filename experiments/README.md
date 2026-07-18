@@ -22,14 +22,17 @@ seed 20260717.)
 Two scenarios (structured two-population + sib pairs; homogeneous control),
 N=400, 240 SNPs on 3 chromosomes, 6000 Monte-Carlo replicates.
 
-**Readout B — Eq (3) is numerically correct.** Regressing the Monte-Carlo
-`E[z_j^2]` on the full-chromosome `L_j^(P_c)` recovers the oracle line
+**Readout B — Eq (3) is numerically correct.** The Monte-Carlo `E[z_j^2]` matches
+the Eq (3) moment: per-SNP standardized residuals have RMS ~1.55 sigma (max ~4.3),
+which is expected because the 80 SNP means share the same MC draws and are
+correlated — the aggregate agreement rules out a systematic error. Window
+truncation (1.5 cM) drops ~12% of the full sum (median), the expected Eq-4
+approximation to quantify in M3. Separately, the slope-estimand check (this is the
+*Readout A2* "correct regressor" row, not Readout B): regressing the calibrated
+oracle `z^2` on the full-chromosome `L_j^(P_c)` recovers
 `(intercept, slope) = (0.997, 6.246e-4)` against the true `tau^2 = 6.229e-4`
-(structured; homogeneous 0.983 / 6.111e-4 vs 5.86e-4). Per-SNP standardized
-residuals have RMS ~1.55 sigma — expected, because the 80 SNP means share the
-same MC draws and are correlated; the aggregate intercept pinned to 1 rules out
-a systematic error. Window truncation (1.5 cM) drops ~12% of the full sum
-(median), the expected Eq-4 approximation to quantify in M3.
+(homogeneous 0.983 / 6.111e-4 vs 5.86e-4) — the cleanest confirmation that the
+slope is `tau^2`.
 
 **Readout A1 — the calibration/confounding use-case, under a null target
 chromosome (`tau^2 = 0`).** Mean `z^2` is the LDSC-intercept-style confounding:
@@ -80,7 +83,8 @@ for OLS operators. Computed analytically (no Monte Carlo); one MC pass
 cross-checks Eq (3). N=400, `sigma_g^2=0.7`, `sigma_e^2=0.3`, PCG64 seed
 20260718.
 
-Mean null chi^2 (want 1.000):
+Mean null chi^2 (want 1.000); the script sweeps 2/5/10/20/50 PCs, table shows a
+representative subset:
 
 | operator | A. relatedness | B. admixture | C. both (biobank-like) |
 |---|---|---|---|
@@ -336,6 +340,40 @@ LDSC's windowed slope is mostly protected while structure surfaces in the
 intercept and long-range LD. This is the validated backbone for reframing the
 project around the decomposition + its structure diagnostics, with the
 identifiability limit (genuine ancestry-aligned signal loads on the same PCs) as
-a stated theorem rather than a hidden flaw.
+a stated limit rather than a hidden flaw.
+
+## `misspecified_background.py` — the one non-circular robustness test
+
+Every other experiment generates data under exactly the assumed model. This one
+deliberately violates `epsilon ~ (0, V_c)` (METHOD.md §6's flagged axis): the
+off-chromosome background is *sparse* or *directional*, so the true covariance
+differs from the `V_c` used to build `P_c`. Exact null-target-chromosome intercept
+= `mean_j null_inflation(P_c, X, V_true)`; 6 realizations; control must return
+1.000 (the P2 identity).
+
+| off-chromosome background | mean null intercept |
+|---|---|
+| infinitesimal (control) | 1.000 |
+| sparse — 10% of SNPs causal | 0.996 |
+| sparse — 2% | 0.996 |
+| sparse — 0.5% | 0.993 |
+| directional — top-axis extra variance α=0.5 | 1.001 |
+| directional — α=1 | 1.002 |
+| directional — α=2 | 1.004 |
+
+### Verdict: robust, with honest scope
+
+The oracle intercept is **remarkably robust** to off-chromosome architecture
+misspecification — even a 0.5%-sparse or doubled-directional background moves it
+<1%. Mechanism: both misspecifications live mostly in the low-rank structure
+subspace `P_c` already whitens (structure is robustly estimated from any SNP
+subset; extra variance along the top structure axis is suppressed by `V_c^{-1}`).
+This is the **first non-circular experiment** — it violates the model assumption
+rather than assuming it — and the answer is reassuring within its scope. Scope
+limits (stated, not hidden): it tests the null *intercept* only; calibration IS
+sensitive to variance-component/scale misspecification (M4a); and it does **not**
+test a background structure axis *absent* from the GRM used to build `V_c` (a
+misspecification orthogonal to the whitened subspace), which is the harder,
+still-untested case.
 
 

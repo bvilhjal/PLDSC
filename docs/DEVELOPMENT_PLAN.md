@@ -17,13 +17,18 @@ the use-case has been tested directly: the LDSC-application niche
 is upstream. Read Section 1.1 before the roadmap.
 
 **Reframing (2026-07-18): the central idea is the local/non-local LD-score
-decomposition.** \(\ell = \ell^{\text{local}} + \ell^{\text{struct}}\), with the
-non-local component equal to the PC score (validated corr = 0.99 genome-wide; see
-[METHOD.md](METHOD.md) §14 and `experiments/ld_decomposition.py`). This one
-identity unifies cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\)
-operator as ways of removing or measuring \(\ell^{\text{struct}}\), and pins
-standard-LDSC structure bias to conflating \(\ell^{\text{local}}\) (\(h^2\)) with
-\(\ell^{\text{struct}}\) (confounding). The project is now organized as a
+decomposition.** \(\ell = \ell^{\text{local}} + \ell^{\text{struct}}\). The
+genome-wide LD score is *exactly* the GRM spectral decomposition
+\(\sum_k r_{jk}^2=(M/N)\sum_p\lambda_p\operatorname{corr}(x_j,u_p)^2\) (textbook
+algebra); the legacy PC score is its leading-eigenvector truncation (corr 0.99
+with the non-local part but only ~37% of its magnitude; see [METHOD.md](METHOD.md)
+§14). The honest number is that structure is only ~5% of the *windowed* LD score
+LDSC uses (~50% genome-wide, which LDSC never regresses on) — which is why
+cov-LDSC suffices. The identity's value is as an **organizing device** unifying
+cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\) operator as ways
+of removing or measuring \(\ell^{\text{struct}}\), pinning standard-LDSC structure
+bias to conflating \(\ell^{\text{local}}\) (\(h^2\)) with \(\ell^{\text{struct}}\)
+(confounding). The project is now organized as a
 **framework/synthesis + diagnostics** effort, not a new estimator: theory = the
 decomposition + unification + identifiability limit; applications = the structure
 diagnostics (per-PC inflation spectrum, structure-robust S-LDSC enrichment, the

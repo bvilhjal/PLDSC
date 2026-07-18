@@ -54,9 +54,12 @@ def ld_score_regression(
     weights
         Optional per-variant regression weights. ``None`` is ordinary LS.
     two_step
-        If true, apply the standard LDSC heteroscedasticity weighting: a first
-        pass predicts ``E[chi2]`` and reweights by ``1 / (2 E[chi2]^2)`` (clipped
-        at ``E[chi2] >= 1``). Composes with ``weights`` if both are given.
+        If true, apply a *simplified* LDSC-style heteroscedasticity weighting: a
+        first pass predicts ``E[chi2]`` and reweights by ``1 / (2 E[chi2]^2)``
+        (clipped at ``E[chi2] >= 1``). Note this is the heteroscedasticity term
+        only; full LDSC additionally down-weights by the sampling variance of the
+        LD score itself (Bulik-Sullivan 2015). Composes with ``weights`` if both
+        are given.
     n_blocks
         Number of contiguous jackknife blocks (capped at the number of points).
 

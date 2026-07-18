@@ -12,16 +12,19 @@ framework/synthesis project, not a production estimator.
 
 **Central idea: the LD score decomposes into linkage + structure.** The LD score
 splits as `ℓ_j = ℓ_j^local + ℓ_j^struct` — recombination-driven linkage plus a
-population-structure component — and the non-local component **is the "PC score"**
-(the eigenvalue-weighted sum of squared SNP–PC loadings), validated at
-**corr = 0.99 genome-wide** ([experiments/ld_decomposition.py](experiments/ld_decomposition.py);
-structure is ~50% of the genome-wide LD score but only ~5% within a local window).
-One identity **unifies the existing structure-corrections**: covariate-adjusted
-LDSC (cov-LDSC), the legacy whitened-LD (WhiLD) score, the PC score, and the
-mixed-model residual-precision operator `P_c` are all ways of removing or
-measuring `ℓ^struct`. Standard LDSC's structure bias is exactly the conflation of
-`ℓ^local` (heritability) with `ℓ^struct` (confounding). See
-[docs/METHOD.md](docs/METHOD.md).
+population-structure component. The genome-wide LD score is *exactly* the spectral
+decomposition of the GRM, `Σ_k r_jk² = (M/N) Σ_p λ_p corr(x_j,u_p)²` (textbook
+algebra, not a new finding); the legacy "PC score" is its leading-eigenvector
+truncation — which correlates 0.99 with the non-local component but captures only
+~37% of its magnitude ([experiments/ld_decomposition.py](experiments/ld_decomposition.py)).
+The honest headline: within the **windowed** LD score LDSC actually uses,
+structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses on
+that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
+died. The value of the identity is as an **organizing device**: cov-LDSC, the
+legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
+residual-precision operator `P_c` are all ways of removing or measuring
+`ℓ^struct`, and standard LDSC's structure bias is the conflation of `ℓ^local`
+(heritability) with `ℓ^struct` (confounding). See [docs/METHOD.md](docs/METHOD.md).
 
 **Applications — structure diagnostics** (all prototyped in `experiments/`):
 a per-PC inflation spectrum that maps a GWAS's confounding to specific axes

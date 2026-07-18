@@ -187,7 +187,14 @@ bookkeeping:
 A violation of (1) or the infinitesimal-\(V_c\) structure by large,
 sparse, or directional effects on the **other** chromosomes (which enter
 \(\varepsilon\) and can be in structure-LD with \(x_j\)) breaks the noise term
-\(E[u_j^2]=q_j\) and is a required simulation axis.
+\(E[u_j^2]=q_j\). This is now tested (`experiments/misspecified_background.py`):
+the null intercept is **robust** to sparse (down to 0.5% causal → 0.993) and
+directional (top-axis variance doubled → 1.004) off-chromosome backgrounds,
+because both live mostly in the low-rank structure subspace \(P_c\) already
+whitens. It remains sensitive to variance-component/scale misspecification (M4a),
+and a background structure axis *absent* from the GRM used to build \(V_c\) — a
+misspecification orthogonal to the whitened subspace — is the harder, still-untested
+case.
 
 ## 7. Reductions
 
@@ -325,26 +332,39 @@ the LD score into a linkage (local) and a structure (non-local) component:
 \]
 
 where \(r_{jk}^{(P_c)}\) is the structure-whitened correlation (Sections 2, 7).
-Writing \(r_{jk}=r_{jk}^{(P_c)}+r_{jk}^{\text{struct}}\) with
-\(r_{jk}^{\text{struct}}\approx\sum_p\gamma_{jp}\gamma_{kp}\) (shared PC loadings)
-and using approximate cross-SNP orthonormality of loadings, the non-local
-component equals the eigenvalue-weighted **PC score**:
+The non-local component has an **exact** form, not an approximation. With
+column-standardized genotypes \(X\) (\(N\times M\)), \(r_{jk}=x_j^\top x_k/N\) and
+GRM \(K=XX^\top/M\) with eigenpairs \((\lambda_p,u_p)\); then the genome-wide LD
+score is exactly the **spectral decomposition of the GRM**:
 
 \[
-\ell_j^{\text{struct}}\;\approx\;s_j=\sum_p\frac{\lambda_p}{\lambda_t}
-\operatorname{corr}(g_j,\mathrm{PC}_p)^2 .
+\sum_k r_{jk}^2=\frac{M}{N^2}\,x_j^\top K x_j
+=\frac{M}{N}\sum_p \lambda_p\,\operatorname{corr}(x_j,u_p)^2 .
 \]
 
-**Validation** (`experiments/ld_decomposition.py`): genome-wide,
-\(\operatorname{corr}(\ell^{\text{struct}},s)=0.988\), with an additive split
-(\(\ell^{\text{ord}}\,4.20=\ell^{\text{local}}\,2.12+\ell^{\text{struct}}\,2.08\))
-and structure \(\approx50\%\) of the genome-wide LD score but only \(\approx5\%\)
-within a local window.
+This is textbook linear algebra, not an empirical discovery. The 2017 **"PC
+score"** \(s_j=\sum_{p\le k}(\lambda_p/\lambda_t)\operatorname{corr}(g_j,u_p)^2\)
+is precisely the **leading-\(k\)-eigenvector (renormalized) truncation** of this
+identity — an estimate of \(\ell^{\text{struct}}\) from the top structure axes.
+
+**What the experiment actually shows** (`experiments/ld_decomposition.py`;
+re-derived and re-checked independently, EXTERNAL_REVIEW §3.3): the top-10-PC
+truncation correlates \(0.99\) with the non-local remainder, **but captures only
+\(\approx37\%\) of its magnitude** (correlation is scale-invariant; the truncation
+misses the eigenvalue tail). The additive split that script prints
+(\(\ell^{\text{ord}}=\ell^{\text{local}}+\ell^{\text{struct}}\)) is **by
+construction** — \(\ell^{\text{struct}}\) is *defined* as the difference — so it is
+not evidence of additivity; the only empirical content is that \(0.99\)
+correlation. **Honest headline:** within the *windowed* LD score LDSC actually
+uses, structure is only \(\approx5\%\) (genome-wide, cross-chromosome-inclusive,
+it is \(\approx50\%\), but LDSC never regresses on that). The small windowed share
+is exactly *why* cov-LDSC suffices and why the estimator angle died (Section 13).
 
 **Unification.** Every structure-correction is an operation on this
 decomposition: cov-LDSC (\(V_c=\sigma^2 I\)) and \(P_c\) compute
 \(\ell^{\text{local}}\); the legacy WhiLD score is the special case of Section 8;
-the PC score is \(\ell^{\text{struct}}\) itself. Standard LDSC's structure bias is
+the PC score is the leading-PC truncation of \(\ell^{\text{struct}}\). Standard
+LDSC's structure bias is
 the conflation of \(\ell^{\text{local}}\) (heritability) with
 \(\ell^{\text{struct}}\) (confounding); because \(\ell^{\text{struct}}\) is a small
 fraction of a *local* window it surfaces mainly in the intercept and long-range
@@ -365,9 +385,11 @@ confounding.
 
 **Positioning.** The qualitative concept (LD has a structure component) is
 established (cov-LDSC; Bhatia et al. 2016; Price et al. 2008; Bercovich et al.
-2025); the contribution here is the explicit identity
-\(\ell^{\text{struct}}=s_j\), the unification, and the diagnostics plus the limit.
-See [PRIOR_ART.md](PRIOR_ART.md).
+2025); the exact spectral identity itself is textbook algebra. The contribution
+here is using it as the *organizing* device that ties cov-LDSC / WhiLD / PC-score
+/ \(P_c\) onto one ladder, the honest negative theorem of practice (relatedness
+does not propagate into windowed LDSC), and the diagnostics plus the stated
+identifiability limit. See [PRIOR_ART.md](PRIOR_ART.md).
 
 ## References
 
