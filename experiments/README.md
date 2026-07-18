@@ -161,4 +161,39 @@ Consequences to act on:
 - Fitted-`V_c` parity against GEMMA's actual null components (rather than this
   local REML) remains the full M4 deliverable.
 
+## `m5_inference.py` — LD-score regression inference and the fitted-`V_c` caveat
+
+Uses the tested `pldsc.regression` (weighted LS + delete-a-block jackknife) and
+the `pldsc._lmm` oracle. Two arms per replicate on an admixture+relatedness
+cohort (N=400, 80 target SNPs, R=300): an oracle-`V_c` arm and a REML-fitted-`V_c`
+arm. Coverage of the intercept (truth 1) and slope (truth `tau^2`):
+
+| arm / SE | intercept coverage | slope coverage |
+|---|---|---|
+| oracle `V_c`, jackknife | 94.3% | 95.3% |
+| fitted `V_c`, jackknife only | 95.0% | 94.3% |
+| fitted `V_c`, jackknife + `V_hat_c` term | 95.0% | — |
+
+### Verdict: jackknife is calibrated at a fixed operator; the `V̂_c` caveat is a scale effect
+
+- The block jackknife gives nominal coverage in both arms, so the regression
+  inference is sound at a fixed operator.
+- **The nuance M4 had hidden:** M4's stable "mean inflation" and M5's
+  extrapolated "regression intercept" are different estimators. At only M=80
+  target SNPs the regression intercept is noise-dominated (SE ≈ 1.63), so the
+  `V̂_c` term (0.145) is negligible and coverage is fine with or without it.
+- **But `V̂_c` uncertainty is a *shared systematic*** — one fitted `V_c` shifts
+  every SNP's statistic together — so it does **not** shrink with the number of
+  SNPs, whereas the regression SE does (~`1/sqrt(M)`). The decomposition
+  (regression SE 1.63 at M=80 vs `V̂_c` SE 0.145) puts the crossover at
+  **~10,000 SNPs**: beyond that the jackknife-only intercept SE under-covers, so
+  a genome-scale M5 must propagate variance-component uncertainty into the
+  intercept SE. The slope, far less sensitive to `V_c`, stays calibrated
+  throughout.
+
+This corrects the earlier framing: the fitted-`V_c` intercept concern is real
+but is a large-`M`/at-scale effect, and the fix (propagate `V̂_c` uncertainty,
+e.g. via `dIntercept/dh^2 x SE(h_hat^2)` added in quadrature) is now a concrete,
+quantified requirement for the M5 estimator.
+
 
