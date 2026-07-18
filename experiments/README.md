@@ -281,4 +281,33 @@ claiming novelty; and the S-LDSC here is crude (small M, negative intercepts sho
 the fit needs proper constrained/weighted S-LDSC over many SNPs), so numbers are
 directional.
 
+## `detect_pc_inflation.py` — mapping GWAS structure inflation to specific PCs
+
+Regresses the GWAS per-SNP statistic on per-SNP LOCO PC loadings, one coefficient
+per PC, to get an inflation *spectrum* (which PCs, not just an aggregate lambda_GC
+/ LDSC intercept). Signed (beta-hat on loadings) and chi^2-scale (squared
+loadings) versions; per-PC z from a block jackknife; 4-population cohort.
+
+- **S1 (confound along PC1 & PC3):** cleanly mapped — signed |z| 96/96 at PC1/PC3,
+  others ~0-2; chi^2 8.5/8.2. Detection works with PC resolution and specificity.
+- **S2 (genuine signal aligned with PC2, no confound):** falsely flags PC2
+  (|z|=56) — the **identifiability limit**: ancestry-aligned true signal is
+  indistinguishable from confounding.
+- **S3 (null):** chi^2 version flat (|z|<=1.6); signed version shows residual
+  |z|~4 at structure PCs (structured genotypes project polygenic signal onto
+  structure axes -> naive jackknife SE is anti-conservative). Signal/null ~24x,
+  but a proper permutation/theoretical null is needed for calibration.
+
+### Verdict: works, but largely Bhatia + incremental
+
+A PC-resolved structure-QC diagnostic, more informative than an aggregate
+inflation number. But the signed version is essentially Bhatia et al. 2016; the
+value-adds are the chi^2-scale magnitude spectrum (cleaner null), the PC
+resolution as a QC output, and the summary-statistics-only framing. Same
+identifiability wall (flag, not proof) and calibration caveat as the S-LDSC
+annotation. Natural companion to `sldsc_pc_annotation.py`: together a coherent
+(if modest) "PC-loading structure diagnostics for GWAS/LDSC" methods note —
+detect which PCs inflate a GWAS, and test whether an enrichment is
+structure-robust — building on Bhatia and the 2017 PC score.
+
 
