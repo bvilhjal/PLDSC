@@ -64,3 +64,52 @@ chasing, removed by the residual-precision metric.
   untested.
 - This is a throwaway spike, not the `pldsc/_lmm.py` oracle (M2) or its unit
   tests.
+
+## `m3_relatedness_admixture.py` — does PLDSC beat cov-LDSC?
+
+The M-spike showed PLDSC beats *ordinary* LDSC and that discrete-population
+cov-LDSC is already ~calibrated. This experiment tests the actual novelty claim:
+does PLDSC beat **cov-LDSC**? cov-LDSC corrects structure with a few fixed PCs,
+which handles a low-rank admixture axis but not high-rank cryptic relatedness
+(each family is its own block). PLDSC uses the full GRM `V_c`.
+
+Headline metric: **mean null chi^2** = `mean_j (x_j^T P V_c P x_j)/(x_j^T P x_j)`,
+the LDSC-intercept-style confounding under a null target chromosome. It is
+**exactly 1** for the oracle `P_c` (property P2, `docs/METHOD.md`) and inflated
+for OLS operators. Computed analytically (no Monte Carlo); one MC pass
+cross-checks Eq (3). N=400, `sigma_g^2=0.7`, `sigma_e^2=0.3`, PCG64 seed
+20260718.
+
+Mean null chi^2 (want 1.000):
+
+| operator | A. relatedness | B. admixture | C. both (biobank-like) |
+|---|---|---|---|
+| ordinary (0 PC) | 1.55 | 1.64 | 2.35 |
+| cov-LDSC (2 PC) | 1.48 | **0.97** | 1.47 |
+| cov-LDSC (10 PC) | 1.26 | 0.88 | 1.25 |
+| cov-LDSC (20 PC) | 1.06 | 0.78 | 1.04 |
+| cov-LDSC (50 PC) | 0.66 | 0.60 | 0.65 |
+| **PLDSC (full GRM)** | **1.000** | **1.000** | **1.000** |
+
+### Verdict: PLDSC's advantage over cov-LDSC is real and specific to relatedness
+
+- **PLDSC is exactly calibrated (1.000) in all three, with no tuning** — the P2
+  identity guarantees it.
+- **Admixture (B):** cov-LDSC with the *right* small number of PCs (2) is also
+  ~calibrated (0.97) — an honest tie, consistent with Luo et al. 2021. PCs
+  handle a low-rank admixture axis.
+- **Relatedness (A) and the biobank case (C):** cov-LDSC stays inflated for any
+  feasible PC count (1.48 at 2 PC, still 1.04–1.06 at 20 PC) because family
+  structure is high-rank — you cannot absorb it into a few fixed covariates.
+- **cov-LDSC needs tuning and has no safe setting:** too few PCs → inflation,
+  too many → deflation (0.60–0.66 at 50 PC, from over-projecting variance out).
+  The sweet spot is scenario-dependent (≈2 PC for admixture, ≈20 PC for
+  relatedness) and fragile. PLDSC removes the tuning problem entirely.
+- Eq (3) MC cross-check (scenario A, 15000 reps): regressing `E[z^2]` on the
+  full `L^(P_c)` gives (intercept, slope) = (1.021, within ~4% of `tau^2`),
+  converging to the exact `(1, tau^2)` as replicates grow.
+
+This is the result that justifies the mixed-model-matched score over cov-LDSC:
+the win is **relatedness**, exactly the regime mixed models exist for. Still
+oracle `V_c` only; fitted-`V_c` (M4) remains untested.
+
