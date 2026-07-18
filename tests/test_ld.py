@@ -49,7 +49,7 @@ class LocalLdScoreTests(unittest.TestCase):
             self.genotypes, self.positions, window_cm=1.0
         )
 
-        np.testing.assert_allclose(observed, expected, atol=1e-12)
+        np.testing.assert_allclose(observed, expected, rtol=0, atol=1e-12)
 
     def test_covariate_projection_removes_structure_induced_correlation(self):
         ancestry = np.array([-1, -1, -1, -1, 1, 1, 1, 1], dtype=float)
@@ -75,7 +75,7 @@ class LocalLdScoreTests(unittest.TestCase):
         )
 
         self.assertTrue(np.all(ordinary > 0.0))
-        np.testing.assert_allclose(adjusted, 0.0, atol=1e-12)
+        np.testing.assert_allclose(adjusted, 0.0, rtol=0, atol=1e-12)
 
     def test_finite_sample_correction_uses_residual_rank(self):
         ancestry = np.array([-1, -1, -1, -1, 1, 1, 1, 1], dtype=float)
@@ -94,7 +94,7 @@ class LocalLdScoreTests(unittest.TestCase):
 
         # N=8 and rank([intercept, ancestry])=2, so nu=6 and the
         # adjustment of an r-squared value of zero is -1/(nu-1).
-        np.testing.assert_allclose(observed, -1.0 / 5.0, atol=1e-12)
+        np.testing.assert_allclose(observed, -1.0 / 5.0, rtol=0, atol=1e-12)
 
     def test_rejects_unsorted_positions_and_fully_explained_variants(self):
         with self.assertRaisesRegex(ValueError, "nondecreasing"):
@@ -107,6 +107,51 @@ class LocalLdScoreTests(unittest.TestCase):
                 [0.0, 0.5],
                 covariates=ancestry,
             )
+
+
+class BaselineHardeningTests(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(np.random.PCG64(7))
+        self.G = rng.integers(0, 3, size=(40, 12)).astype(float)
+        self.pos = np.sort(rng.uniform(0.0, 10.0, 12))
+        self.cov = rng.standard_normal((40, 3))
+
+    def test_invariant_to_full_rank_covariate_reparameterization(self):
+        # [1, C] and [1, C @ A] span the same subspace for invertible A, so the
+        # residualized correlations -- and thus the LD scores -- must match.
+        rng = np.random.default_rng(np.random.PCG64(8))
+        A = rng.standard_normal((3, 3))
+        A += 3 * np.eye(3)  # keep it well-conditioned / invertible
+        s1 = local_ld_scores(self.G, self.pos, covariates=self.cov, window_cm=2.0)
+        s2 = local_ld_scores(
+            self.G, self.pos, covariates=self.cov @ A, window_cm=2.0
+        )
+        np.testing.assert_allclose(s1, s2, rtol=0, atol=1e-9)
+
+    def test_accepts_multi_column_covariates(self):
+        scores = local_ld_scores(
+            self.G, self.pos, covariates=self.cov, window_cm=2.0
+        )
+        self.assertEqual(scores.shape, (12,))
+        self.assertTrue(np.all(np.isfinite(scores)))
+
+    def test_rejects_non_finite_genotypes(self):
+        bad = self.G.copy()
+        bad[0, 0] = np.nan
+        with self.assertRaisesRegex(ValueError, "finite"):
+            local_ld_scores(bad, self.pos)
+
+    def test_rejects_misshaped_covariates(self):
+        with self.assertRaisesRegex(ValueError, "covariates"):
+            local_ld_scores(self.G, self.pos, covariates=self.cov[:5])
+
+    def test_rejects_too_few_samples(self):
+        with self.assertRaisesRegex(ValueError, "at least 3 samples"):
+            local_ld_scores(self.G[:2], self.pos)
+
+    def test_rejects_position_count_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "one value per variant"):
+            local_ld_scores(self.G, self.pos[:5])
 
 
 if __name__ == "__main__":
