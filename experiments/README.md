@@ -310,4 +310,32 @@ annotation. Natural companion to `sldsc_pc_annotation.py`: together a coherent
 detect which PCs inflate a GWAS, and test whether an enrichment is
 structure-robust — building on Bhatia and the 2017 PC score.
 
+## `ld_decomposition.py` — the local/non-local decomposition (framework linchpin)
+
+Tests the central identity of the "local vs non-local LD" framing:
+`ell_j (ordinary LD score) = ell_j^local + ell_j^struct`, with
+`ell_j^local = sum_k (r_jk^(P_c))^2` (structure-whitened linkage) and the claim
+that the non-local part equals the 2017 PC score,
+`ell_j^struct ~ s_j = sum_p (lambda_p/lambda_t) corr(g_j, PC_p)^2`. Multi-
+population cohort, windowed and genome-wide, 10 replicates.
+
+| scope | corr(ell_struct, PC score) | struct/total | ell_ord = ell_local + ell_struct |
+|---|---|---|---|
+| windowed | 0.70 | 0.05 | 1.41 = 1.34 + 0.07 |
+| genome-wide | **0.988** | 0.50 | 4.20 = 2.12 + 2.08 |
+
+### Verdict: the decomposition and unification hold
+
+Genome-wide, the non-local component of the LD score correlates **0.99** with the
+PC score and the split is cleanly additive. So **the non-local part of the LD
+score IS the PC score** — one identity that unifies the P_c operator, cov-LDSC,
+the legacy WhiLD score, and the 2017 PC score, with standard LDSC's structure
+bias = conflating `ell^local` (h²) with `ell^struct` (confounding). The structure
+fraction is 50% genome-wide but only 5% within a local window, which explains why
+LDSC's windowed slope is mostly protected while structure surfaces in the
+intercept and long-range LD. This is the validated backbone for reframing the
+project around the decomposition + its structure diagnostics, with the
+identifiability limit (genuine ancestry-aligned signal loads on the same PCs) as
+a stated theorem rather than a hidden flaw.
+
 
