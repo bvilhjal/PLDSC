@@ -377,3 +377,39 @@ misspecification orthogonal to the whitened subspace), which is the harder,
 still-untested case.
 
 
+## `within_family_killtest.py` — the within-family kill-test (fair version)
+
+The one candidate niche after the summary-statistics angle collapsed was
+within-family / sib-GWAS, where relatedness is exactly known by pedigree so `P_c`
+is exact with no fitted-`V_c` fragility. Claim under test: the within-family
+genetic covariance that survives family-mean-centering (`M_B = I − B(BᵀB)⁻¹Bᵀ`)
+biases the standard sib-GWAS LD-score regression, and `P_c` removes it. The design
+was hardened by a 3-lens adversarial review *before* coding (all three lenses
+returned *fundamentally-flawed* on the first draft, which used the circular
+P2-identity metric and a strawman baseline — see the note in the script).
+
+- **Part 1 (the crux).** For full sibs `R = 0.5(I + B)` and `M_B B = 0`, so
+  `M_B R M_B = 0.5·M_B` **exactly** — measured `c_hat ≈ 0.47–0.55`. The surviving
+  covariance is a homoscedastic *scale*, not LD-correlated confounding; a real
+  sib-GWAS's cluster-robust / effective-N SE (Howe et al. 2022) divides it out and
+  the null χ² is 1 with no modelling of `V`.
+- **Part 2 (MC).** Given each estimator a consistent (cluster-robust-equivalent)
+  SE, within-sib FE, pedigree-`P_c`, and oracle-`P_c` **all** recover intercept ~1
+  and slope ~τ² — equivalent. Pedigree-`P_c` is the most off under admixture.
+- **Part 3 (Wall-1).** `corr(FE surviving-leverage, windowed L) ≈ 0` — the
+  structured remainder is off-target/cross-chromosome, orthogonal to the windowed
+  LD score, so it cannot bias the slope either.
+
+### Verdict: KILLED for standard full-sib designs
+
+The standard sib-GWAS pipeline is already calibrated; PLDSC's exact `P_c`
+reproduces it, it does not beat it, and pedigree-only `P_c` is *more* fragile
+under admixture (it forfeits the "no fitted-`V_c`" premise if it uses the realized
+GRM instead). The only unruled-out regime is **heterogeneous pedigrees** (mixed
+full/half sibs, cousins) where `M_B K M_B` is not proportional to `M_B`, evaluated
+on a **genome-wide** (not windowed) intercept — but that estimand is already owned
+by Sib-Regression (Visscher 2006) and RDR (Young 2018), and testing it honestly
+needs a per-meiosis-recombination simulator this repo lacks. This closes candidate
+option (a) of DEVELOPMENT_PLAN §1.1.
+
+

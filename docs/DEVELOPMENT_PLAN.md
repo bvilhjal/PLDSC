@@ -64,16 +64,30 @@ cov-LDSC**. The theory (LMM-matched LD score) is correct and validated, but the
 practical gap the cov-LDSC authors flagged as future work is, in practice,
 closed by cov-LDSC.
 
-**Where the differentiated value actually is.** Upstream, at the association
-step — specifically **within-family / sib-GWAS designs**, where relatedness is
-definitional and exactly known, so \(P_c\) is exact (no fitted-\(V_c\) fragility,
-no reference-panel approximation). This is the one surviving candidate niche
-(from an adversarially-vetted 31-application panel) and is **proposed, not yet
-validated**. The live options are therefore: (a) pursue the within-family
-matched-covariance direction (a cheap kill-test first); (b) publish a clean
-theory/methods note without a differentiated summary-statistics application; or
-(c) stop. Do **not** pursue LDSC-application angles (\(h^2\), \(r_g\), the
-intercept) as PLDSC differentiators.
+**Where the differentiated value was thought to be — and the kill-test verdict.**
+Upstream, at the association step — specifically **within-family / sib-GWAS
+designs**, where relatedness is definitional and exactly known, so \(P_c\) is
+exact (no fitted-\(V_c\) fragility). This was the one surviving candidate niche
+(from an adversarially-vetted 31-application panel). It has now been **kill-tested
+and comes back NEGATIVE** (2026-07-18; `experiments/within_family_killtest.py`,
+design hardened by a 3-lens adversarial review before coding). The reason is
+exact: for full sibs \(R=0.5(I+B)\) and the family-mean-centering projector
+annihilates the family span (\(M_BB=0\)), so \(M_BRM_B=0.5\,M_B\) — the
+within-family genetic covariance that survives mean-centering is a homoscedastic
+*scale*, not LD-correlated confounding. A standard sib-GWAS's cluster-robust /
+effective-N standard error (Howe et al. 2022) removes it, so the standard pipeline
+is already calibrated; \(P_c\) reproduces it but does not beat it, and pedigree-only
+\(P_c\) is *more* fragile under admixture. The structured remainder is off-target
+and orthogonal to the windowed LD score (the same Wall-1 that killed the
+summary-stat angle). The only unruled-out regime — heterogeneous pedigrees on a
+genome-wide intercept — is already owned by Sib-Regression (Visscher 2006) and RDR
+(Young et al. 2018).
+
+**Live options (post-kill-test):** (a) within-family is **closed**; the honest
+choices are (b) publish a clean theory/methods note (the decomposition +
+unification + identifiability limit) without a differentiated summary-statistics
+application, or (c) stop. Do **not** pursue LDSC-application angles (\(h^2\),
+\(r_g\), the intercept) as PLDSC differentiators.
 
 ### 1.2 Minimum viable deliverable (status: the original MVP was tested)
 
@@ -84,13 +98,15 @@ and the claim is **false as stated**: cov-LDSC *does* calibrate for the regime
 (structure) that actually biases LDSC on LMM sumstats (Section 1.1). The letter
 would reduce to "use cov-LDSC," which exists — so this MVP is retired.
 
-The remaining candidate MVP is the **within-family matched-covariance** result
-(Section 1.1), gated by a cheap kill-test: derive \(V_c,P_c\) for the
-sib-difference / trio design, confirm the intercept-1 identity transfers, and
-test whether the exact within-family covariance beats the effective-\(N\) scalar
-(Howe et al. 2022) on a within-family quantity people report (partitioned
-\(h^2\), \(r_g\)). If it does, that is the methods letter (it reuses the existing
-M2/M3/M5 machinery, no new theory). If not, fall back to a theory note.
+The candidate MVP was the **within-family matched-covariance** result
+(Section 1.1). Its kill-test has now been **run and failed**
+(`experiments/within_family_killtest.py`): the intercept-1 identity does transfer,
+but the exact within-family covariance does **not** beat the effective-\(N\) /
+cluster-robust standard error (Howe et al. 2022) — the surviving within-family
+genetic covariance is a homoscedastic scale (\(M_BRM_B=0.5\,M_B\)) that the
+standard SE already removes, and its structured remainder is orthogonal to the
+windowed LD score. So the fallback applies: a **theory/methods note** (the
+decomposition, unification, and identifiability limit), or stop.
 
 Software novelty is nil and is not claimed: modernized, tested LDSC code already
 exists. What is established is the **theorem and its validation**; what is *not*
@@ -322,11 +338,12 @@ deliverables and status:
 | D3. Prior-art positioning | positioning | Bercovich 2025 gate **closed** (full read); broader landscape sweep still to re-run |
 | D4. One non-circular robustness result | validation | **done** (`misspecified_background.py`): null intercept robust to sparse/directional off-chr background |
 | D5. Real-data survey / efficient decomposition engine | efficiency + empirics | scoped ([REAL_DATA_SURVEY.md](REAL_DATA_SURVEY.md)); gated on an efficient \(P_c\) engine; not started |
-| D6. Alternative differentiated application: within-family matched covariance | application | proposed kill-test (Sections 1.1/1.2); not started |
+| D6. Alternative differentiated application: within-family matched covariance | application | **kill-tested, NEGATIVE** (`within_family_killtest.py`); option (a) closed |
 
-The honest gate for the paper: is D1 + D3 + D2/D4 a clarifying contribution on its
-own, or does it need a differentiated application (D6) to land? That decision
-(Section 1.1's options (a)/(b)/(c)) is the project's central open question.
+The honest gate for the paper: D6 (the last candidate differentiated application)
+has now failed its kill-test, so the choice narrows to whether **D1 + D3 + D2/D4**
+is a clarifying contribution on its own (a theory/methods note) or whether the
+project stops. That is the central open decision (Section 1.1's (b) vs (c)).
 
 GEMMA is the first external association benchmark (Phase 2) because it implements
 an exact LMM suitable for checking a dense implementation
