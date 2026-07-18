@@ -4,20 +4,33 @@ PLDSC is a clean restart of the 2017 `newldsc` research prototype. The project
 studies LD Score regression when GWAS samples contain population structure or
 when association statistics come from covariate-adjusted or mixed models.
 
-The project is currently in the specification and validation phase. It does
-not yet provide a production-ready estimator.
+The core theory is derived, validated, and tested; the open question is whether
+it has a differentiated application. It does not provide a production-ready
+estimator.
 
-## Current direction
+## Status (2026-07-18)
 
-1. Reproduce covariate-adjusted LD scores with a small, testable Python 3 core.
-2. Derive and test LD scores matched to leave-one-chromosome-out mixed-model
-   association statistics.
-3. Treat the legacy GRM-whitening and aggregated PC-score methods as
-   experimental comparators, not established estimators.
+**Theory: done and validated.** The LD score matched to a leave-one-chromosome-
+out mixed-model score statistic is derived in [docs/METHOD.md](docs/METHOD.md)
+(the `P_c` operator and the exact moment `E[z_j^2] = 1 + Σ_k τ_k² q_k
+r_jk^(P_c)²`), unit-tested (`pldsc/_lmm.py`), and numerically confirmed across a
+full experiment arc (`experiments/`): it reduces to cov-LDSC and ordinary LDSC,
+calibrates exactly, beats cov-LDSC on relatedness *in the association step*, and
+survives a REML-fitted `V_c`.
 
-See [the scientific idea review](docs/IDEA_REVIEW.md) for the rationale and
-failure modes, and [the development plan](docs/DEVELOPMENT_PLAN.md) for the
-derived mixed-model moment, milestone gates, and commit sequence.
+**Application: the LDSC-application niche reduces to cov-LDSC.** A direct test
+([map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py)) showed
+the miscalibration of LDSC on mixed-model summary statistics is a *structure*
+effect that cov-LDSC (Luo et al. 2021) already corrects; relatedness — PLDSC's
+one edge — does not propagate into the local LD-score regression. So PLDSC offers
+no differentiated advantage in LDSC application. Its remaining candidate niche is
+**within-family / sib-GWAS designs** (the association step), which is proposed
+but not yet validated. See [docs/METHOD.md](docs/METHOD.md) §13 and
+[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) §1.1 for the honest scope.
+
+The legacy GRM-whitening (WhiLD) and PC-score methods are treated as named
+comparators, not established estimators; see
+[the scientific idea review](docs/IDEA_REVIEW.md).
 
 ## First numerical slice
 

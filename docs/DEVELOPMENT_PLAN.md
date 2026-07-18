@@ -1,6 +1,7 @@
 # PLDSC development plan
 
-Date: 2026-07-17 (revised 2026-07-17 after multi-lens review)
+Date: 2026-07-17 (revised 2026-07-18 after multi-lens review and the
+application investigation)
 
 ## 1. Objective, use-case, and decision rule
 
@@ -9,44 +10,70 @@ PLDSC tests whether an LD score matched to a specified leave-one-chromosome-out
 Score regression for quantitative traits. It is not a general LDSC rewrite, and
 covariate-residualized LD is a baseline rather than the novelty claim. The
 central identity (Section 2) is already proved and independently checked, so the
-project's risk is delivery and use-case, not the theorem.
+project's risk was always delivery and use-case, not the theorem. As of
+2026-07-18 both the theorem and the full MVP arc (M-spike–M5) are validated, and
+the use-case has been tested directly: the LDSC-application niche
+**reduces to cov-LDSC** (Section 1.1), so PLDSC's differentiated value, if any,
+is upstream. Read Section 1.1 before the roadmap.
 
-### 1.1 Primary deliverable: a calibration and confounding diagnostic
+### 1.1 Use-case: the intended deliverable and its empirical verdict
 
-PLDSC's exact estimator consumes individual-level genotypes **and** a fitted
-null covariance \(V_c=\sigma_g^2K_{-c}+\sigma_e^2I\). A null REML fit already
-returns \(\sigma_g^2/(\sigma_g^2+\sigma_e^2)\) as SNP heritability, and in that
-regime GREML/BOLT-REML/RHE-mc are the validated standard. **PLDSC therefore does
-not claim a better \(h^2\) point estimate than REML on individual data**, and
-this document says so wherever heritability is mentioned.
+The intended deliverable was a calibration/confounding **diagnostic**. PLDSC's
+exact estimator consumes individual-level genotypes **and** a fitted null
+covariance \(V_c=\sigma_g^2K_{-c}+\sigma_e^2I\); a null REML fit already returns
+\(\sigma_g^2/(\sigma_g^2+\sigma_e^2)\) as SNP heritability, so **PLDSC does not
+claim a better \(h^2\) point estimate than REML on individual data** and the
+non-redundant object was to be the intercept — its displacement off 1 under a
+fitted/misspecified \(V_c\) as a mixed-model analog of the LDSC intercept. The
+slope is reported as \(\tau^2\) on the per-\(P_c\) metric (an \(h_g^2/M\)-type
+quantity), never as total heritability.
 
-The deliverable is instead the **intercept**. Under an oracle \(V_c\) the LDSC
-intercept is exactly 1 (Section 2); its displacement off 1 under a fitted or
-misspecified \(V_c\) is the residual confounding that survives the modeled
-mixed-model geometry — a mixed-model analog of the LDSC intercept that a REML
-variance-component fit does not provide. The regression slope is reported as a
-scale parameter \(\tau^2\) on the declared per-\(P_c\) genotype metric (an
-\(h_g^2/M\)-type quantity), never as total heritability. A companion, deferred,
-use-case is a summary-statistics-only structure-matched LD score for third-party
-LMM statistics; see contract item 8 in Section 2.
+**Empirical verdict (2026-07-18): this use-case reduces to cov-LDSC.** A direct
+test (`experiments/map_ldsc_miscalibration.py`; Section 5 of METHOD, Section 13)
+regressed the exact LMM moment on conventional LD scores across regimes:
 
-### 1.2 Minimum viable deliverable (the first result)
+- On mixed-model summary statistics, ordinary LDSC underestimates \(h^2\) by
+  \(\sim30\%\) at \(F_{st}=0.15\) and inflates the intercept — but **cov-LDSC
+  (Luo et al. 2021) already corrects this**, reproducing its known result.
+- **Cryptic relatedness — PLDSC's one edge over cov-LDSC — does not propagate
+  into the local, windowed LD-score regression** (the LMM absorbs it upstream).
 
-The MVP is a simulation-grounded methods letter:
+So in the LDSC-application setting PLDSC gives **no differentiated advantage over
+cov-LDSC**. The theory (LMM-matched LD score) is correct and validated, but the
+practical gap the cov-LDSC authors flagged as future work is, in practice,
+closed by cov-LDSC.
 
-> *An LD score matched to leave-one-chromosome-out mixed-model association
-> statistics — derived, falsified on simulations, and shown to calibrate LDSC
-> where ordinary and covariate-adjusted LD scores do not.*
+**Where the differentiated value actually is.** Upstream, at the association
+step — specifically **within-family / sib-GWAS designs**, where relatedness is
+definitional and exactly known, so \(P_c\) is exact (no fitted-\(V_c\) fragility,
+no reference-panel approximation). This is the one surviving candidate niche
+(from an adversarially-vetted 31-application panel) and is **proposed, not yet
+validated**. The live options are therefore: (a) pursue the within-family
+matched-covariance direction (a cheap kill-test first); (b) publish a clean
+theory/methods note without a differentiated summary-statistics application; or
+(c) stop. Do **not** pursue LDSC-application angles (\(h^2\), \(r_g\), the
+intercept) as PLDSC differentiators.
 
-Concretely, MVP = **M-spike + M0(light) + M1 + M2 + M3**, individual-level,
-dense, \(N\lesssim2{,}000\), oracle and deliberately-misspecified \(V_c\), with
-one covariate-adjusted-LDSC comparison. Everything from M4 onward (fitted-
-component/GEMMA parity, regression and inference machinery, scalability, PLINK
-interoperability, archival release) is an explicitly separate **Phase 2**
-software paper and is **not a blocker** for the first result.
+### 1.2 Minimum viable deliverable (status: the original MVP was tested)
+
+The original MVP was a simulation-grounded methods letter — *"an LMM-matched LD
+score that calibrates LDSC where ordinary and covariate-adjusted LD scores do
+not."* That MVP was **built (M-spike–M5) and its differentiating claim tested**,
+and the claim is **false as stated**: cov-LDSC *does* calibrate for the regime
+(structure) that actually biases LDSC on LMM sumstats (Section 1.1). The letter
+would reduce to "use cov-LDSC," which exists — so this MVP is retired.
+
+The remaining candidate MVP is the **within-family matched-covariance** result
+(Section 1.1), gated by a cheap kill-test: derive \(V_c,P_c\) for the
+sib-difference / trio design, confirm the intercept-1 identity transfers, and
+test whether the exact within-family covariance beats the effective-\(N\) scalar
+(Howe et al. 2022) on a within-family quantity people report (partitioned
+\(h^2\), \(r_g\)). If it does, that is the methods letter (it reuses the existing
+M2/M3/M5 machinery, no new theory). If not, fall back to a theory note.
 
 Software novelty is nil and is not claimed: modernized, tested LDSC code already
-exists. The novelty is the estimator and the calibration result.
+exists. What is established is the **theorem and its validation**; what is *not*
+established is a differentiated summary-statistics application.
 
 ### 1.3 Scope
 
@@ -242,9 +269,14 @@ local REML (intercept `1.010 ± 0.078`), with external GEMMA byte-parity
 specified in [GEMMA_PARITY.md](GEMMA_PARITY.md) and deferred to Linux; **M5**
 (`pldsc/regression.py` + `experiments/m5_inference.py`) provides block-jackknife
 inference and quantifies the fitted-`V_c` intercept-SE requirement. 29 tests
-pass. Remaining: propagate variance-component uncertainty in the M5 estimator at
-scale, run the GEMMA cross-check on Linux, and the Phase-2 scale/interop work
-(M6).
+pass. **Then the use-case was investigated directly** and angle #1 ("LDSC
+miscalibrated for LMM sumstats") came back negative for PLDSC
+(`experiments/map_ldsc_miscalibration.py`): the bias is a structure effect
+cov-LDSC already fixes, and relatedness does not reach the local LD-score
+regression (Section 1.1). Remaining, contingent on the Section 1.1 decision: the
+within-family kill-test; else a theory note. Deferred regardless: the GEMMA
+cross-check on Linux, at-scale `V_c`-uncertainty propagation, and Phase-2
+scale/interop (M6).
 
 GEMMA is the first external association benchmark (Phase 2) because it implements
 an exact LMM suitable for checking a dense implementation

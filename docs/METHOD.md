@@ -230,7 +230,10 @@ The intercept is the deliverable. Under an oracle \(V_c\) it is exactly 1
 becomes \(x_j^{\top}P_c\Sigma_{\text{true}}P_cx_j/q_j\neq1\), and its
 displacement from 1 is the residual confounding that survives the modeled
 mixed-model geometry — a mixed-model analog of the LDSC intercept that a REML
-variance-component fit does not provide. This is PLDSC's primary use-case.
+variance-component fit does not provide. This was the *intended* primary
+use-case; Section 13 records the empirical verdict that, in the
+summary-statistics LDSC-application setting, it reduces to cov-LDSC and gives
+PLDSC no differentiated edge.
 
 ## 10. Window locality
 
@@ -239,6 +242,18 @@ threshold on \(|r_{jk}^{(P_c)}|\), and the omitted-window remainder relative to
 the whole-chromosome sum is itself a diagnostic of \(V_c\) misspecification. In
 a structured sample the \(P_c\)-metric neighborhood need not coincide with the
 physical-map neighborhood.
+
+**Empirical locality finding.** Within a physical (cM) window, however,
+\(r_{jk}^{(P_c)}\approx\) the raw local correlation: tight recombination-driven
+LD is nearly orthogonal to the few genome-wide structure axes that \(V_c^{-1}\)
+down-weights, so \(P_c\)'s action is concentrated in the *long-range /
+between-locus* block — exactly the block a local LD-score window discards. The
+map experiment (Section 11) confirms the consequence: cryptic relatedness, even
+with 90% of the sample in sib-pairs, does **not** measurably change the windowed
+LD-score regression on mixed-model summary statistics, because the LMM already
+absorbs relatedness in the association step. The one regime that does bias the
+windowed regression is population structure — which cov-LDSC (Section 7) already
+corrects.
 
 ## 11. Numerical confirmation
 
@@ -251,12 +266,46 @@ homogeneous cohort, while ordinary OLS inflates to \(9\text{–}12\); and
 \(P_c\) shrinks structure-induced cross-chromosome \(r^2\) from \(0.053\) to
 \(0.0015\). See `experiments/README.md`.
 
+The miscalibration map (`experiments/map_ldsc_miscalibration.py`) regresses the
+exact analytic moment on conventional LD scores across regimes (fixed \(N\),
+fixed \(\tau^2\), averaged over genotype realizations). On mixed-model summary
+statistics, ordinary LDSC underestimates the slope by \(\sim30\%\) at
+\(F_{st}=0.15\) and inflates the intercept, while **both** cov-LDSC and PLDSC
+recover it; cryptic relatedness produces no measurable drift for any method.
+This is the empirical basis for the scope verdict in Section 13.
+
 ## 12. Deferred to later milestones
 
-- Fitted-\(V_c\) plug-in error and GEMMA score-test parity (M4).
-- The summary-statistics-only deployment: a reference-panel approximation of
-  \(P_c\) and its approximation error, the eventual product (contract item 8).
-- The regression variance, weighting, and block-resampling model (M5).
+- Fitted-\(V_c\) plug-in error: validated by a local REML (M4b; intercept
+  \(1.010\pm0.078\)); external GEMMA byte-parity awaits a Linux environment
+  (protocol in [GEMMA_PARITY.md](GEMMA_PARITY.md)).
+- At-scale propagation of variance-component uncertainty into the intercept SE
+  (M5 quantified the requirement; not yet implemented in the estimator).
+- The within-family / sib-GWAS matched-covariance direction (Section 13) — the
+  one differentiated niche, proposed but not yet validated.
+
+## 13. Scope: what the LMM connection does and does not buy
+
+The *theoretical* connection is exact and validated (Sections 2–4, 11): the
+\(P_c\)-matched score is the LOCO-LMM score statistic, and its LD score is the
+random-effect-adjusted LD that cov-LDSC (Luo et al. 2021) explicitly left as
+future work. The *empirical* verdict on that gap, for a new summary-statistics
+estimator, is negative:
+
+- The genuinely random-effect part of the LMM null — **relatedness** — is
+  handled by the LMM in the association step and does not propagate into the
+  local, windowed LD-score regression (Sections 10–11).
+- The part that does bias LDSC on mixed-model summary statistics is **population
+  structure**, which cov-LDSC already corrects.
+
+Hence, in the LDSC-application setting, the random-effect-adjusted LD score
+**reduces in practice to cov-LDSC**, and PLDSC provides no differentiated
+advantage there. PLDSC's genuine differentiated value is *upstream* — at the
+association step, and specifically in **within-family / sib-GWAS designs** where
+relatedness is definitional and exactly known, so \(P_c\) is exact (no
+fitted-\(V_c\) fragility, no reference-panel approximation). That direction is
+proposed, not yet validated. This section records the honest scope so the theory
+(correct and clean) is not overstated as a practical LDSC replacement.
 
 ## References
 
