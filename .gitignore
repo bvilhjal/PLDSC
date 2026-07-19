@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 build/
 dist/
+.scratch_1000g/

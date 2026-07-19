@@ -497,3 +497,51 @@ Ordered by leverage:
 - Did **not** do: run the long Monte-Carlo experiments end-to-end (minutes
   each; static reading sufficed for the claims checked), read Bercovich 2025
   or the other cited papers in full, or audit the 2017 legacy code.
+
+---
+
+## Follow-up verification (2026-07-19): response to this review
+
+The project responded to the recommendations above across commits
+`af1bbad`–`9bf8d6e`, and then **concluded the project (decision: stop)**, archiving
+the repo as an honest record. I verified each item against the code and by
+re-running the new experiments. Status of the eight recommendations:
+
+| # | Recommendation | Status | Evidence |
+|---|---|---|---|
+| 1 | Restate the decomposition exactly | **Done, in full** | METHOD §14 now states the exact spectral identity `Σ_k r_jk² = (M/N)Σ_p λ_p corr(x_j,u_p)²`, calls it "textbook linear algebra, not an empirical discovery," discloses the additivity-by-construction, reports the ~37% magnitude of the top-10-PC truncation, and leads with the windowed ~5% figure. README matches. This is verbatim the correction this review asked for. |
+| 2 | One non-circular experiment | **Done** | `experiments/misspecified_background.py` violates `ε ~ (0,V_c)` (sparse / directional off-chromosome background). **Re-ran it: reproduces exactly** (control 1.000; sparse 0.5% → 0.993; directional α=2 → 1.004). Verdict — robust within the whitened subspace — is reported with honest scope: intercept-only, scale misspecification still fragile (M4a), and the harder case (a structure axis *absent* from the GRM) explicitly flagged as still-untested. |
+| 3 | Fix meiosis in the simulator | **Not done — acknowledged instead** | `pldsc/simulate.py` unchanged. The within-family kill-test write-up explicitly cites the missing per-meiosis-recombination simulator as the reason the one surviving regime (heterogeneous pedigrees) was *not* pursued. Given the project is archived, acknowledging rather than building is a defensible call; it stands as a known limitation. |
+| 4 | Run the within-family kill-test | **Done — result NEGATIVE** | `experiments/within_family_killtest.py`; **re-ran it: reproduces**. Crux: for full sibs `M_B R M_B = 0.5·M_B` exactly, a homoscedastic scale the standard cluster-robust SE already removes; FE, pedigree-`P_c`, oracle-`P_c` all equivalent; pedigree-`P_c` most fragile under admixture. Credibly, the script notes the first draft was adversarially reviewed and found fundamentally flawed (circular P2 metric, strawman baseline) *before* being hardened. This closes the last estimator niche. |
+| 5 | Inference hygiene | **Mostly done** | Readout-B provenance fixed (numbers now attributed to the Readout-A2 row); m3 PC-count mismatch fixed ("sweeps 2/5/10/20/50, table shows a representative subset"); the m_spike residual discussion now states the correlated-draws explanation up front. **Not done:** the held-out-seed protocol and out-of-sample validation of m5's SE correction — minor now, given archival. |
+| 6 | Presentation fixes | **Done** | `regression.py` docstring now labels the weighting *simplified* and names the omitted LD-score-variance term; "stated theorem" → "stated limit"; the identifiability limit is formalized as the §14 "structure aliasing" remark (aliasing coefficient `τ²Mλ_p + V_p^gen + V_p^env` — I re-checked the algebra, it is correct) with explicit scope, corollary, and what-breaks-it. The map-experiment OLS arm was not added — moot, since the project concluded. |
+| 7 | Repo hygiene / plan consolidation / Bercovich read | **Done** | `build/` and `*.egg-info` untracked and gitignored; DEVELOPMENT_PLAN §3 consolidated; Bercovich 2025 read in full; and a full adversarial prior-art sweep was run (`docs/PRIOR_ART.md`). |
+
+**New evidence beyond the recommendations.** Two additions materially strengthen
+the record:
+
+- `experiments/identifiability_aliasing.py` — **re-ran it: reproduces**. The
+  environmental-axis and directional-genetic models give identical structure-only
+  statistics to 2 dp (exact aliasing), while the heteroscedastic-along-axis model
+  separates via the `corr²×ℓ^local` interaction — a clean numerical illustration
+  of the *scoped* limit, exactly as METHOD §14 states it.
+- The **prior-art sweep** (PRIOR_ART.md) found two genuine corrections this
+  review did not catch: **Mangin et al. 2012** is already an eigenvalue-weighted
+  GLS/mixed-model-whitened LD operator (so `P_c` is not the first GLS
+  generalization — the UNIF premise needed correcting), and **Huang et al. 2025**
+  already states the co-attenuation corollary in print (so ALIAS is occupied).
+  Both are now credited prominently. The sweep verdict — "thin-but-defensible as
+  a clarifying/unifying exposition only" — matches this review's §7 almost
+  exactly.
+
+**Assessment of the endpoint.** The response to this review is complete and
+honest: every load-bearing criticism was either fixed, tested, or explicitly
+carried as a stated limitation. The final decision to stop — after the
+within-family kill-test came back negative and the sweep occupied the remaining
+claims — is well-supported by the project's own evidence and consistent with this
+review's §7 ("borderline-passable only as a clarifying note"). The archived state
+(README "CONCLUDED / archived", NOTE_OUTLINE.md for an optional clarifying note)
+is a coherent and, frankly, model ending for a methods-research project of this
+kind. Nothing in the archive overclaims; the durable artifacts (tested `P_c`
+implementation, the verified METHOD write-up, and the negative-results record)
+are correctly identified as the value.

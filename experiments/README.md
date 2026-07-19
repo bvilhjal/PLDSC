@@ -439,3 +439,128 @@ aliased (every structure-only correction co-attenuates it); the LD-borne compone
 is not.
 
 
+
+## `local_adaptation_channel.py` — kill-test for the one surviving direction
+
+The aliasing limit (METHOD §14) leaves one identifiable channel for ancestry-aligned
+signal: a *heteroscedastic-along-axis* architecture (per-SNP h² elevated for
+high-loading SNPs — what polygenic local adaptation along an ancestry cline should
+look like) leaves a `corr²×ℓ^local` interaction an environmental axis shift lacks.
+This kill-test asks whether that channel has **power** at wild-population-study
+scale (N = 600/1200, discrete populations, in-sample PCs and LD scores — no
+reference panel). Three amplitude-matched arms per realization: ENV (rank-1
+environmental shift; the null), DIR (rank-1 directional genetic; the aliased
+control), HET (the local-adaptation architecture; the alternative). Thresholds are
+empirically calibrated on the ENV arm (95th percentile, one-sided). Pre-registered
+verdict rule (fixed before running): PASS = power ≥ 80% at N=600, χ²=2.5, κ=1;
+KILL = power < 50% at χ²=4.0, κ=2; else MARGINAL. PCG64 seed 20260719, 16–24
+genotype realizations per setting, 2000 phenotype replicates per arm.
+
+| setting | med t ENV | med t DIR | med t HET | thr95 | power |
+|---|---|---|---|---|---|
+| N600 χ²=2.5 κ=0.5 | 3.77 | 3.77 | 4.06 | 6.71 | 0.17 |
+| N600 χ²=2.5 κ=1 | 3.77 | 3.77 | 6.18 | 6.71 | 0.38 |
+| N600 χ²=2.5 κ=2 | 3.77 | 3.77 | 15.11 | 6.71 | **1.00** |
+| N600 χ²=1.5 κ=1 | 4.03 | 4.03 | 5.93 | 6.53 | 0.33 |
+| N600 χ²=4.0 κ=1 | 3.46 | 3.46 | 6.18 | 6.65 | 0.38 |
+| N1200 χ²=2.5 κ=1 | 3.94 | 3.94 | 6.97 | 6.59 | 0.75 |
+| N600 χ²=4.0 κ=2 | 3.46 | 3.46 | 15.57 | 6.65 | 1.00 |
+
+### Verdict: MARGINAL (by the pre-registered rule) — and a null-calibration warning
+
+- **The channel has power only for strong architectures or larger samples**: power
+  1.00 at κ=2, 0.75 at N=1200, but only 0.38 at the moderate setting (N=600, κ=1).
+  Doubling N clearly helps (0.38 → 0.75); the trend says the channel is real but
+  weak at realistic wild-study sizes and gradient strengths.
+- **The naive interaction test is badly anti-conservative**: the ENV null itself
+  has median t ≈ 3.8 and exceeds t>2 in 88–100% of realizations — centering
+  `ℓ^local` does not remove the collinearity-driven leakage of the large `corr²`
+  term into the interaction coefficient. Any real test on this channel needs a
+  calibrated null (permutation / parametric bootstrap), which will cost further
+  power. (This mirrors the signed-version anti-conservatism in
+  `detect_pc_inflation.py`.)
+- **DIR sits exactly on ENV in every setting** (identical medians) — the aliasing
+  limit holds at the decision level, not just in the moment.
+- Consequence: a within-sample local-adaptation test on this channel is **not
+  validated** for moderate architectures at N≲1000. It is not dead (strong
+  gradients, or N≥1200 with a calibrated null), but it cannot be the next
+  milestone without a better-powered statistic or a calibrated-null design.
+
+
+## `misspecified_orthogonal.py` — axes absent from the GRM (the untested case)
+
+`misspecified_background.py` found the oracle intercept robust (<1%) to sparse and
+directional off-chromosome backgrounds — but both live in the structure subspace
+`P_c` already whitens. This tests the harder, previously untested case: true-
+covariance structure **absent from the GRM** used to build `V_c`. Exact (no MC),
+6 realizations, PCG64 seed 20260719.
+
+| arm | setting | mean null intercept |
+|---|---|---|
+| (a) batch axis orthogonal to ancestry (shared microenvironment; projection onto top-10 GRM eigenvectors = 0.016) | v/σ_e² = 0.25 → 2.0 | 1.000 → 1.003 |
+| (b) GRM from every 10th off-chr SNP (LD-thinning practice); truth uses full GRM | — | **3.185** |
+| (c) family-shared environment + FULL GRM (100 sibships ×4) | v/σ_e² = 0.25 → 2.0 | 1.091 → 1.731 |
+| (c) family-shared environment + PRUNED GRM | v/σ_e² = 0.25 → 2.0 | **4.383 → 7.687** |
+| (c) oracle (`P_c` from `V_true`) | all | 1.000 ✓ |
+
+### Verdict: fragility lives in GRM coverage, not in orthogonal axes
+
+- **(a) An axis orthogonal to the genotype structure axes does nothing**, even at
+  v = 2σ_e²: `P_c` does not down-weight it, but genotypes have no loading on it, so
+  `x_j^T P_c u ≈ 0`. Confirms the precise mechanism of the robustness found in
+  `misspecified_background.py`: inflation requires the missed axis to be correlated
+  with *genotype* structure.
+- **(b) A thin GRM is the realistic failure mode.** Building `V_c` from every 10th
+  SNP — standard LD-thinning practice — triples the null intercept (3.19), because
+  the unmodeled SNPs carry real covariance the assumed `V_c` cannot see. The
+  intercept's oracle calibration depends on the GRM *spanning* the true covariance,
+  not just on getting two variance-component scalars right.
+- **(c) Family-shared environment** is partly whitened when the full GRM captures
+  the sibship axes (1.09–1.73 with a full GRM) but severe under a pruned GRM
+  (4.4–7.7). Together with (b): the intercept is only as good as the GRM's coverage
+  of the sample's actual covariance structure.
+- Practical upshot for METHOD §6: the "structure axis absent from the GRM" case is
+  now tested. It is benign when genuinely orthogonal to genotypes, and damaging
+  exactly when the GRM under-covers the genetic/family covariance — i.e. it folds
+  into the known fitted-`V_c` sensitivity (M4a) rather than adding a new axis of
+  concern, but it prices in GRM density as a first-order requirement.
+
+## `realdata_1000g_structure.py` — the structure fraction of LD on real data
+
+REAL_DATA_SURVEY question 1, smallest version: chr22 of 1000 Genomes phase 3
+(20130502; biallelic SNPs, full-panel MAF ≥ 0.05, 1-in-25 thinning, ~3.6–3.9k
+cohort-common SNPs at ~13 kb spacing; `.scratch_1000g/`, not committed). Ordinary
+vs `P_c`-whitened LD scores (in-chromosome GRM — NOT LOCO, chr22 is the whole
+dataset; window = ±50 SNP index, no genetic map). `ell_struct = ell_ord −
+ell_local` by construction; the empirical content is its correlation with the
+top-10 PC score.
+
+| cohort | N | λ1 | struct share, genome-wide | struct share, windowed | corr(ℓ^struct, PC score) full / windowed |
+|---|---|---|---|---|---|
+| EUR | 503 | 5.3 | 28% | 19% | 0.75 / 0.80 |
+| AFR | 661 | 13.0 | 35% | 20% | 0.93 / 0.49 |
+| FULL panel | 2504 | 283.1 | **96%** | **62%** | **1.00** / 0.79 |
+
+### Verdict: the framework is real; the sim's quantitative "~5% windowed" is not
+
+- **The qualitative story reproduces on real data**: the LD score decomposes, the
+  non-local remainder tracks the leading-PC score (corr 0.93–1.00 genome-wide),
+  and the structure fraction grows steeply with actual structure strength — 28% →
+  35% → **96%** of the genome-wide score from EUR to the multi-ancestry panel,
+  tracking λ1 (5.3 → 13 → 283). In a real multi-ancestry sample the genome-wide
+  LD score is almost entirely structure, and whitening removes 96% of it.
+- **But the windowed share is NOT ~5% on real data at this density**: 19–20% in
+  single-ancestry cohorts and 62% in the full panel. The sim's 5% came from dense
+  simulated SNPs with strong local LD; here thinning leaves ~13 kb spacing where
+  pairwise local LD is weak, so structure dominates even within a ±50-SNP window.
+  The honest statement: the windowed structure share is **density- and
+  structure-dependent**, and in real multi-ancestry panels it is large. (This
+  cuts both ways for the project: it strengthens "structure matters in windows
+  too" for real panels, while the sim's "windows are safe" comfort is gone —
+  consistent with cov-LDSC mattering most in exactly such panels.)
+- Caveats: one chromosome; in-chromosome GRM (not LOCO); SNP-index window; the
+  `P_c` metric assumes h²=0.5; GT parsing treats any non-0/1 genotype as
+  homozygous reference (phase-3 calls are essentially complete, so immaterial).
+- Next steps if pursued: all chromosomes with a LOCO GRM and a recombination map
+  (cM window), denser common-SNP sets (less thinning), and the EUR→admixed→
+  multi-ancestry gradient at matched density. Compute is linear in chromosomes.

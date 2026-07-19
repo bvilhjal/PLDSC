@@ -6,7 +6,14 @@ The decomposition and diagnostics are validated in simulation
 (`experiments/`). Their *value* — the "resulting knowledge" — can only be settled
 on real data: how much of real LD / real GWAS inflation is structure, and does
 correcting it change any published conclusion. This document scopes that study.
-It is a plan, not a result; no real data has been run.
+
+**Status (2026-07-19): question 1 now has a chr22 pilot** —
+`experiments/realdata_1000g_structure.py` (1000G phase 3, EUR / AFR / full
+panel). Headline: the framework reproduces (structure fraction 28% → 35% → 96%
+genome-wide with λ1; the non-local remainder tracks the PC score at corr
+0.93–1.00), but the windowed structure share is 19–62%, NOT the sim's ~5% — it
+is density- and structure-dependent. See `experiments/README.md`. The remaining
+questions are still unrun.
 
 ## Questions the survey answers (that simulations cannot)
 

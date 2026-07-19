@@ -191,10 +191,16 @@ sparse, or directional effects on the **other** chromosomes (which enter
 the null intercept is **robust** to sparse (down to 0.5% causal → 0.993) and
 directional (top-axis variance doubled → 1.004) off-chromosome backgrounds,
 because both live mostly in the low-rank structure subspace \(P_c\) already
-whitens. It remains sensitive to variance-component/scale misspecification (M4a),
-and a background structure axis *absent* from the GRM used to build \(V_c\) — a
-misspecification orthogonal to the whitened subspace — is the harder, still-untested
-case.
+whitens. It remains sensitive to variance-component/scale misspecification (M4a).
+The harder case — true-covariance structure *absent* from the GRM used to build
+\(V_c\) — is also now tested (`experiments/misspecified_orthogonal.py`): an axis
+orthogonal to the genotype structure axes is harmless (intercept 1.000–1.003 up to
+\(v=2\sigma_e^2\); genotypes carry no loading on it), so the realistic failure
+route is an under-covering GRM — a GRM built from every 10th SNP (standard
+LD-thinning) triples the intercept (3.19), and family-shared environment under a
+pruned GRM inflates it 4.4–7.7×. The intercept's calibration therefore depends on
+the GRM *spanning* the sample's actual covariance, which folds into the known
+fitted-\(V_c\) sensitivity (M4a) with GRM density as a first-order requirement.
 
 ## 7. Reductions
 
