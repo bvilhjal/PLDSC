@@ -266,7 +266,13 @@ physical-map neighborhood.
 \(r_{jk}^{(P_c)}\approx\) the raw local correlation: tight recombination-driven
 LD is nearly orthogonal to the few genome-wide structure axes that \(V_c^{-1}\)
 down-weights, so \(P_c\)'s action is concentrated in the *long-range /
-between-locus* block — exactly the block a local LD-score window discards. The
+between-locus* block — exactly the block a local LD-score window discards. This
+is a simulation finding; on real multi-ancestry data structure is *not* confined
+to the long-range block — the LOCO-clean structure share of a ±250 kb windowed
+score is \(\approx17\%\) (FULL panel; \(\approx0\%\) in EUR,
+`experiments/realdata_1000g_benchmarks.py` B2) — but that in-window structure is
+what a few fixed PCs absorb (B3: top-2 PCs leave 8% of what \(P_c\) removes), so
+the consequence below stands. The
 map experiment (Section 11) confirms the consequence: cryptic relatedness, even
 with 90% of the sample in sib-pairs, does **not** measurably change the windowed
 LD-score regression on mixed-model summary statistics, because the LMM already
@@ -301,7 +307,10 @@ This is the empirical basis for the scope verdict in Section 13.
 - At-scale propagation of variance-component uncertainty into the intercept SE
   (M5 quantified the requirement; not yet implemented in the estimator).
 - The within-family / sib-GWAS matched-covariance direction (Section 13) — the
-  one differentiated niche, proposed but not yet validated.
+  one differentiated niche; **kill-tested, NEGATIVE** (2026-07-18,
+  `experiments/within_family_killtest.py`): the surviving within-family
+  genetic covariance is a homoscedastic scale (\(M_BRM_B=0.5\,M_B\)) that the
+  standard cluster-robust / effective-\(N\) standard error already removes.
 
 ## 13. Scope: what the LMM connection does and does not buy
 
@@ -319,11 +328,16 @@ estimator, is negative:
 
 Hence, in the LDSC-application setting, the random-effect-adjusted LD score
 **reduces in practice to cov-LDSC**, and PLDSC provides no differentiated
-advantage there. PLDSC's genuine differentiated value is *upstream* — at the
-association step, and specifically in **within-family / sib-GWAS designs** where
-relatedness is definitional and exactly known, so \(P_c\) is exact (no
-fitted-\(V_c\) fragility, no reference-panel approximation). That direction is
-proposed, not yet validated. This section records the honest scope so the theory
+advantage there. PLDSC's genuine differentiated value was then sought *upstream*
+— at the association step, and specifically in **within-family / sib-GWAS
+designs** where relatedness is definitional and exactly known, so \(P_c\) is
+exact (no fitted-\(V_c\) fragility, no reference-panel approximation). That
+direction was kill-tested (2026-07-18, `experiments/within_family_killtest.py`)
+and came back **negative**: for full sibs the surviving within-family genetic
+covariance is a homoscedastic scale (\(M_BRM_B=0.5\,M_B\)) that the standard
+cluster-robust / effective-\(N\) standard error (Howe et al. 2022) already
+removes, so the standard sib-GWAS pipeline is already calibrated and \(P_c\)
+only reproduces it. This section records the honest scope so the theory
 (correct and clean) is not overstated as a practical LDSC replacement.
 
 ## 14. The local/non-local decomposition (organizing framework)
@@ -338,7 +352,14 @@ the LD score into a linkage (local) and a structure (non-local) component:
 \]
 
 where \(r_{jk}^{(P_c)}\) is the structure-whitened correlation (Sections 2, 7).
-The non-local component has an **exact** form, not an approximation. With
+**The split is operator-dependent** (real-data finding,
+`experiments/realdata_1000g_benchmarks.py` B2): an in-chromosome GRM whitens
+local LD along with structure (for EUR it whitens the genome-wide score down to
+the \(M/N\) noise floor), overstating \(\ell^{\text{struct}}\); a LOCO GRM cannot
+touch local LD and isolates the structure component, slightly *under*stating it
+(up-weighting of sub-1 eigenvalues plus the \(q_k\) renormalization, Section 5).
+The two operators bracket the truth; \(\ell^{\text{local}}\) here means the LOCO
+operator. The non-local component has an **exact** form, not an approximation. With
 column-standardized genotypes \(X\) (\(N\times M\)), \(r_{jk}=x_j^\top x_k/N\) and
 GRM \(K=XX^\top/M\) with eigenpairs \((\lambda_p,u_p)\); then the genome-wide LD
 score is exactly the **spectral decomposition of the GRM**:
@@ -361,9 +382,14 @@ misses the eigenvalue tail). The additive split that script prints
 (\(\ell^{\text{ord}}=\ell^{\text{local}}+\ell^{\text{struct}}\)) is **by
 construction** — \(\ell^{\text{struct}}\) is *defined* as the difference — so it is
 not evidence of additivity; the only empirical content is that \(0.99\)
-correlation. **Honest headline:** within the *windowed* LD score LDSC actually
-uses, structure is only \(\approx5\%\) (genome-wide, cross-chromosome-inclusive,
-it is \(\approx50\%\), but LDSC never regresses on that). The small windowed share
+correlation. **Honest headline (simulation, fst=0.1):** within the *windowed* LD
+score LDSC actually uses, structure is only \(\approx5\%\) (genome-wide,
+cross-chromosome-inclusive, it is \(\approx50\%\), but LDSC never regresses on
+that). **On real 1000G data** (`experiments/realdata_1000g_benchmarks.py`) the
+LOCO-clean windowed share is \(\approx0\%\) (EUR) to \(\approx17\%\)
+(multi-ancestry panel) and the genome-wide share \(\approx90\%\) in the panel;
+the in-chromosome operator overstates both (B2), and the share rises with MAF
+(B5). The small single-ancestry windowed share
 is exactly *why* cov-LDSC suffices and why the estimator angle died (Section 13).
 
 **Unification.** Every structure-correction is an operation on this
@@ -414,7 +440,11 @@ genuine-signal channels stay identifiable and must not be claimed as lost:
 slope \(\tau^2\); (ii) a *heteroscedastic-along-axis* architecture (per-SNP
 \(h^2\) elevated for high-loading SNPs) rides on local LD and leaves a
 \(\operatorname{corr}(x_j,u_p)^2\times\ell_j^{\mathrm{local}}\) interaction that a
-fixed environmental axis shift does not. So the honest statement is
+fixed environmental axis shift does not *asymptotically* — in finite samples the
+environmental shift leaks a spurious interaction (median t \(\approx3.8\) at
+\(N=600\)), so channel (ii) requires a calibrated null and has limited power at
+realistic architectures (`experiments/local_adaptation_channel.py`, verdict
+MARGINAL). So the honest statement is
 *non-identifiability from the second moments of structure-only statistics*,
 confined to the directional component.
 

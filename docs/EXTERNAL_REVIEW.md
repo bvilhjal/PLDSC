@@ -545,3 +545,117 @@ is a coherent and, frankly, model ending for a methods-research project of this
 kind. Nothing in the archive overclaims; the durable artifacts (tested `P_c`
 implementation, the verified METHOD write-up, and the negative-results record)
 are correctly identified as the value.
+
+---
+
+## Part III — theory & documentation audit (2026-07-19, current HEAD `93d7636`)
+
+Scope: the theory as now written (METHOD.md end-to-end) and the coherence of the
+whole documentation set (README, METHOD, DEVELOPMENT_PLAN, NOTE_OUTLINE,
+PRIOR_ART, REAL_DATA_SURVEY, GEMMA_PARITY, experiments/README), after all edits
+through the 1000G benchmarks. Every factual claim below was checked against the
+documents and against experiment outputs this reviewer ran (kill-test,
+orthogonal test, chr22 pilot, B1–B6 benchmarks).
+
+### 1. Theory correctness — sound, with three qualifications
+
+Re-verified correct on this pass: the M6 moment and P1–P4; the reductions
+(§7); the spectral identity (§14, including the fine print that column-centering
+gives \(K\mathbf 1=0\), hence mean-zero eigenvectors — the step
+\(x_j^\top u_p=\sqrt N\,\operatorname{corr}(x_j,u_p)\) is valid); the aliasing
+coefficient \(\tau^2M\lambda_p+V_p^{gen}+V_p^{env}\) and its scope; and the §6
+misspecification text (matches the two experiments). The theory's *mathematics*
+needs no further correction. Three *framing* qualifications do:
+
+1. **The decomposition's terms are operator-dependent, and §14 does not say so.**
+   The display \(\ell_j\approx\sum_k(r_{jk}^{(P_c)})^2+\ell^{struct}\) defines the
+   local component through \(r^{(P_c)}\) without naming the operator. Benchmark B2
+   (real data) showed the choice is first-order: an in-chromosome GRM whitens
+   local LD along with structure (EUR genome-wide score whitened *to the M/N
+   noise floor*), while a LOCO GRM cannot touch local LD and isolates structure
+   (EUR ~0%, FULL ~90% genome-wide). As written, a reader cannot tell which
+   "\(\ell^{local}\)" the decomposition means, and the two readings give
+   materially different numbers (e.g. FULL windowed share 63% vs 17%). §14
+   should state the operator-dependence explicitly and cite B2.
+2. **§10's locality claim is overstated on real multi-ancestry data.** "Within a
+   physical window, \(r^{(P_c)}\approx\) the raw local correlation … \(P_c\)'s
+   action is concentrated in the long-range block — exactly the block a local
+   window discards" holds in the simulations and (LOCO-clean) for single-ancestry
+   cohorts, but on real FULL-panel data 17% of a ±250 kb windowed score is
+   structure, and in-chromosome whitening removes up to 63% of it. The
+   conclusion (structure matters mostly in the intercept, not the windowed slope)
+   survives — B3 shows a couple of PCs capture it — but the mechanism as stated
+   ("confined to the long-range block") needs the real-data qualifier.
+3. **The aliasing remark's Scope needs a calibration caveat.** "A heteroscedastic
+   -along-axis architecture leaves a \(corr^2\times\ell^{local}\) interaction
+   that a fixed environmental axis shift does not" is true only asymptotically:
+   `local_adaptation_channel.py` shows the environmental null *does* leak a
+   substantial interaction at finite N (median t ≈ 3.8 at N=600; type-I ~0.9 at
+   t>2), so the identifiable channel exists in principle but requires a
+   calibrated null in practice. The remark should cite this; currently the
+   caveat lives only in experiments/README.
+
+### 2. Documentation coherence — stale statements, with locations
+
+- **Stale kill-test status (2 spots).** METHOD.md:304 ("the one differentiated
+  niche, proposed but not yet validated") and METHOD.md:326 ("That direction is
+  proposed, not yet validated") both predate `within_family_killtest.py`
+  (verdict: NEGATIVE). DEVELOPMENT_PLAN §1.1/§1.2 and README are correctly
+  updated; METHOD is not.
+- **Unlabeled simulation numbers (4 spots).** The "~5% windowed / ~50%
+  genome-wide" headline appears in METHOD.md:364-366, README.md:53-55,
+  DEVELOPMENT_PLAN.md:25-26, and NOTE_OUTLINE.md:78 without saying it comes from
+  *simulated* data (fst=0.1, dense AR(1) LD). The real-data LOCO-clean numbers
+  are ~0% (EUR) / ~17% (FULL) windowed and ~90% (FULL) genome-wide. Each spot
+  should be attributed to simulation and cross-reference the 1000G benchmarks —
+  especially NOTE_OUTLINE §2, since that figure would go in the note.
+- **README's science record predates the real-data work.** The 1000G pilot, the
+  B1–B6 benchmarks, the local-adaptation kill-test, and the orthogonal-
+  misspecification test exist only in experiments/README; the README's "science
+  (record)" section mentions none of them, so the project's most credible
+  empirical results are invisible from the front page.
+- **NOTE_OUTLINE.md:108** lists "Full prior-art landscape sweep" as an open
+  task; the sweep was run and its verdict is quoted at the top of the same file
+  (2026-07-19 banner). Checkbox never flipped.
+- **Consistent elsewhere.** experiments/README (including the pilot correction
+  note), PRIOR_ART (sweep verdict), GEMMA_PARITY (deferred, correctly scoped),
+  REAL_DATA_SURVEY (status note current), DEVELOPMENT_PLAN §1.1/§3 (decision
+  and consolidation current).
+
+### 3. Assessment
+
+The theory is correct and, after Part II's corrections, honestly framed; the
+documentation is ~90% coherent, and every inconsistency found is a *stale
+forward-reference*, not an overclaim — the record errs in the safe direction
+throughout. The one real gap is that the narrative docs have not absorbed the
+post-archive experiments: the decomposition's operator-dependence (B2), the
+heteroscedastic channel's power limit + null-calibration requirement
+(kill-test), the GRM-coverage fragility boundary (orthogonal test), and the
+first real-data numbers (pilot + benchmarks) currently live only in
+experiments/README. Since the repo's stated durable value is the honesty of the
+record, absorbing them is worth the small effort.
+
+**Minimal fix list (all mechanical):**
+1. METHOD §12 & §13: mark the within-family direction kill-tested (negative),
+   citing `within_family_killtest.py`.
+2. METHOD §14 + README + PLAN §1 + NOTE_OUTLINE §2: label "~5%/~50%" as
+   simulation; add the LOCO-clean real-data numbers and the B2 operator caveat.
+3. METHOD §14 decomposition display: name the operator (LOCO \(P_c\)) and note
+   the in-chromosome over-whitening finding.
+4. METHOD §10: qualify the "confined to the long-range block" claim with the
+   real-data windowed numbers (17% FULL / ~0% EUR, LOCO-clean).
+5. METHOD §14 Scope: add "with a calibrated null (finite-sample leakage;
+   `local_adaptation_channel.py`)".
+6. README science record: one short paragraph pointing to the post-archive
+   experiments (kill-test MARGINAL, orthogonal test, 1000G pilot + B1–B6) so
+   the record's strongest empirical content is discoverable; flip the
+   NOTE_OUTLINE sweep checkbox.
+
+**Fix application (2026-07-19).** All six items of the Part-III fix list were
+applied: METHOD §12/§13 now record the within-family kill-test verdict; the
+"~5%/~50%" headline is labeled as simulation with the LOCO-clean real-data
+numbers added (METHOD §14, README, PLAN §1, NOTE_OUTLINE §2); the §14
+decomposition display names the operator and cites the B2 over-whitening
+finding; §10 carries the real-data locality qualifier; the aliasing Scope note
+carries the calibrated-null caveat; README's science record gained a real-data
+paragraph; the NOTE_OUTLINE sweep checkbox is flipped.

@@ -22,8 +22,11 @@ genome-wide LD score is *exactly* the GRM spectral decomposition
 \(\sum_k r_{jk}^2=(M/N)\sum_p\lambda_p\operatorname{corr}(x_j,u_p)^2\) (textbook
 algebra); the legacy PC score is its leading-eigenvector truncation (corr 0.99
 with the non-local part but only ~37% of its magnitude; see [METHOD.md](METHOD.md)
-§14). The honest number is that structure is only ~5% of the *windowed* LD score
-LDSC uses (~50% genome-wide, which LDSC never regresses on) — which is why
+§14). The honest number (simulation) is that structure is only ~5% of the
+*windowed* LD score LDSC uses (~50% genome-wide, which LDSC never regresses on);
+on real 1000G data the LOCO-clean windowed share is ~0% (EUR) to ~17%
+(multi-ancestry panel), the genome-wide share ~90% in the panel
+(`experiments/realdata_1000g_benchmarks.py`) — which is why
 cov-LDSC suffices. The identity's value is as an **organizing device** unifying
 cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\) operator as ways
 of removing or measuring \(\ell^{\text{struct}}\), pinning standard-LDSC structure
@@ -320,7 +323,7 @@ within-family kill-test; else a theory note. Deferred regardless: the GEMMA
 cross-check on Linux, at-scale `V_c`-uncertainty propagation, and Phase-2
 scale/interop (M6). **After two external reviews (2026-07-18):** the decomposition
 was restated *exactly* as the GRM spectral identity (not an empirical discovery)
-and the honest windowed ~5% figure led; one **non-circular** robustness result was
+and the honest windowed ~5% (simulation) figure led; one **non-circular** robustness result was
 added (`experiments/misspecified_background.py`: the null intercept is robust to a
 sparse/directional off-chromosome background); and **Bercovich 2025 was read in
 full** — it is a pairwise-\(r^2\) QC method (pruning/clumping/FST/PCA) with a hard

@@ -75,7 +75,9 @@ result (the identifiability limit formalizes a known confounding).
    old (Price 2008, cov-LDSC, Bercovich 2025); what is useful is the exact
    decomposition as an organizing device and its consequences.
 2. **The decomposition** — the spectral identity; local vs non-local; PC score as
-   truncation; the honest magnitudes (windowed ~5%, genome-wide ~50%).
+   truncation; the honest magnitudes (simulation: windowed ~5%, genome-wide ~50%;
+   real 1000G, LOCO-clean: windowed ~0% EUR / ~17% FULL, genome-wide ~90% FULL —
+   `realdata_1000g_benchmarks.py` B2/B6).
 3. **Unification** — the four methods as one ladder; hard projection vs GLS `P_c`;
    the exactness/assumptions table.
 4. **The identifiability limit** — the proposition + proof; the corollary
@@ -104,8 +106,10 @@ result (the identifiability limit formalizes a known confounding).
       Corrected moment coefficient `τ²Mλ_p` separately confirmed (corr 0.998).
 - [ ] Decide venue/length (short methods note / preprint vs a Genetics-style
       perspective) — user call.
-- [ ] Full prior-art landscape sweep to confirm the unification niche is
-      unoccupied (deferred; the Bercovich gate is closed).
+- [x] Full prior-art landscape sweep to confirm the unification niche is
+      unoccupied — DONE (2026-07-19): verdict "thin-but-defensible", with the
+      Mangin-2012 and Huang-2025 corrections (see the banner above and
+      PRIOR_ART.md).
 
 ## Honest self-assessment (carry into the write-up)
 

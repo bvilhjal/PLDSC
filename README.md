@@ -50,10 +50,12 @@ decomposition of the GRM, `Σ_k r_jk² = (M/N) Σ_p λ_p corr(x_j,u_p)²` (textb
 algebra, not a new finding); the legacy "PC score" is its leading-eigenvector
 truncation — which correlates 0.99 with the non-local component but captures only
 ~37% of its magnitude ([experiments/ld_decomposition.py](experiments/ld_decomposition.py)).
-The honest headline: within the **windowed** LD score LDSC actually uses,
-structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses on
-that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
-died. The value of the identity is as an **organizing device**: cov-LDSC, the
+The honest headline (simulation): within the **windowed** LD score LDSC actually
+uses, structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses
+on that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
+died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~17%
+(multi-ancestry panel) and the genome-wide share ~90% in the panel
+([realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
 legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
 residual-precision operator `P_c` are all ways of removing or measuring
 `ℓ^struct`, and standard LDSC's structure bias is the conflation of `ℓ^local`
@@ -83,6 +85,17 @@ across the `experiments/` arc. The earlier "LMM-matched LD score as a new
 survives and now organizes the project. The legacy WhiLD and PC-score methods are
 special cases of the decomposition, not standalone estimators; see
 [the scientific idea review](docs/IDEA_REVIEW.md).
+
+**Real data (1000 Genomes, post-archive).** The decomposition was tested on real
+genotypes (phase-3 chr22/21/10; EUR/AMR/AFR/full panel): the structure share of
+the genome-wide LD score tracks λ1 (~0–5% single-ancestry, ~90% multi-ancestry,
+LOCO-clean; an in-chromosome GRM over-whitens), ~2–10 hard-projected PCs match
+the GLS operator (real-data support for the reduces-to-cov-LDSC verdict), and the
+non-local component tracks the PC score at corr 0.9–1.0. A kill-test of the one
+surviving application direction (a within-sample local-adaptation test) came back
+MARGINAL, and the intercept's robustness boundary is GRM coverage. See
+[experiments/README.md](experiments/README.md) and
+[docs/REAL_DATA_SURVEY.md](docs/REAL_DATA_SURVEY.md).
 
 ## First numerical slice
 
