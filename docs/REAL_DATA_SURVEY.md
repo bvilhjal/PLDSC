@@ -7,13 +7,16 @@ The decomposition and diagnostics are validated in simulation
 on real data: how much of real LD / real GWAS inflation is structure, and does
 correcting it change any published conclusion. This document scopes that study.
 
-**Status (2026-07-19): question 1 now has a chr22 pilot** —
-`experiments/realdata_1000g_structure.py` (1000G phase 3, EUR / AFR / full
-panel). Headline: the framework reproduces (structure fraction 28% → 35% → 96%
-genome-wide with λ1; the non-local remainder tracks the PC score at corr
-0.93–1.00), but the windowed structure share is 19–62%, NOT the sim's ~5% — it
-is density- and structure-dependent. See `experiments/README.md`. The remaining
-questions are still unrun.
+**Status (2026-07-19): question 1 now has a chr22 pilot and a 3-chromosome
+benchmark suite** — `experiments/realdata_1000g_structure.py` +
+`experiments/realdata_1000g_benchmarks.py` (1000G phase 3, EUR / AMR / AFR /
+full panel). Headline: the framework reproduces (structure fraction tracks λ1;
+the non-local remainder tracks the PC score at corr 0.9–1.0), and the LOCO-clean
+structure share of the genome-wide LD score is ~90% in the multi-ancestry panel
+but ~0–5% in single-ancestry cohorts (~17% vs ~0% in ±250 kb windows). A key
+methodological finding: the operator matters — an in-chromosome GRM over-whitens
+(removes local LD with structure); cov-LDSC needs only ~2–10 PCs to match the
+GLS operator on real data (B3). The remaining questions are still unrun.
 
 ## Questions the survey answers (that simulations cannot)
 

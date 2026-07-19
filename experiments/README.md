@@ -541,6 +541,12 @@ top-10 PC score.
 | AFR | 661 | 13.0 | 35% | 20% | 0.93 / 0.49 |
 | FULL panel | 2504 | 283.1 | **96%** | **62%** | **1.00** / 0.79 |
 
+> **Correction (2026-07-19, see `realdata_1000g_benchmarks.py` B2 below):** these
+> shares used an **in-chromosome GRM**, which removes local LD along with
+> structure and thereby overstates the structure share. The LOCO-clean numbers
+> are: genome-wide ~0–5% (EUR) / ~90% (FULL); windowed ~0% (EUR) / ~17% (FULL).
+> The corr(ℓ^struct, PC score) findings are unaffected.
+
 ### Verdict: the framework is real; the sim's quantitative "~5% windowed" is not
 
 - **The qualitative story reproduces on real data**: the LD score decomposes, the
@@ -564,3 +570,71 @@ top-10 PC score.
 - Next steps if pursued: all chromosomes with a LOCO GRM and a recombination map
   (cM window), denser common-SNP sets (less thinning), and the EUR→admixed→
   multi-ancestry gradient at matched density. Compute is linear in chromosomes.
+
+## `realdata_1000g_benchmarks.py` — thorough decomposition benchmarks (B1–B6)
+
+Follow-up to the chr22 pilot, closing its caveats: chr22 (1-in-10 thin) + chr21/10
+(1-in-25, GRM fodder), cached parses; **normalized correlations throughout**
+(the cov-LDSC convention — an early version of this script used unnormalized
+cross-products, which inflated the whitened scores; fixed and re-run). Windows
+are physical (kb). All numbers below are on real 1000G phase-3 data.
+
+**B1 — density × window (in-chromosome operator).** Windowed structure share is
+robust to SNP density (EUR: 26% dense vs 27% sparse at ±250 kb; FULL: 63% vs 52%)
+— the pilot's windowed numbers were not a thinning artifact.
+
+**B2 — LOCO vs in-chromosome GRM: the operator matters more than the data.**
+The pilot whitened with an in-chromosome GRM; this benchmark adds a proper LOCO
+GRM (chr21+10). Genome-wide / ±250 kb structure shares:
+
+| cohort | in-chrom full / win | LOCO full / win |
+|---|---|---|
+| EUR | 33% / 26% | **−4% / −0%** |
+| FULL | 96% / 63% | **90% / 17%** |
+
+The in-chromosome operator removes **structure plus local LD** (its middle
+eigenspace spans the target chromosome's own haplotype background — for EUR it
+whitens the genome-wide score down to the M/N noise floor), so the pilot's
+shares overstated structure, especially in windows. The LOCO operator cannot
+touch local LD, so it isolates structure — but slightly *inflates* residual
+scores (up-weighting of sub-1 eigenvalues + the q-renormalization of METHOD §5),
+visible as the small negative EUR shares. The two operators bracket the truth:
+**the honest structure share of the genome-wide LD score is ~90% in a
+multi-ancestry panel and only ~0–5% in single-ancestry cohorts; in ±250 kb
+windows it is ~17% (FULL) vs ~0% (EUR).** The sim's "5% in windows" was the
+right order for single-ancestry cohorts, wrong for multi-ancestry panels — and
+the pilot's "19–62% in windows" overstated both.
+
+**B3 — PC-projection vs P_c (FULL): cov-LDSC needs very few PCs on real data.**
+Exact spectral capture of the genome-wide score: **top-1 eigenvector 79%,
+top-2 92%, top-10 95%** (50% in top-1, 90% in top-2). Hard-projecting top-2 PCs
+leaves only 8% of what P_c removes (top-10: 5%; top-50: 5% genome-wide but 41%
+in windows — GLS down-weights the mid-spectrum that hard projection leaves
+behind). Real-data support for the project's central negative result: on real
+multi-ancestry genotypes the GLS operator ≈ cov-LDSC with a handful of PCs.
+
+**B4 — metric sensitivity.** Structure share vs the assumed h² in P_c: EUR
+15%/33%/25% (full) at h²=0.1/0.5/0.9 — NOT insensitive (the pilot's claim was
+wrong for mild-structure cohorts); FULL is stable (93–96%).
+
+**B5 — MAF gradient (in-chrom convention; relative gradient robust).** Structure
+share rises with MAF: EUR 22% → 27% → 30% across [0.01–0.05, 0.05–0.2, 0.2–0.5];
+FULL 88% → 90%. Common SNPs carry proportionally more structure signal (they are
+older and more ancestry-informative).
+
+**B6 — ancestry gradient (matched SNP set; in-chrom convention).**
+
+| cohort | N | λ1 | struct% full | struct% ±250kb | corr(ℓ^struct, PC10) |
+|---|---|---|---|---|---|
+| EUR | 503 | 5.3 | 33% | 26% | 0.885 |
+| AMR (CLM/MXL/PUR) | 262 | 8.4 | 34% | 19% | 0.976 |
+| AFR | 661 | 13.2 | 38% | 27% | 0.959 |
+| FULL | 2504 | 283.0 | 96% | 63% | 0.994 |
+
+The gradient tracks λ1 as expected; the corr(ℓ^struct, PC score) ≈ 0.9–1.0
+finding of the pilot is robust on real data.
+
+**Caveats.** Three chromosomes, thinned SNP sets; in-chromosome vs LOCO bracket
+the truth (B2) — future whole-genome runs should use LOCO throughout; MAF
+gradient (B5) is in-chrom convention; windows are physical (no recombination map
+yet); the P_c metric is intercept-only.
