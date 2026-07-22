@@ -18,6 +18,19 @@ methodological finding: the operator matters — an in-chromosome GRM over-white
 (removes local LD with structure); cov-LDSC needs only ~2–10 PCs to match the
 GLS operator on real data (B3). The remaining questions are still unrun.
 
+**Status (2026-07-23): the gating engine is built and validated.** The efficient
+decomposition engine below is now `pldsc/genome.py` (numpy-only, 21 unit tests in
+`tests/test_genome.py`), and a genome-wide LOCO driver with cM windows is
+`experiments/realdata_genome_loco.py`. The enabling primitive is the exact
+spectral genome-wide score (METHOD §14 Eq. D2), `O(M N²)` with no `M × M` matrix;
+it reproduces the brute-force benchmark to `3e-13` on real chr22 and the driver
+reproduces the B2 LOCO shares (FULL 17%/90%, EUR −0%/−4%). Genetic-distance (cM)
+windows are supported via the Beagle GRCh37 map, surfacing a first new finding:
+the *windowed* structure share depends on the window unit (FULL chr22: 17% at
+250 kb vs ~11% at 0.25 cM), because a fixed physical window spans variable
+genetic distance. What remains is the full 22-autosome run (data acquisition,
+`realdata_genome_loco.py --plan`) and questions 2–4.
+
 ## Questions the survey answers (that simulations cannot)
 
 1. **How large is the structure fraction of LD in real cohorts?** Compute
@@ -38,11 +51,18 @@ GLS operator on real data (B3). The remaining questions are still unrun.
 4. **Does structure-corrected LD move any headline h²/r_g?** Compare LDSC on the
    total vs local (`ell_local`) LD score for a panel of traits/cohorts.
 
-## Gating first step: an efficient decomposition engine
+## Gating first step: an efficient decomposition engine — DONE (2026-07-23)
 
-Everything above needs `P_c x` / `ell_local` at real scale, where the dense
-`V_c^{-1}` is infeasible. This is buildable now and is the real "efficiency
-contribution" (validate on simulated data, then run on real):
+Built as `pldsc/genome.py` and validated (see the 2026-07-23 status above). The
+route taken was the exact **spectral genome-wide score** (METHOD §14 Eq. D2):
+the total per-SNP squared-correlation sum is the GRM quadratic form
+`||Xtilde^T xtilde_j||²`, evaluable in `O(M N²)` from the `N × N` sample Gram
+with no `M × M` matrix — which is what makes millions of SNPs tractable. The
+windowed (local) score stays banded and now takes cM windows. The Woodbury /
+matrix-free `P_c` options below remain the path for a biobank-scale `N`; at
+`N ≈ 2504` the dense eigendecomposition is trivial and is what the driver uses.
+
+Original scoping (still the plan for large `N`):
 
 - `V_c = sigma_g^2 K + sigma_e^2 I` with **low-rank K** (from M_grm SNPs) →
   Woodbury: `V_c^{-1} = sigma_e^{-2}(I - Z(sigma_e^2/sigma_g^2 I + Z^T Z)^{-1}Z^T)`,

@@ -686,3 +686,44 @@ validates the released code path.
 
 Exposed as `pldsc.effective_pair_df(A, covariates)` and
 `local_ld_scores(..., pair_df=...)`; 9 unit tests in `tests/test_ld.py`.
+
+## `realdata_genome_loco.py` — genome-wide LOCO run (the #2 engine, end to end)
+
+Post-archive (2026-07-23). Scales the B2/B6 benchmarks from three thinned
+chromosomes to a genuine leave-one-chromosome-out sweep, on the tested
+`pldsc.genome` engine, with genetic-distance (cM) windows and the exact
+`O(M N²)` spectral genome-wide score (METHOD §14 Eq. D2 — no `M × M` matrix, so
+it scales to millions of SNPs). This is the shared infrastructure for
+`docs/WHEN_STRUCTURE_MATTERS.md` (#6) and the per-axis study (#4).
+
+Engine validation (against the brute-force benchmark, real chr22): the spectral
+full score matches to **3e-13**, the cM windowed score matches the physical
+benchmark exactly, and the LOCO shares reproduce **B2** (EUR −0.2%/−4.4%, FULL
+17.3%/89.6% vs the published −0%/−4% and 17%/90%). 21 unit tests in
+`tests/test_genome.py`.
+
+Rotating-LOCO demonstration on the cached three chromosomes (target 22 ← 21+10
+fodder, 21 ← 22+10, 10 ← 22+21), 1.0 cM windows, `P_c` at h²=0.5, SNP-weighted
+genome-wide aggregate:
+
+| cohort | M | struct% (1 cM window) | struct% (genome-wide) |
+|---|---|---|---|
+| EUR | 25 308 | −0.7% | −9.2% |
+| AMR | 27 395 | 1.2% | −0.2% |
+| AFR | 26 362 | 1.5% | −2.0% |
+| FULL | 27 600 | **29.3%** | **90.0%** |
+
+### Verdict: the machinery scales; the genome-wide headline needs all 22 autosomes
+
+- The multi-ancestry genome-wide share is **90.0%**, matching B2/B6; the
+  windowed cM share (**29%** at 1 cM) is higher than the 250 kb physical share
+  (17%) because a 1 cM window is wider than 250 kb on average — the window unit
+  matters, and cM is the recombination-aware choice.
+- Single-ancestry shares are ~0% windowed and slightly **negative** genome-wide
+  — the documented B2 LOCO over-whitening / q-renormalization inflation for
+  low-structure cohorts, faithfully reproduced.
+- **Three chromosomes is a demonstration, not the headline.** The genome-wide
+  run needs all 22 autosomes: `python experiments/realdata_genome_loco.py --plan`
+  prints the manifest (~15 GB phase-3 VCFs; maps and panel already local). Gated
+  on that download — a large resource commitment, so it is deliberately not run
+  automatically.
