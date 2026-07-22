@@ -528,6 +528,63 @@ found no measurable relatedness effect on windowed regression after LMM
 association, while population structure remained the regime cov-LDSC already
 corrected.
 
+### 10.1 Relatedness in the LD panel: the residual-df correction
+
+Section 13 concludes that relatedness "does not propagate into the local,
+windowed LD-score regression." That is correct about the *slope*, but it is not
+the whole story about the LD score itself, and the remaining channel is
+mis-specified in the current implementation.
+
+The finite-sample adjustment used by `pldsc.ld.local_ld_scores`,
+\(\widetilde r^2=r^2-(1-r^2)/(\nu-1)\) with \(\nu=N-\operatorname{rank}(C)\)
+(Equation (7), [IDEA_REVIEW.md](IDEA_REVIEW.md) §5), subtracts the noise floor
+that two *unlinked* variants generate by chance. That floor is \(1/(N-1)\) only
+when the rows are independent. For a panel with relationship matrix \(A\) and LD
+covariates \(C\), taking the expectation over one variant at a time gives
+\(E[(x_j^\top x_k)^2]=\operatorname{tr}(\widetilde A^2)\) and
+\(E\|x_j\|^2=\operatorname{tr}(\widetilde A)\) with
+\(\widetilde A=P_CAP_C\), so
+
+\[
+E[\widehat r_{jk}^2]\;\approx\;
+\frac{\operatorname{tr}(\widetilde A^2)}{\operatorname{tr}(\widetilde A)^2}
+\;=\;\frac1{N_{\mathrm{eff}}},\qquad
+N_{\mathrm{eff}}:=\frac{\operatorname{tr}(\widetilde A)^2}
+{\operatorname{tr}(\widetilde A^2)}.
+\tag{M22}
+\]
+
+\(N_{\mathrm{eff}}\) is the participation ratio of the projected relationship
+spectrum. For \(A=I\) with an intercept it is exactly \(N-1\), recovering the
+usual convention up to the customary \(O(1)\) offset; with relatives it is
+strictly smaller, so \(\nu-1\) **under-subtracts**. It is exposed as
+`pldsc.effective_pair_df` and accepted by `local_ld_scores(..., pair_df=...)`.
+
+**Verified** (`experiments/relatedness_effective_df.py`, real Mendelian
+transmission, unlinked SNPs, \(N=400\) throughout): (M22) is accurate to
+\(\le1\%\) across full-sib designs spanning a 4.7× inflation of the floor
+(\(N_{\mathrm{eff}}=399\to228\to145\to84\)), while \(\nu-1\) is wrong by that
+same 4.7×. The unrelated control reproduces \(1/(N-1)\).
+
+**Why this is a correctness fix and not a heritability result.** Accumulated
+over a window of \(S\) variants the omitted floor is
+\(S(1/N_{\mathrm{eff}}-1/(\nu-1))\) — up to \(\approx19\) LD-score units at
+\(S=2000\) in the 16-sib design, which is large relative to a real local score.
+But it is *near-uniform across variants at fixed \(S\)*, so to first order it
+shifts every \(\ell_j\) by a constant and therefore moves the LDSC **intercept**,
+not the slope. \(h^2\) is protected; an intercept read as a confounding
+barometer on a related in-sample panel is not. The residual non-uniformity
+enters only through variation in \(S\) (variant density per window), which is a
+density artifact that must be controlled for on its own account.
+
+**Scope.** This is a statement about panels that contain relatives — in-sample
+LD scores in family or founder cohorts. The standard fix remains to compute LD
+from unrelated individuals, which sets \(N_{\mathrm{eff}}=N-1\) and makes the
+correction moot; (M22) matters when that is not possible. It does not revive a
+relatedness-based case for \(P_c\) as an estimator (Section 13): the channel it
+describes is an intercept effect with a one-line remedy, whereas the biases
+\(P_c\) was built for are slope effects.
+
 ## 11. Numerical confirmation
 
 The M-spike (`experiments/m_spike_kill_or_continue.py`, env `pldsc`, PCG64 seed

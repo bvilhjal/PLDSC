@@ -72,6 +72,56 @@ def residualize_genotypes(
     return residuals
 
 
+def effective_pair_df(
+    relationship: ArrayLike, covariates: ArrayLike | None = None
+) -> float:
+    """Noise-floor denominator for unlinked-variant squared correlations.
+
+    For two unlinked variants in a panel with relationship matrix ``A`` and LD
+    covariates ``C``, the finite-sample noise floor of the squared correlation
+    is ``E[r^2] ~= tr(Atilde^2) / tr(Atilde)^2`` with ``Atilde = P_C A P_C``.
+    This returns its reciprocal ``tr(Atilde)^2 / tr(Atilde^2)``, the effective
+    denominator to pass as ``pair_df`` to :func:`local_ld_scores`.
+
+    For unrelated individuals (``A = I``, intercept only) this is ``N - 1``,
+    reproducing the usual convention up to the customary O(1) offset. With
+    relatives it is strictly smaller, so the default ``residual_df - 1``
+    under-subtracts. Verified in ``experiments/relatedness_effective_df.py``.
+
+    Parameters
+    ----------
+    relationship
+        Symmetric sample-by-sample relationship matrix (a GRM, or a pedigree
+        additive relationship matrix).
+    covariates
+        Optional sample-aligned fixed covariates. An intercept is always added,
+        matching :func:`local_ld_scores`.
+
+    Returns
+    -------
+    float
+        The effective pair degrees of freedom.
+    """
+
+    A = np.asarray(relationship, dtype=np.float64)
+    if A.ndim != 2 or A.shape[0] != A.shape[1]:
+        raise ValueError("relationship must be a square matrix")
+    if not np.all(np.isfinite(A)):
+        raise ValueError("relationship must contain only finite values")
+
+    design = _design_matrix(A.shape[0], covariates)
+    q, _ = np.linalg.qr(design)
+    # Atilde = P A P with P = I - q q^T, formed without an explicit N x N P.
+    qa = q.T @ A
+    At = A - q @ qa - (A @ q) @ q.T + q @ (qa @ q) @ q.T
+
+    trace = float(np.trace(At))
+    trace_sq = float(np.sum(At * At))
+    if trace_sq <= 0.0:
+        raise ValueError("projected relationship matrix has no variance")
+    return trace**2 / trace_sq
+
+
 def local_ld_scores(
     genotypes: ArrayLike,
     positions_cm: ArrayLike,
@@ -79,6 +129,7 @@ def local_ld_scores(
     covariates: ArrayLike | None = None,
     window_cm: float = 1.0,
     finite_sample_correction: bool = True,
+    pair_df: float | None = None,
     include_self: bool = True,
 ) -> FloatVector:
     """Calculate covariate-adjusted LD scores for one chromosome.
@@ -105,6 +156,12 @@ def local_ld_scores(
     finite_sample_correction
         Apply the residual-degrees-of-freedom adjustment to squared
         correlations.
+    pair_df
+        Denominator used in that adjustment, ``r2 - (1 - r2) / pair_df``.
+        Defaults to ``residual_df - 1``, which assumes independent samples. A
+        panel containing relatives has a higher unlinked-pair noise floor and
+        needs the smaller :func:`effective_pair_df`; see ``docs/METHOD.md``
+        Section 10.1.
     include_self
         Include the standard LD Score self-term, fixed exactly to one.
 
@@ -124,8 +181,11 @@ def local_ld_scores(
         raise ValueError("positions_cm must be nondecreasing")
     if not np.isfinite(window_cm) or window_cm < 0:
         raise ValueError("window_cm must be finite and nonnegative")
+    if pair_df is not None and (not np.isfinite(pair_df) or pair_df <= 0.0):
+        raise ValueError("pair_df must be finite and positive")
 
     residuals, residual_df = _residualize(values, covariates)
+    denominator = float(residual_df - 1) if pair_df is None else float(pair_df)
     norms = np.linalg.norm(residuals, axis=0)
     input_norms = np.linalg.norm(values, axis=0)
     tolerance = (
@@ -152,7 +212,7 @@ def local_ld_scores(
         squared = np.clip(correlations, -1.0, 1.0) ** 2
         squared[variant - left] = 1.0
         if finite_sample_correction:
-            squared = squared - (1.0 - squared) / (residual_df - 1)
+            squared = squared - (1.0 - squared) / denominator
         if not include_self:
             squared[variant - left] = 0.0
         scores[variant] = np.sum(squared)

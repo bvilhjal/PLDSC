@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from pldsc import local_ld_scores, residualize_genotypes
+from pldsc import effective_pair_df, local_ld_scores, residualize_genotypes
 
 
 class ResidualizationTests(unittest.TestCase):
@@ -107,6 +107,86 @@ class LocalLdScoreTests(unittest.TestCase):
                 [0.0, 0.5],
                 covariates=ancestry,
             )
+
+
+class EffectivePairDfTests(unittest.TestCase):
+    def test_unrelated_panel_reduces_to_n_minus_one(self):
+        # A = I with an intercept only: Atilde = P, tr(P) = tr(P^2) = N - 1.
+        self.assertAlmostEqual(effective_pair_df(np.eye(40)), 39.0, places=9)
+
+    def test_extra_covariates_lower_the_df_by_their_rank(self):
+        rng = np.random.default_rng(np.random.PCG64(11))
+        covariates = rng.standard_normal((40, 3))
+        self.assertAlmostEqual(
+            effective_pair_df(np.eye(40), covariates), 36.0, places=9
+        )
+
+    def test_full_sib_families_shrink_the_df(self):
+        # 10 families of 4 full sibs: A has 1 on the diagonal, 0.5 between sibs.
+        block = 0.5 * np.ones((4, 4))
+        np.fill_diagonal(block, 1.0)
+        A = np.kron(np.eye(10), block)
+
+        df = effective_pair_df(A)
+
+        # Strictly below the unrelated value, and matching the closed form
+        # tr(Atilde)^2 / tr(Atilde^2) computed densely.
+        P = np.eye(40) - np.ones((40, 40)) / 40
+        At = P @ A @ P
+        expected = np.trace(At) ** 2 / np.trace(At @ At)
+        self.assertLess(df, 39.0)
+        self.assertAlmostEqual(df, float(expected), places=9)
+
+    def test_rejects_non_square_and_non_finite_input(self):
+        with self.assertRaisesRegex(ValueError, "square"):
+            effective_pair_df(np.ones((4, 5)))
+        bad = np.eye(5)
+        bad[0, 0] = np.inf
+        with self.assertRaisesRegex(ValueError, "finite"):
+            effective_pair_df(bad)
+
+
+class PairDfOverrideTests(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(np.random.PCG64(12))
+        self.G = rng.integers(0, 3, size=(30, 6)).astype(float)
+        self.pos = np.sort(rng.uniform(0.0, 5.0, 6))
+
+    def test_override_replaces_the_residual_df_denominator(self):
+        correlations = np.corrcoef(self.G, rowvar=False)
+        squared = correlations**2
+        adjusted = squared - (1.0 - squared) / 7.5
+        expected = np.array(
+            [
+                adjusted[j, np.abs(self.pos - self.pos[j]) <= 2.0].sum()
+                for j in range(self.G.shape[1])
+            ]
+        )
+
+        observed = local_ld_scores(
+            self.G, self.pos, window_cm=2.0, pair_df=7.5
+        )
+
+        np.testing.assert_allclose(observed, expected, rtol=0, atol=1e-12)
+
+    def test_default_matches_an_explicit_residual_df_minus_one(self):
+        default = local_ld_scores(self.G, self.pos, window_cm=2.0)
+        explicit = local_ld_scores(
+            self.G, self.pos, window_cm=2.0, pair_df=self.G.shape[0] - 2
+        )
+        np.testing.assert_allclose(default, explicit, rtol=0, atol=1e-12)
+
+    def test_smaller_pair_df_subtracts_more(self):
+        # Window spans the whole chromosome, so every variant has neighbours
+        # and the extra subtraction is strict (the self-term is exactly 1 and
+        # contributes no correction either way).
+        loose = local_ld_scores(self.G, self.pos, window_cm=10.0, pair_df=100.0)
+        tight = local_ld_scores(self.G, self.pos, window_cm=10.0, pair_df=10.0)
+        self.assertTrue(np.all(tight < loose))
+
+    def test_rejects_nonpositive_pair_df(self):
+        with self.assertRaisesRegex(ValueError, "pair_df"):
+            local_ld_scores(self.G, self.pos, pair_df=0.0)
 
 
 class BaselineHardeningTests(unittest.TestCase):

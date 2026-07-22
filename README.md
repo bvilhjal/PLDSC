@@ -74,6 +74,26 @@ identify mate choice or parental nurture. This synthesis extends the
 interpretation/identification record; it does not revive the archived \(P_c\)
 estimator claim.
 
+**Post-archive correctness fix (2026-07-23).** [METHOD §10.1](docs/METHOD.md#101-relatedness-in-the-ld-panel-the-residual-df-correction)
+records one channel through which relatedness *does* reach the LD score, and
+which the implementation had wrong: the Eq. (7) noise-floor subtraction
+`(ν−1)` assumes independent rows and under-subtracts by up to 4.7× on a
+related panel. The correct denominator is `tr(Ã)²/tr(Ã²)`
+(`pldsc.effective_pair_df`, verified in
+[relatedness_effective_df.py](experiments/relatedness_effective_df.py)). The
+resulting LD-score bias is large but near-uniform, so it moves the LDSC
+**intercept**, not the slope: h² is protected, an intercept-based confounding
+readout on a related in-sample panel is not. This does **not** revive the
+relatedness case for `P_c` (§13) — it is an intercept effect whose standard
+remedy is to compute LD from unrelateds.
+
+**Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
+outlines a practice-facing alternative to the archived theory note: lead with
+the empirical magnitudes (windowed structure share ~0% single-ancestry vs ~17%
+multi-ancestry) and a two-moment decision rule (relatedness → intercept,
+structure → slope) rather than with theory claims the prior-art sweep graded
+partial-or-occupied. Gating task is a prior-art check on that framing.
+
 **Applications — structure diagnostics** (all prototyped in `experiments/`):
 a per-PC inflation spectrum that maps a GWAS's confounding to specific axes
 ([detect_pc_inflation.py](experiments/detect_pc_inflation.py)); a

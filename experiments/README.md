@@ -642,3 +642,47 @@ finding of the pilot is robust on real data.
 the truth (B2) — future whole-genome runs should use LOCO throughout; MAF
 gradient (B5) is in-chrom convention; windows are physical (no recombination map
 yet); the P_c metric is intercept-only.
+
+## `relatedness_effective_df.py` — the residual-df correction under relatedness
+
+Post-archive (2026-07-23). Section 13 says relatedness "does not propagate into
+the local, windowed LD-score regression." True of the *slope* — but there is one
+channel it does reach, and the implementation had it wrong. The Eq. (7)
+adjustment `r² − (1−r²)/(ν−1)` subtracts the noise floor two *unlinked* variants
+generate by chance, and that floor is `1/(N−1)` only for independent rows. With
+relationship matrix `A` and LD covariates `C`, it is `tr(Ã²)/tr(Ã)² = 1/N_eff`
+for `Ã = P_C A P_C` (METHOD §10.1, Eq. M22).
+
+Real Mendelian transmission (founder haplotypes, one transmitted per parent per
+SNP), unlinked SNPs by construction, N=400 throughout, 8 replicates, PCG64 seed
+20260723. Predictions come from the shipped `pldsc.effective_pair_df`, so this
+validates the released code path.
+
+| design | N_eff | observed floor | naive 1/(ν−1) | tr-ratio | obs/naive | obs/tr |
+|---|---|---|---|---|---|---|
+| unrelated (control) | 399.0 | 0.002504 | 0.002513 | 0.002506 | 1.00 | **1.00** |
+| 100 fam × 4 sibs | 227.8 | 0.004384 | 0.002513 | 0.004391 | 1.74 | **1.00** |
+| 50 fam × 8 sibs | 144.9 | 0.006812 | 0.002513 | 0.006903 | 2.71 | **0.99** |
+| 25 fam × 16 sibs | 83.9 | 0.011752 | 0.002513 | 0.011925 | 4.68 | **0.99** |
+
+### Verdict: correct, and an intercept effect — not a heritability result
+
+- **(M22) is accurate to ≤1%** across designs spanning a **4.7× inflation** of
+  the noise floor, while `ν−1` is wrong by that same 4.7×. The unrelated control
+  reproduces `1/(N−1)`.
+- Accumulated over a window of `S` variants the omitted floor reaches **≈19
+  LD-score units** at S=2000 in the 16-sib design — large against a real local
+  score.
+- **But it is near-uniform across variants at fixed S**, so to first order it
+  shifts every `ℓ_j` by a constant: it moves the LDSC **intercept**, not the
+  slope. h² is protected; an intercept read as a confounding barometer on a
+  related in-sample panel is not. Residual non-uniformity enters only through
+  variation in variant density per window.
+- **Does not revive the relatedness case for `P_c`** (§13). This channel is an
+  intercept effect whose standard remedy is to compute LD from unrelated
+  individuals (which sets `N_eff = N−1` and makes the correction moot); the
+  biases `P_c` was built for are slope effects. (M22) matters only when dropping
+  relatives is not an option — family or founder cohorts with in-sample LD.
+
+Exposed as `pldsc.effective_pair_df(A, covariates)` and
+`local_ld_scores(..., pair_df=...)`; 9 unit tests in `tests/test_ld.py`.
