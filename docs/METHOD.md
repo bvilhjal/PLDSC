@@ -1,6 +1,7 @@
 # PLDSC method: the mixed-model-matched LD score
 
-Date: 2026-07-17; M0 contract completed and re-audited 2026-07-22
+Date: 2026-07-17; M0 contract completed and re-audited 2026-07-22;
+theory addendum added 2026-07-22
 
 This is the M0 "freeze the theorem" document (see
 [the development plan](DEVELOPMENT_PLAN.md)). It states the model, derives the
@@ -18,6 +19,13 @@ identity; calling part of that identity "structure" additionally requires a
 declared window, operator, or externally justified PC subspace. Cov-LDSC,
 WhiLD, the PC score, and \(P_c\) are related operations on that geometry, not a
 unique algebraic separation of linkage from structure.
+
+**Theory addendum (added 2026-07-22).** Section 15 asks what the same
+moments mean under assortative mating and parental genetic nurture. Assortment
+creates signed, effect-aligned long-range gametic-phase disequilibrium (GPD),
+whereas pure nurture can preserve the ordinary LDSC line while making its slope
+entirely non-direct. Neither mate choice nor parental nurture is causally
+identified from offspring GWAS plus offspring LD alone.
 
 ## 1. Frozen scales, model, and variant sets
 
@@ -369,6 +377,10 @@ E[z_j^2\mid X,V_c]
 \]
 
 which contains cross-effect terms and generally has no scalar LD-score slope.
+Section 15 gives two mechanistically distinct cautions: assortative mating makes
+long-range genotype covariance align with the generating trait, whereas
+parental nurture can produce direct-like marginal associations even when
+\(\beta_{\rm direct}=0\).
 
 If the working score, effect architecture, or window is misspecified, a
 free-intercept WLS fit over \(R_c\) targets the design-dependent projection
@@ -498,6 +510,12 @@ Window convergence must therefore be checked against the full dense oracle or
 a valid bound. A large omitted remainder shows truncation error; by itself it
 does not diagnose misspecification of \(V_c\).
 
+Equation (M21) contains only omitted variants in \(S_c\), the modeled target-
+chromosome effect set. The off-chromosome effect partners in cross-autosome GPD
+lie outside \(S_c\); they enter through the LOCO background/model assumptions
+and must not be mislabeled as the (M21) window tail. Section 15.1 treats that
+separate mechanism.
+
 **Empirical locality finding.** Within a physical window,
 \(r_{jk}^{(P_c)}\) was close to raw local correlation in the simulations:
 tight recombination-driven LD was nearly orthogonal to the few genome-wide
@@ -570,6 +588,11 @@ removes, so the standard sib-GWAS pipeline is already calibrated and \(P_c\)
 only reproduces it. This section records the honest scope so the theory
 (correct and clean) is not overstated as a practical LDSC replacement.
 
+That negative PLDSC-versus-cov-LDSC verdict is for the direct/isotropic model
+tested here. The mechanisms in Section 15 are violations of causal or
+architecture assumptions, not gaps repaired merely by swapping one offspring
+LD metric for another.
+
 ## 14. The local/non-local decomposition (organizing framework)
 
 Reframed 2026-07-18 and qualified 2026-07-22. The results above use a declared,
@@ -616,6 +639,11 @@ This is textbook linear algebra, not an empirical discovery, and
 an estimate of a structure component only when those selected eigenvectors are
 independently justified as structure axes; eigenvalue rank alone does not make
 that classification.
+
+Assortative-mating GPD can appear as a diffuse low-rank contribution to (D2),
+but a genotype-only eigenspace cannot assign that contribution to mate choice:
+the same covariance geometry can arise from geography, ancestry, or selection
+(Section 15.1).
 
 **What the experiment actually shows** (`experiments/ld_decomposition.py`;
 re-derived and re-checked independently, EXTERNAL_REVIEW §3.3): the top-10-PC
@@ -704,11 +732,15 @@ recover \(V_p^{\mathrm{gen}}\): the axis is shared between sibs (\(u_p\) lies in
 family span), so family-mean-centering annihilates it — exactly the
 \(M_BRM_B=0.5\,M_B\) of `within_family_killtest.py` — nulling the aligned genetic
 *and* environmental parts together and estimating a strictly smaller,
-confound-robust *within-family* heritability that omits \(V_p^{\mathrm{gen}}\)
-(this is why within-family \(h^2<\) population \(h^2\)). Genuine separation of
-direct genetic from stratification needs cross-population replication or parental
-genotypes (transmitted/non-transmitted, [Kong et al. 2018]; RDR,
-[Young et al. 2018]).
+confound-robust *within-family* heritability that omits \(V_p^{\mathrm{gen}}\).
+This is one reason within-family \(h^2\) can be lower than population \(h^2\),
+not a complete explanation. Direct-versus-stratification separation needs
+cross-population replication or other external structure information;
+direct-versus-nurture separation needs parental genotypes
+(transmitted/nontransmitted, Kong et al. 2018) or another family anchor.
+RDR (Young et al. 2018) can estimate a direct variance component robust to
+environmental bias, but it does not by itself identify a specific parental-
+nurture pathway (Section 15.2).
 
 **Positioning.** This is a *formalization*, in the LD-score metric, of the
 long-known polygenic-signal-vs-stratification confounding — the senior author's
@@ -753,6 +785,298 @@ whitened GRM, the PC score, and a LOCO-LMM-matched \(P_c\) appear as choices of
 clarifying/unifying exposition, not a set of novel contributions. See
 [PRIOR_ART.md](PRIOR_ART.md).
 
+## 15. Theory addendum: assortative mating and genetic nurture
+
+The M0 theorem conditions on a genotype matrix and a declared effect model. It
+does not determine *why* offspring genotype predicts phenotype. This section
+specializes established assortative-mating and indirect-genetic-effect results
+to the LDSC moments above. It is an explanatory synthesis, not a new
+identification theorem or a claim that the archived \(P_c\) estimator solves
+either mechanism. Neither mate choice nor parental nurture is causally
+identified from offspring GWAS plus offspring LD alone.
+
+### 15.1 Assortative mating and directional GPD
+
+Let \(G\) be a componentwise-standardized diploid genotype vector over \(M\)
+loci, with \(\Sigma=\operatorname{Cov}(G)\), and let mates sort on the additive
+phenotype
+
+\[
+S=G^Tb+\varepsilon_S,\qquad
+a=\operatorname{Cov}(G,S)=\Sigma b,\qquad
+\varepsilon_S\perp G. \tag{AM1}
+\]
+
+Under primary phenotypic assortment, equal genotype distributions in the two
+sexes, linear-Gaussian conditional means, and conditional independence of mate
+genotypes given their phenotypes, define
+\(\rho_m=\operatorname{Corr}(S^{(m)},S^{(f)})\). Then
+
+\[
+\Sigma_{mf}:=\operatorname{Cov}(G^{(m)},G^{(f)})
+=\frac{\rho_m}{\operatorname{Var}(S)}aa^T. \tag{AM2}
+\]
+
+The covariance is proportional to the **signed product** of the loci's loadings
+on the mating phenotype. Here \(a_j=\operatorname{Cov}(G_j,S)\), not generally
+the direct effect \(b_j\). Under alternative mating models (AM2) need not hold;
+in some weak-assortment models it is only a first-order approximation.
+
+Mendelian transmission converts cross-mate covariance into within-person
+gametic-phase disequilibrium (GPD). Let \(\Xi_t\) and \(\Xi_{mf,t}\) be,
+respectively, within-person and cross-mate covariances of centered allele counts
+on one fixed, generation-invariant per-locus scale. For different chromosomes,
+
+\[
+(\Xi_{t+1})_{jk}
+=\frac12(\Xi_t)_{jk}
++\frac14\{(\Xi_{mf,t})_{jk}+(\Xi_{mf,t})_{kj}\},\qquad
+\operatorname{chr}(j)\ne\operatorname{chr}(k). \tag{AM3}
+\]
+
+If \(\Xi_{mf,t}=\Xi_{mf}\) is fixed and symmetric, \(\Xi_t\) approaches
+\(\Xi_{mf}\) geometrically; at a stationary equilibrium with symmetric
+\(\Xi_{mf,\infty}\), (AM3) implies
+\(\Xi_{\infty,jk}=\Xi_{mf,\infty,jk}\). In the more specific
+Fisher--Nagylaki model used by Border et al. (2022a), the exact equilibrium
+causal-locus covariance is
+
+\[
+\Upsilon_\infty=D+2\phi\phi^T,\qquad
+\phi_j=O(M^{-1/2}), \tag{AM4}
+\]
+
+where \(D\) is diagonal in that model and \(\phi\) depends on substitution
+effects and mating strength. Real-genome local linkage and structure cannot be
+inserted into (AM4) without a separate model.
+
+For an analyzed trait with causal effects \(\beta\), equal to \(b\) only when it
+is the mating trait, the cross-autosome contribution to genetic variance is
+signed:
+
+\[
+V_{\rm GPD}^{\times}
+=2\sum_{\substack{j<k\\
+                  \operatorname{chr}(j)\ne\operatorname{chr}(k)}}
+  \beta_j\beta_k r_{jk}. \tag{AM5}
+\]
+
+Positive assortment increases this variance for the mating trait, and can do so
+for another trait aligned with its loading direction; there is no such claim
+for an arbitrary \(\beta\). Squared LD scores discard the sign. If, on a
+declared long-range set \(\mathcal F_j\),
+\(r_{jk}=r^0_{jk}+\kappa a_ja_k\), then
+
+\[
+\Delta\ell_{j,\mathcal F}^{\rm AM}
+=2\kappa a_j\sum_{k\in\mathcal F_j}r^0_{jk}a_k
++\kappa^2a_j^2\sum_{k\in\mathcal F_j}a_k^2. \tag{AM6}
+\]
+
+Only when background long-range covariance is negligible does the first term
+vanish. This is a diagnostic identity, not automatically a corrected LDSC
+regressor; its cross-term is another instance of the non-orthogonality in (D1).
+
+For marginal signal \(\eta=\Sigma\beta\), the realized square is
+
+\[
+\eta_j^2
+=\sum_k \sigma_{jk}^2\beta_k^2
++2\sum_{k<l}\sigma_{jk}\sigma_{jl}\beta_k\beta_l. \tag{AM7}
+\]
+
+Let \(E[\beta\mid\Sigma]=0\) and
+\(\Omega_{\beta\mid\Sigma}=E[\beta\beta^T\mid\Sigma]\). On the same standardized
+phenotype and association-statistic scale as (M6),
+
+\[
+\begin{aligned}
+E[\chi_j^2\mid\Sigma]
+&\approx1+N\mathbf e_j^T\Sigma\Omega_{\beta\mid\Sigma}\Sigma\mathbf e_j,\\
+\Omega_{\beta\mid\Sigma}
+&=\operatorname{diag}(\tau_1^2,\ldots,\tau_M^2)
+\ \Longrightarrow\
+1+N\sum_k\tau_k^2\sigma_{jk}^2,\\
+\Omega_{\beta\mid\Sigma}
+&=\tau^2I
+\ \Longrightarrow\
+1+N\tau^2\ell_j .
+\end{aligned} \tag{AM8}
+\]
+
+A diagonal effect ensemble sets the expected cross terms in (AM7) to zero;
+isotropy is the additional condition that yields an ordinary one-slope LDSC
+line. Because assortment makes \(\Sigma\) depend on the generating trait,
+conditional isotropy is not justified as a causal averaging model for that
+trait, even though imposing it recovers the algebra in (M6). Equations
+(M12)--(M14) describe the remaining projection problem. A local-window LD score
+also excludes all cross-autosome and distant same-chromosome terms.
+
+The genomic signature is established prior art: Yengo et al. (2018) detected
+odd/even-chromosome GPD, Border et al. (2022a) derived (AM4), and Zhang et al.
+(2025) introduced DGREML for directional-GPD variance. GPD alone does not prove
+mate choice; geography/ancestry, some forms of selection, social homogamy, and
+selection into the analyzed sample can also generate long-range covariance.
+Pure vertical environmental transmission instead creates genotype--environment
+covariance, which is the distinct problem below.
+
+### 15.2 Pure parental nurture can preserve the LDSC line
+
+Let \(G_o,G_m,G_f\) denote componentwise-standardized offspring, maternal, and
+paternal genotype vectors on one common, stable allele-frequency scale, and write
+\(\Sigma_o=\operatorname{Cov}(G_o)\) and
+\(\Sigma_p=\operatorname{Cov}(G_m)=\operatorname{Cov}(G_f)\). Under Mendelian
+transmission and random mating,
+
+\[
+E[G_o\mid G_m,G_f]=\frac{G_m+G_f}{2},\qquad
+\operatorname{Cov}(G_o,G_m)
+=\operatorname{Cov}(G_o,G_f)=\frac12\Sigma_p. \tag{GN1}
+\]
+
+Consider a phenotype caused entirely by an additive parental environmental
+pathway:
+
+\[
+Y=G_m^T\gamma_m+G_f^T\gamma_f+\varepsilon,\qquad
+\beta_{\rm direct}=0,\qquad
+\operatorname{Cov}(G_o,\varepsilon)=0. \tag{GN2}
+\]
+
+The ordinary offspring-GWAS marginal association vector is
+
+\[
+\eta:=\operatorname{Cov}(G_o,Y)
+=\Sigma_p\theta,\qquad
+\theta=\frac{\gamma_m+\gamma_f}{2}. \tag{GN3}
+\]
+
+If LD is stable across generations and the reference is matched,
+\(\Sigma_p=\Sigma_o=\Sigma\), this is identical at the marginal-moment level to
+a direct model with effect \(\theta\). Suppose additionally that the phenotype
+has unit variance, association statistics are correctly calibrated,
+\(E[\theta\theta^T\mid\Sigma]=\tau_\theta^2I\), and the orthogonal parental
+component is homoscedastic among unrelated offspring. Then
+
+\[
+E[\chi_j^2\mid\Sigma]
+\approx1+N\tau_\theta^2\ell_j
+=1+\frac{Nh_{\rm assoc}^2}{M}\ell_j,\qquad
+h_{\rm assoc}^2=M\tau_\theta^2. \tag{GN4}
+\]
+
+Thus the textbook LDSC line and intercept can hold while direct SNP
+heritability is zero. Its slope is offspring-genotype-tagged association
+variance, not direct heritability or total nurture variance.
+
+For equal maternal and paternal nurture effects
+\(\gamma_m=\gamma_f=\gamma\), independent random mates, and no other pathway,
+
+\[
+V_{\rm nurture}=2\gamma^T\Sigma\gamma,\qquad
+V_{\rm tagged}=\gamma^T\Sigma\gamma
+=\frac12V_{\rm nurture}. \tag{GN5}
+\]
+
+Thus a unit-variance phenotype consisting entirely of symmetric biparental
+nurture has \(h_{\rm assoc}^2=1/2\) in this toy model despite zero direct
+heritability. With one nurturing parent, the tagged fraction is \(1/4\).
+These are thought-experiment scalings, not empirical expectations.
+
+With direct effects \(d\) plus symmetric parental nurture, offspring GWAS
+identifies only their sum and its tagged variance:
+
+\[
+\theta_{\rm assoc}=d+\gamma,\qquad
+V_{\rm assoc}
+=(d+\gamma)^T\Sigma(d+\gamma)
+=d^T\Sigma d+\gamma^T\Sigma\gamma+2d^T\Sigma\gamma. \tag{GN6}
+\]
+
+The variance contributed by the direct and parent-genotype-mediated pathways is
+different: under random mating, the coefficient on
+\(\gamma^T\Sigma\gamma\) is two, not one. Neither the LDSC slope nor intercept
+separates the terms in (GN6). A nontransmitted parental allele supplies the
+needed external nurture anchor (Kong et al. 2018); its reported effect ratio is
+not a fraction of heritability.
+
+For a shared parental pathway, correctly centered within-sibship association
+removes (GN2), provided the centered residual is genotype-uncorrelated:
+
+\[
+\begin{aligned}
+\operatorname{Cov}
+\{G_{o,i}-\bar G_{o,\rm family},\,
+  Y_i-\bar Y_{\rm family}\}&=0,\\
+\operatorname{Cov}
+\{G_{o,i}-\bar G_{o,\rm family},\,
+  \varepsilon_i-\bar\varepsilon_{\rm family}\}&=0 .
+\end{aligned} \tag{GN7}
+\]
+
+This does not cover sibling effects, child-genotype-evoked or differential
+parenting, or other non-shared indirect effects. Population-minus-within-family
+attenuation is therefore not itself a nurture estimator. Lee et al. (2018)
+analyzed LDSC under parental environmental effects; family and
+multigenerational methods such as DONUTS and JODIE already address direct versus
+indirect decomposition.
+
+### 15.3 Assortment plus nurture requires cross-generational geometry
+
+On one common fixed per-locus scale, let
+\(\Xi_o=\operatorname{Cov}(G_o)\),
+\(\Xi_p=\operatorname{Cov}(G_m)=\operatorname{Cov}(G_f)\),
+\(\Xi_{mf}=\operatorname{Cov}(G_m,G_f)\), and
+\(\Xi_{oP}=\operatorname{Cov}(G_o,G_m+G_f)\). Mendelian transmission gives
+
+\[
+\Xi_{oP}
+=\Xi_p+\frac12(\Xi_{mf}+\Xi_{mf}^T). \tag{GN8}
+\]
+
+For equal parental nurture effects \(\gamma\), \(\eta=\Xi_{oP}\gamma\).
+Under isotropic nurture effects and the calibration assumptions of (GN4), the
+matched offspring--parent row score is
+
+\[
+\ell_j^{\rm OP}
+:=\frac{(\Xi_{oP}\Xi_{oP}^T)_{jj}}{(\Xi_o)_{jj}}
+=\frac{\sum_k(\Xi_{oP})_{jk}^2}{\operatorname{Var}(G_{o,j})},
+\qquad
+E[\chi_j^2\mid\Xi_{oP},\Xi_o]
+\approx1+N\tau_\gamma^2\ell_j^{\rm OP}. \tag{GN9}
+\]
+
+Random mating, stable LD, and componentwise standardization reduce
+\(\Xi_{oP}\) to offspring LD and (GN9) to
+ordinary LDSC. Assortment adds the long-range component in (AM2), so the
+cross-generational operator need not equal offspring LD. Distinct maternal and
+paternal architectures require separate offspring--mother and
+offspring--father operators and effect covariances. Offspring genotypes do not
+identify \(\Xi_{oP}\) without mating and transmission assumptions; a
+directly matched score requires parent--offspring reference data.
+
+For compactness, Table 3 writes \(\Sigma_{\rm AM}\) for the analyzed offspring
+LD matrix under assortment.
+
+**Table 3. What offspring GWAS plus offspring LD can identify**
+
+| Generative case | Marginal association object | Ordinary scalar LDSC? | Causal mechanism identified? |
+|---|---|---|---|
+| Direct, isotropic effects | \(\Sigma d\) | Yes, under the usual assumptions | Only with the direct-effect model imposed |
+| Pure parental nurture, random mating | \(\Sigma\theta\) from (GN3) | Yes, under the same effect assumptions | No; aliased with a direct coefficient at the marginal-moment level |
+| Trait-aligned assortative mating | \(\Sigma_{\rm AM}\beta\), with LD aligned to \(b\) | Only if conditional isotropy and a full matched LD score are imposed; otherwise M14 is a projection | No; signed GPD does not identify its cause |
+| Assortment plus nurture | \(\Xi_{oP}\gamma\) | Only under isotropic nurture effects with a matched score such as (GN9) | No; requires family and mate anchors |
+
+Changing ordinary LD to \(P_c\)-weighted LD changes association geometry; it
+does not manufacture the family or historical information needed to distinguish
+direct biology, mate choice, and parental environment. RDR or within-family
+designs can estimate a direct component under their assumptions;
+transmitted/nontransmitted parental or trio data identify parental nurture; and
+spouse data provide an assortment anchor. Any summary-statistic directional-GPD
+or cross-generational extension would be a new branch beside PLDSC and should be
+benchmarked against DGREML, DONUTS/JODIE, and family GWAS.
+
 ## References
 
 1. Bulik-Sullivan et al. (2015), [LD Score regression distinguishes confounding
@@ -779,3 +1103,23 @@ clarifying/unifying exposition, not a set of novel contributions. See
    observations](https://doi.org/10.1214/aos/1176347265).
 10. Xiong et al. (2024), [Improved estimation of functional enrichment in SNP
     heritability using feasible generalized least squares](https://doi.org/10.1016/j.xhgg.2024.100272).
+11. Yengo et al. (2018), [Imprint of assortative mating on the human
+    genome](https://doi.org/10.1038/s41562-018-0476-3).
+12. Border et al. (2022a), [Assortative mating biases marker-based heritability
+    estimators](https://doi.org/10.1038/s41467-022-28294-9).
+13. Border et al. (2022b), [Cross-trait assortative mating is widespread and
+    inflates genetic correlation estimates](https://doi.org/10.1126/science.abo2059).
+14. Zhang et al. (2025), [The contribution of gametic phase disequilibrium to
+    the heritability of complex traits](https://doi.org/10.1038/s41588-025-02192-4).
+15. Lee et al. (2018), [The accuracy of LD Score regression as an estimator of
+    confounding and genetic correlations in genome-wide association
+    studies](https://doi.org/10.1002/gepi.22161).
+16. Howe et al. (2022), [Within-sibship genome-wide association analyses
+    decrease bias in estimates of direct genetic
+    effects](https://doi.org/10.1038/s41588-022-01062-7).
+17. Wu et al. (2021), [Estimating genetic nurture with summary statistics of
+    multigenerational genome-wide association
+    studies](https://doi.org/10.1073/pnas.2023184118) (DONUTS).
+18. Krätschmer et al. (2026), [Separating direct, indirect, and
+    parent-of-origin genetic effects in the human
+    population](https://doi.org/10.1016/j.xgen.2026.101277) (JODIE).

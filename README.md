@@ -63,6 +63,17 @@ They do not all remove or measure one unique `ℓ^struct`, and ancestry-aligned
 genetic signal can be aliased with environmental confounding. See
 [docs/METHOD.md](docs/METHOD.md).
 
+**Post-archive theory addendum (2026-07-22).** [Section 15 of the method
+note](docs/METHOD.md#15-theory-addendum-assortative-mating-and-genetic-nurture)
+now records two complementary limits. Assortative mating creates signed,
+trait-aligned cross-autosome GPD that a squared LD score cannot identify as mate
+choice; under random mating and the usual isotropic-effect assumptions, pure
+parental genetic nurture can produce a textbook LDSC slope even when direct SNP
+heritability is zero. Offspring GWAS plus offspring LD alone cannot causally
+identify mate choice or parental nurture. This synthesis extends the
+interpretation/identification record; it does not revive the archived \(P_c\)
+estimator claim.
+
 **Applications — structure diagnostics** (all prototyped in `experiments/`):
 a per-PC inflation spectrum that maps a GWAS's confounding to specific axes
 ([detect_pc_inflation.py](experiments/detect_pc_inflation.py)); a

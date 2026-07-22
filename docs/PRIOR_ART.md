@@ -32,6 +32,30 @@ MQS/GEMMA (unification-of-estimators), de Vlaming 2017 (GRM-PC view of LDSC), an
 the WhiLD/Mahalanobis heritability lineage (Mathew 2018 [10.1038/s41437-017-0011-8](https://doi.org/10.1038/s41437-017-0011-8);
 Ma & Dicker 2019, arXiv:1901.02936).
 
+## Theory addendum (2026-07-22)
+
+METHOD Section 15 now connects the PLDSC moments to assortative-mating GPD and
+parental genetic nurture. These are **expository specializations of established
+results** and do not alter the archive decision or create a new PLDSC
+identification claim.
+
+**Table PA1. Prior-art boundary for the theory addendum**
+
+| Extension | Established result | Status here |
+|---|---|---|
+| Assortative mating creates trait-aligned long-range GPD | Yengo et al. 2018 detected odd/even-chromosome GPD ([10.1038/s41562-018-0476-3](https://doi.org/10.1038/s41562-018-0476-3)); Border et al. 2022a derived the low-rank equilibrium covariance and analyzed LDSC/HE/REML bias ([10.1038/s41467-022-28294-9](https://doi.org/10.1038/s41467-022-28294-9)) | Occupied; Section 15 restates signed-versus-squared information loss in M0 notation |
+| Cross-trait assortment can inflate genetic correlation | Border et al. 2022b ([10.1126/science.abo2059](https://doi.org/10.1126/science.abo2059)) | Occupied; no claim that every genetic correlation is an assortment artifact |
+| Individual-level directional-GPD variance decomposition | DGREML, Zhang et al. 2025 ([10.1038/s41588-025-02192-4](https://doi.org/10.1038/s41588-025-02192-4)) | Occupied; a generic “GPD decomposition” is not a PLDSC novelty |
+| Pure parental nurture can enter an LDSC slope while direct effects are absent | Kong et al. 2018 supplies the transmitted/nontransmitted anchor ([10.1126/science.aan6877](https://doi.org/10.1126/science.aan6877)); Lee et al. 2018 directly analyzes LDSC under parent-genotype environmental effects ([10.1002/gepi.22161](https://doi.org/10.1002/gepi.22161)) | Established logic; Section 15 gives the transparent random-mating special-case algebra |
+| Direct/indirect decomposition from family or multigenerational data | DONUTS, Wu et al. 2021 ([10.1073/pnas.2023184118](https://doi.org/10.1073/pnas.2023184118)); JODIE, Krätschmer et al. 2026 ([10.1016/j.xgen.2026.101277](https://doi.org/10.1016/j.xgen.2026.101277)) | Occupied; offspring GWAS plus offspring LD alone remains non-identifying |
+
+Safe wording is therefore: **the new section is a synthesis showing two
+different failures of direct-heredity interpretation**. Assortment makes LD
+signed and effect-aligned; nurture can leave the ordinary LD-score line intact
+while changing what its slope means. A future cross-generational or
+summary-GPD method would need a fresh prior-art review and external family/mate
+anchors; it is not a consequence of the current spectral decomposition.
+
 ## Headline (superseded by the sweep verdict above; kept for the lineage)
 
 ## Headline
