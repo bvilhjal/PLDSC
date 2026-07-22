@@ -1,57 +1,107 @@
 # PLDSC method: the mixed-model-matched LD score
 
-Date: 2026-07-17
+Date: 2026-07-17; M0 contract completed and re-audited 2026-07-22
 
 This is the M0 "freeze the theorem" document (see
 [the development plan](DEVELOPMENT_PLAN.md)). It states the model, derives the
 oracle conditional moment on which PLDSC rests, records the exact assumptions,
-and shows the reductions to covariate-adjusted and ordinary LD Score regression.
+and states the precise conditions under which its geometry or full regression
+moment reduces to covariate-adjusted and ordinary LD Score regression.
 The identity in Section 4 has been derived independently three times and
 confirmed numerically by the M-spike (`experiments/m_spike_kill_or_continue.py`;
 Section 11).
 
-**Organizing framework (reframed 2026-07-18).** These results are best read
-through the local/non-local decomposition of the LD score in **Section 14**: the
-LD score splits into a linkage component and a structure component, the latter
-equal to the PC score, and every structure-correction below (cov-LDSC, WhiLD,
-the PC score, \(P_c\)) is an operation on that decomposition.
+**Organizing framework (reframed 2026-07-18, qualified 2026-07-22).** These
+results are best read through the operator-dependent local/non-local
+decomposition in **Section 14**. The total LD score has an exact GRM spectral
+identity; calling part of that identity "structure" additionally requires a
+declared window, operator, or externally justified PC subspace. Cov-LDSC,
+WhiLD, the PC score, and \(P_c\) are related operations on that geometry, not a
+unique algebraic separation of linkage from structure.
 
-## 1. Model and notation
+## 1. Frozen scales, model, and variant sets
 
-Fix a target chromosome \(c\). Let
-
-- \(y\in\mathbb{R}^{N}\) be the quantitative phenotype on \(N\) individuals;
-- \(C\in\mathbb{R}^{N\times K}\) the complete fixed-effect design used by the
-  GWAS, including the intercept (rank \(K'\le K\));
-- \(X_c=[x_1,\dots,x_{M_c}]\in\mathbb{R}^{N\times M_c}\) the modeled
-  target-chromosome genotypes, columns centered and scaled by a frozen
-  convention;
-- \(K_{-c}\in\mathbb{R}^{N\times N}\) a genetic relationship matrix built from
-  the **other** chromosomes (leave-one-chromosome-out), symmetric PSD with a
-  frozen normalization.
-
-The null covariance for the target-chromosome score test is
+Fix a target chromosome \(c\). For an imputed diploid dosage \(g_k\), estimate
+the allele frequency in the analysis sample and use the same HWE scaling as the
+reference implementation:
 
 \[
-V_c=\sigma_g^2K_{-c}+\sigma_e^2I,\qquad \sigma_e^2>0, \tag{M1}
+\widehat p_k=\frac{\mathbf 1^Tg_k}{2N},\qquad
+x_k=\frac{g_k-2\widehat p_k\mathbf 1}
+          {\sqrt{2\widehat p_k(1-\widehat p_k)}},\qquad
+d_k=\frac{x_k^Tx_k}{N}. \tag{S1}
 \]
 
-so \(V_c\) is symmetric positive definite. The data-generating model is
+Missing dosages are mean-imputed only after the declared genotype QC;
+monomorphic variants are excluded. Thus \(\mathbf 1^Tx_k=0\), but \(d_k\) is
+not forced to one. HWE scaling and sample-RMS scaling are not interchangeable
+in an admixed sample. All exact formulas below retain \(d_k\); sample-RMS
+standardization is the special convention \(d_k=1\).
+
+Let \(Z_{-c}\) contain the similarly scaled variants in the LOCO-GRM set
+\(B_{-c}\), and freeze the GRM and phenotype scale as
 
 \[
-y=C\alpha+X_c\beta_c+\varepsilon,\qquad \varepsilon\sim(0,V_c), \tag{M2}
+K_{-c}=\frac{Z_{-c}Z_{-c}^T}{M_{-c}},\qquad
+\frac{\operatorname{tr}(K_{-c})}{N}
+ =\frac{1}{M_{-c}}\sum_{m\in B_{-c}}d_m,\qquad
+y=\frac{y_{\rm raw}}{s_y},\quad
+s_y^2=\frac{y_{\rm raw}^TM_Cy_{\rm raw}}{N}, \tag{S2}
 \]
 
-with random target-chromosome effects satisfying
+where \(M_C=I-C(C^TC)^+C^T\) and \(C\) includes an intercept. No secondary
+trace normalization is applied to \(K_{-c}\). Analyses on the raw phenotype
+scale are algebraically valid, but must say so; then every variance and effect
+below is in raw squared-phenotype units. Under (S2), \(\beta_k\) is measured in
+conditional-phenotype SD per HWE-standardized genotype unit. If background
+coefficients have covariance \(\sigma_g^2I/M_{-c}\), their genetic-value
+covariance is \(\sigma_g^2K_{-c}\); their average per-individual variance is
+\(\sigma_g^2\operatorname{tr}(K_{-c})/N\), not necessarily \(\sigma_g^2\).
+
+**Table 1. Variant-set contract**
+
+| Symbol | Role | May differ from |
+|---|---|---|
+| \(B_{-c}\) | off-chromosome variants used only to build \(K_{-c}\) | every target-chromosome set |
+| \(S_c\) | modeled target-chromosome effect/tagging universe in \(X_{S_c}\) | \(T_c,R_c\) |
+| \(T_c\) | variants whose score statistics \(z_j\) are defined | \(S_c,R_c\) |
+| \(R_c\subseteq T_c\) | predeclared QC-passing regression observations | \(S_c,T_c\) |
+| \(W_j\subseteq S_c\) | effect variants retained by a score approximation for test variant \(j\) | the complete \(S_c\) |
+
+Write \(M_{-c}=|B_{-c}|\) and \(M_c=|S_c|\). The dense oracle and current
+small-array API specialize to
+\(S_c=T_c=R_c\); that is an implementation choice, not a theorem. Regression
+QC may filter \(R_c\), but it does not silently remove the corresponding terms
+from \(S_c\). Let \(C\in\mathbb R^{N\times K}\) be the complete GWAS
+fixed-effect design, with rank \(K'\leq K\). The oracle null covariance and
+data-generating model are
 
 \[
-E[\beta_k]=0,\quad E[\beta_k\beta_l]=\tau_k^2\,\delta_{kl},\quad
-\beta_c\perp\varepsilon. \tag{M3}
+V_c=\sigma_g^2K_{-c}+\sigma_e^2I,\qquad \sigma_e^2>0. \tag{M1}
 \]
 
-Only the first two moments in (M3) are used; **no Gaussianity of \(\beta_c\) or
-\(\varepsilon\) is required** for the moment identity (it is required only if one
-later wants exact sampling distributions rather than the mean of \(z^2\)).
+\[
+y=C\alpha+X_{S_c}\beta_{S_c}+\varepsilon. \tag{M2}
+\]
+
+Conditional on the fixed genotype/design data and the declared \(V_c\), assume
+
+\[
+\begin{aligned}
+E[\beta_{S_c}\mid X,V_c]&=0,&
+\operatorname{Cov}(\beta_{S_c}\mid X,V_c)&=
+   \operatorname{diag}(\tau_k^2:k\in S_c),\\
+E[\varepsilon\mid X,V_c]&=0,&
+\operatorname{Cov}(\varepsilon\mid X,V_c)&=V_c,\\
+\operatorname{Cov}(\beta_{S_c},\varepsilon\mid X,V_c)&=0.
+\end{aligned} \tag{M3}
+\]
+
+Only these conditional first and second moments are needed for the mean
+identity. Gaussianity is needed later for the exact covariance of squared
+scores, not for Equation (M6). Genotype-derived covariates, PCs, and GRMs are
+compatible with this conditioning; a phenotype-derived \(C\) or
+\(\widehat V_c(y)\) is not fixed conditional on \(X\).
 
 ## 2. The generalized residual precision \(P_c\)
 
@@ -65,27 +115,20 @@ where \((\cdot)^{+}\) is the Moore–Penrose pseudoinverse (so a rank-deficient
 \(C\) is handled). Equivalently \(P_c=W Q\) with the oblique projector
 \(Q=I-C(C^{\top}WC)^{+}C^{\top}W\).
 
-**Property P1 (annihilates the fixed design): \(P_cC=0\).**
-For full-rank \(C\), \((C^{\top}WC)^{+}=(C^{\top}WC)^{-1}\) and
-\(P_cC=WC-WC(C^{\top}WC)^{-1}(C^{\top}WC)=0\). For rank-deficient \(C\), put
-\(B=W^{1/2}C\); then \(C^{\top}WC=B^{\top}B\) and
-\(B(B^{\top}B)^{+}B^{\top}B=B\) (a standard pseudoinverse identity), so
-\(WC(C^{\top}WC)^{+}(C^{\top}WC)=WC\) and again \(P_cC=0\). By symmetry (P3),
-\(C^{\top}P_c=0\) as well.
+The four identities used below are
 
-**Property P2 (\(V_c\)-idempotence): \(P_cV_cP_c=P_c\).**
-\(Q\) is idempotent: with \(M=(C^{\top}WC)^{+}\),
-\(Q^2=I-2CMC^{\top}W+CM(C^{\top}WC)MC^{\top}W=I-CMC^{\top}W=Q\), using
-\(M(C^{\top}WC)M=M\). Then
-\(P_cV_cP_c=(WQ)V_c(WQ)=WQ(V_cW)Q=WQ\,Q=WQ^2=WQ=P_c\).
+\[
+P_cC=0,\qquad P_cV_cP_c=P_c,\qquad P_c^T=P_c,\qquad
+P_c\succeq0,\quad
+x^TP_cx=0\Longleftrightarrow x\in\operatorname{span}(C). \tag{P1--P4}
+\]
 
-**Property P3 (symmetry): \(P_c^{\top}=P_c\).**
-\(P_c^{\top}=W-WC(C^{\top}WC)^{+}C^{\top}W=P_c\) since \(W\) and \(M\) are
-symmetric.
-
-**Property P4 (positive semidefinite):** \(P_c\succeq0\), with
-\(x^{\top}P_cx=0\iff x\in\operatorname{span}(C)\). Hence the self-weight
-\(q_j\) below is nonnegative and vanishes only for variants explained by \(C\).
+For completeness, put \(B=V_c^{-1/2}C\). The middle term in (M4) is the
+orthogonal projector onto \(\operatorname{col}(B)\), conjugated by
+\(V_c^{-1/2}\). This proves symmetry, positive semidefiniteness, and P1 even
+when \(C\) is rank-deficient. The projector is idempotent, and conjugating that
+identity back gives P2. Hence the self-weight below is nonnegative and vanishes
+only for a tested genotype already spanned by \(C\).
 
 ## 3. The matched score statistic
 
@@ -108,13 +151,14 @@ threshold.
 Define the \(P_c\)-metric correlation
 \(r_{jk}^{(P_c)}=\dfrac{x_j^{\top}P_cx_k}{\sqrt{q_jq_k}}\).
 
-**Theorem.** Under (M1)–(M3), conditional on \(X\) and \(V_c\),
+**Theorem.** Under (M1)–(M3), for every \(j\in T_c\), conditional on \(X\) and
+the fixed oracle \(V_c\),
 
 \[
 \boxed{\;
 E\!\left[z_j^2\mid X,V_c\right]
-=1+\sum_{k}\tau_k^2\,\frac{(x_j^{\top}P_cx_k)^2}{q_j}
-=1+\sum_{k}\tau_k^2\,q_k\,\bigl\{r_{jk}^{(P_c)}\bigr\}^2 .
+=1+\sum_{k\in S_c}\tau_k^2\,\frac{(x_j^{\top}P_cx_k)^2}{q_j}
+=1+\sum_{k\in S_c}\tau_k^2\,q_k\,\bigl\{r_{jk}^{(P_c)}\bigr\}^2 .
 \;} \tag{M6}
 \]
 
@@ -123,13 +167,13 @@ E\!\left[z_j^2\mid X,V_c\right]
 
 \[
 x_j^{\top}P_cy=\underbrace{x_j^{\top}P_cC\alpha}_{0}
-+\sum_k\beta_k\,(x_j^{\top}P_cx_k)+x_j^{\top}P_c\varepsilon
-=\sum_k a_{jk}\beta_k+u_j,
++\sum_{k\in S_c}\beta_k\,(x_j^{\top}P_cx_k)+x_j^{\top}P_c\varepsilon
+=\sum_{k\in S_c} a_{jk}\beta_k+u_j. \tag{M6a}
 \]
 
 with \(a_{jk}=x_j^{\top}P_cx_k\) and \(u_j=x_j^{\top}P_c\varepsilon\). Taking the
-conditional second moment and using \(\beta\perp\varepsilon\),
-\(E[\beta]=0\), \(E[u_j]=0\):
+conditional second moment and using the conditional zero means and zero
+effect-noise covariance in (M3):
 
 - signal term \(E\bigl[(\sum_k a_{jk}\beta_k)^2\bigr]
   =\sum_{k,l}a_{jk}a_{jl}E[\beta_k\beta_l]=\sum_k a_{jk}^2\tau_k^2\)
@@ -138,51 +182,68 @@ conditional second moment and using \(\beta\perp\varepsilon\),
 - noise term \(E[u_j^2]=x_j^{\top}P_c\,E[\varepsilon\varepsilon^{\top}]\,P_cx_j
   =x_j^{\top}P_cV_cP_cx_j=x_j^{\top}P_cx_j=q_j\) by P2.
 
-Hence \(E[(x_j^{\top}P_cy)^2\mid X,V_c]=q_j+\sum_k a_{jk}^2\tau_k^2\). Dividing
+Hence \(E[(x_j^{\top}P_cy)^2\mid X,V_c]=q_j+\sum_{k\in S_c} a_{jk}^2\tau_k^2\). Dividing
 by \(q_j\) and substituting \(a_{jk}^2=q_jq_k\{r_{jk}^{(P_c)}\}^2\) gives (M6).
 \(\square\)
 
 Two structural facts follow immediately: the intercept is **exactly 1** (from
-P2, i.e. the noise contributes exactly its null variance), and the \(j=k\) term
-is present and contributes \(\tau_j^2q_j\) (since \(r_{jj}^{(P_c)}=1\)).
+P2, i.e. the noise contributes exactly its null variance), and, when
+\(j\in S_c\), the \(j=k\) term is present and contributes \(\tau_j^2q_j\)
+(since \(r_{jj}^{(P_c)}=1\)).
 
 ## 5. The candidate LD score and the role of \(q_k\)
 
-Under a homoscedastic effect model \(\tau_k^2\equiv\tau^2\), (M6) becomes a
-simple line in a single regressor,
+Under a homoscedastic effect model \(\tau_k^2\equiv\tau^2\), the complete
+effect-set score gives the exact single-regressor line
 
 \[
 E[z_j^2\mid X,V_c]=1+\tau^2\,L_j^{(P_c)},\qquad
-L_j^{(P_c)}=\sum_{k\in W_j}q_k\bigl\{r_{jk}^{(P_c)}\bigr\}^2, \tag{M7}
+L_j^{(P_c)}=\sum_{k\in S_c}q_k\bigl\{r_{jk}^{(P_c)}\bigr\}^2. \tag{M7}
 \]
 
-where \(W_j\) is a locality window (Section 10); \(W_j=\){all target-chromosome
-\(k\)} recovers the exact moment. **The \(q_k\) weights do not cancel in
-general.** They cancel iff \(q_k\) is constant in \(k\), which happens under a
-per-\(P_c\)-metric standardization \(x_k\mapsto x_k/\sqrt{q_k}\); but that same
-rescaling turns homoscedastic \(\tau_k^2\) into heteroscedastic \(q_k\tau^2\),
-so one cannot simultaneously have homoscedastic effects and constant \(q_k\)
-unless \(q_k\) is already constant (e.g. ordinary LDSC, Section 7). The weights
-therefore carry genuine information about the effect-size scale in the \(P_c\)
-metric, and are the primary point of departure from covariate-adjusted LDSC.
+A windowed version replaces \(S_c\) by \(W_j\) and is an approximation
+(Section 10). The \(q_k\) terms do not cancel. If \(q_k=q_0\) for all \(k\), the
+common factor is absorbed into the slope. Variantwise normalization
+\(x_k^*=x_k/\sqrt{q_k}\) instead transforms the coefficient to
+\(\beta_k^*=\sqrt{q_k}\beta_k\), so
+\(\operatorname{Var}(\beta_k^*)=q_k\tau^2\). An unweighted row sum therefore
+represents the same homoscedastic architecture only when the original \(q_k\)'s
+are constant; otherwise it silently changes the prior.
+
+The theorem also supplies the annotation extension. If
+\(\tau_k^2=\sum_{a=1}^A\theta_a a_{ka}\), with the resulting variance
+nonnegative for every \(k\), then
+
+\[
+E[z_j^2\mid X,V_c]=1+\sum_{a=1}^A\theta_aL_{ja}^{(P_c)},\qquad
+L_{ja}^{(P_c)}=\sum_{k\in S_c}a_{ka}q_k
+  \{r_{jk}^{(P_c)}\}^2. \tag{M7a}
+\]
 
 ## 6. Exactness assumptions
 
 (M6) is exact only if all of the following hold; each is a precondition, not
 bookkeeping:
 
-1. **Oracle \(V_c\).** The covariance generating \(\varepsilon\) equals the
-   \(V_c\) inside \(P_c\). This is what forces the intercept to 1 (P2). A fitted
-   or misspecified \(V_c\) moves the intercept; that displacement is the
-   diagnostic signal (Section 9).
-2. **Second-moment effect model.** Only \(E[\beta_k]=0\) and
-   \(E[\beta_k\beta_l]=\tau_k^2\delta_{kl}\) are used. Full independence and
-   Gaussianity are not needed for (M6).
-3. \(\beta_c\perp\varepsilon\).
-4. **Same \(C\)** in the GWAS and in \(P_c\).
-5. The sum in (M6) ranges over the **causal** target-chromosome set; an omitted
-   causal target SNP biases the moment.
-6. \(q_j>0\) (P4).
+1. **Fixed oracle \(V_c\).** The covariance generating \(\varepsilon\) equals
+   the \(V_c\) inside \(P_c\). An independent plug-in \(\widehat V_c\) may be
+   conditioned on as fixed, but oracle exactness still requires it to equal the
+   true residual covariance; otherwise the baseline is (M15).
+2. **Conditional effect moments.** Equation (M3), including zero conditional
+   means, diagonal conditional covariance, and zero effect-noise covariance,
+   holds given \(X,V_c\). Independence and Gaussianity are not needed for the
+   mean in (M6).
+3. **Same \(C\).** The complete fixed-effect design used by the GWAS appears in
+   (M4); phenotype-selected covariates require separate selection inference.
+4. **Complete modeled-effect set.** The sum is over \(S_c\), whether or not its
+   variants are tested. Omitted target signal leaves an omitted nonnegative
+   term under the diagonal architecture. Filtering \(R_c\) does not alter that
+   sum.
+5. **Defined matched score.** \(j\in T_c\) and \(q_j>0\). A scale-aware
+   threshold may filter \(T_c\) or \(R_c\), but not silently redefine \(S_c\).
+6. **Matched statistic.** Equation (M5) is a score statistic. Wald,
+   likelihood-ratio, or engine-calibrated statistics need their own moment or a
+   demonstrated equivalence.
 
 A violation of (1) or the infinitesimal-\(V_c\) structure by large,
 sparse, or directional effects on the **other** chromosomes (which enter
@@ -204,81 +265,250 @@ fitted-\(V_c\) sensitivity (M4a) with GRM density as a first-order requirement.
 
 ## 7. Reductions
 
-**Covariate-adjusted LDSC (cov-LDSC).** If \(V_c=\sigma^2I\) then
-\(P_c=\sigma^{-2}\bigl(I-C(C^{\top}C)^{+}C^{\top}\bigr)=\sigma^{-2}P_C\), so
-\(r_{jk}^{(P_c)}=\operatorname{Cor}(\widetilde x_j,\widetilde x_k)\) with
-\(\widetilde X=P_CX\) — exactly the covariate-adjusted LD score of Luo et al.
-(2021).
+Let \(M_C=I-C(C^TC)^+C^T\) and
+\(s_{C,k}^2=N^{-1}x_k^TM_Cx_k\).
 
-**Ordinary LDSC.** With only an intercept and column-standardized genotypes,
-\(P_c\propto I-\tfrac1N\mathbf{1}\mathbf{1}^{\top}\) and
-\(q_k=\sigma^{-2}(N-1)\) is constant, so it cancels into the slope and
-\(L_j^{(P_c)}\to\sum_k r_{jk}^2\), the Bulik-Sullivan et al. (2015) LD score, up
-to a known scale.
-
-Both reductions are the M0 acceptance checks and both hold.
-
-## 8. The legacy WhiLD score as a special case
-
-The 2017 WhiLD score computed ordinary LDSC on genotypes whitened by the
-Cholesky factor of the inverse of a \(w\)-weighted hybrid GRM/covariance matrix
-\(M\). On paper this is (M7) with metric \(M^{-1}\) in place of \(V_c^{-1}\),
-weights \(q_k\equiv1\), and no covariate projection. So \(P_c\) supplies the
-derivation WhiLD lacked, and the two constructions sit on one ladder:
+**Covariate-adjusted geometry.** If \(V_c=\sigma^2I\), then
+\(P_c=\sigma^{-2}M_C\), \(q_k=Ns_{C,k}^2/\sigma^2\), and
+\(r_{jk}^{(P_c)}\) is the correlation of the residual genotypes. Hence
 
 \[
-\text{ordinary}\ \to\ \text{correct metric }V_c^{-1}\ \to\
-\text{add projection }C\ \to\ \text{add }q_k\ =\ \text{PLDSC}.
+E[z_j^2\mid X,V_c]
+=1+\frac{N}{\sigma^2}\sum_{k\in S_c}
+  \tau_k^2s_{C,k}^2\{r_{jk}^{(C)}\}^2. \tag{M8}
 \]
 
-The ablation isolates which correction buys calibration. The unstable
-pseudoinverse-plus-Cholesky **estimator** is not implemented; WhiLD is a
-paper-only comparator.
+Thus the **correlation geometry** is exactly cov-LDSC's fixed-covariate
+geometry. The full one-slope row-sum moment is conventional cov-LDSC only if
+\(\tau_k^2s_{C,k}^2\) is constant: for example, residual norms are common and
+effects are homoscedastic, or an inverse-information effect prior is declared.
+Arbitrary covariates generally make the residual norms differ. Luo et al.
+(2021) motivate the residual-genotype geometry; Equation (M8) records the
+additional scale condition needed for equality of regression moments.
+Literal equivalence to a conventional cov-LDSC slope also requires the same
+phenotype/null-variance normalization for the association statistic.
 
-## 9. Estimand and the calibration diagnostic
+**Ordinary LDSC.** With only an intercept, (S1) gives
+\(M_Cx_k=x_k\), \(s_{C,k}^2=d_k\), and
 
-Under the homoscedastic model, the regression slope of \(z_j^2\) on
-\(L_j^{(P_c)}\) estimates \(\tau^2\): the per-\(P_c\)-metric effect-size variance,
-an \(h_g^2/M\)-type quantity on the declared genotype scale. It is **not** total
-realized heritability, and PLDSC labels it as \(\tau^2\), not \(h^2\)
-(directional-LD covariance can separate the two in admixed samples; Huang et
-al. 2025).
+\[
+E[z_j^2\mid X,V_c]
+=1+\frac{N\tau^2}{\sigma^2}
+  \sum_{k\in S_c}d_k r_{jk}^2
+\longrightarrow 1+\frac{N\rho_c}{M_c}\ell_j,\qquad
+\ell_j=\sum_{k\in S_c}r_{jk}^2,\quad
+\rho_c=\frac{M_cd_0\tau^2}{\sigma^2}. \tag{M9}
+\]
 
-The intercept is the deliverable. Under an oracle \(V_c\) it is exactly 1
-(Section 4). Under a fitted or deliberately misspecified \(V_c\), the noise term
-becomes \(x_j^{\top}P_c\Sigma_{\text{true}}P_cx_j/q_j\neq1\), and its
-displacement from 1 is the residual confounding that survives the modeled
-mixed-model geometry — a mixed-model analog of the LDSC intercept that a REML
-variance-component fit does not provide. This was the *intended* primary
-use-case; Section 13 records the empirical verdict that, in the
-summary-statistics LDSC-application setting, it reduces to cov-LDSC and gives
-PLDSC no differentiated edge.
+The arrow is exact under sample-RMS scaling \(d_k=1\), or under any common
+\(d_k=d_0\). Under sample-RMS scaling \(d_0=1\). Under the frozen HWE scale
+it is a population/asymptotic limit when \(d_k\to1\), not a finite-sample
+identity. Equation (M9) is the ordinary-LDSC-shaped moment of Bulik-Sullivan et
+al. (2015) when \(\sigma^2\) has the conventional association-statistic
+normalization. Otherwise \(\rho_c\) is a signal-to-residual-variance ratio, not
+automatically conventional SNP heritability.
+The earlier \(N-1\) claim mixed a different standardization into (S1) and is
+withdrawn. In short: both limiting geometries hold; the conventional regression
+moments require the stated scale/prior conditions.
 
-## 10. Window locality
+## 8. Relation to the legacy WhiLD score
 
-Locality lives in the \(P_c\) metric, not in centimorgans: \(W_j\) should be a
-threshold on \(|r_{jk}^{(P_c)}|\), and the omitted-window remainder relative to
-the whole-chromosome sum is itself a diagnostic of \(V_c\) misspecification. In
-a structured sample the \(P_c\)-metric neighborhood need not coincide with the
-physical-map neighborhood.
+The 2017 WhiLD construction computed ordinary LDSC after whitening genotypes by
+a covariance-derived metric. This is a useful **metric analogue** of (M7), but
+not literally the same homoscedastic-effect model with \(q_k\equiv1\). Choose a
+square-root factor \(A_c\) with \(A_c^TA_c=P_c\), and let
+\(\widetilde x_k=A_cx_k\). Re-standardizing that whitened column changes its
+coefficient scale:
 
-**Empirical locality finding.** Within a physical (cM) window, however,
-\(r_{jk}^{(P_c)}\approx\) the raw local correlation: tight recombination-driven
-LD is nearly orthogonal to the few genome-wide structure axes that \(V_c^{-1}\)
-down-weights, so \(P_c\)'s action is concentrated in the *long-range /
-between-locus* block — exactly the block a local LD-score window discards. This
-is a simulation finding; on real multi-ancestry data structure is *not* confined
-to the long-range block — the LOCO-clean structure share of a ±250 kb windowed
-score is \(\approx17\%\) (FULL panel; \(\approx0\%\) in EUR,
-`experiments/realdata_1000g_benchmarks.py` B2) — but that in-window structure is
-what a few fixed PCs absorb (B3: top-2 PCs leave 8% of what \(P_c\) removes), so
-the consequence below stands. The
-map experiment (Section 11) confirms the consequence: cryptic relatedness, even
-with 90% of the sample in sib-pairs, does **not** measurably change the windowed
-LD-score regression on mixed-model summary statistics, because the LMM already
-absorbs relatedness in the association step. The one regime that does bias the
-windowed regression is population structure — which cov-LDSC (Section 7) already
-corrects.
+\[
+x_k^*=\widetilde x_k/\sqrt{q_k}
+     =A_cx_k/\sqrt{x_k^TP_cx_k},\qquad
+\beta_k^*=\sqrt{q_k}\beta_k,\qquad
+\operatorname{Var}(\beta_k^*\mid X,V_c)=q_k\tau^2. \tag{M10}
+\]
+
+A q-free WhiLD row sum therefore corresponds to the same prior only when the
+original \(q_k\)'s are common; otherwise it corresponds approximately to an
+inverse-information prior on the original scale. The qualitative ablation
+ladder—identity metric, covariance metric, fixed-effect projection, and explicit
+\(q_k\)—remains useful. The unstable pseudoinverse-plus-Cholesky estimator is
+not implemented; WhiLD remains a paper-only comparator.
+
+## 9. Estimand, calibration, and inference
+
+Under the complete homoscedastic model, a correctly specified regression of
+\(z_j^2\) on (M7) has slope \(\tau^2\): coefficient variance per
+HWE-standardized genotype, in squared phenotype units. It is not a
+"per-\(P_c\)-metric" variance; \(P_c\) controls association geometry, not the
+input effect scale. The corresponding model-based target-chromosome genic
+variance on the (S2) phenotype scale is
+
+\[
+v_{\mathrm{genic},c}
+=E[\beta_{S_c}^T(X_{S_c}^TX_{S_c}/N)\beta_{S_c}\mid X,V_c]
+=\sum_{k\in S_c}\tau_k^2d_k, \tag{M11}
+\]
+
+which becomes \(M_c\tau^2\) only when \(d_k=1\). A realized effect vector also
+contains directional-LD covariance,
+
+\[
+\frac{\|X_{S_c}\beta_{S_c}\|^2}{N}
+=\sum_k d_k\beta_k^2
++2\sum_{k<l}\frac{x_k^Tx_l}{N}\beta_k\beta_l. \tag{M12}
+\]
+
+Consequently neither \(\tau^2\) nor (M11) is automatically total realized
+heritability in an admixed population (Huang et al. 2025). For a general
+correlated-effect covariance \(\Omega_\beta\), with
+\(a_j=X_{S_c}^TP_cx_j\), the exact signal is
+
+\[
+E[z_j^2\mid X,V_c]
+=1+q_j^{-1}a_j^T\Omega_\beta a_j, \tag{M13}
+\]
+
+which contains cross-effect terms and generally has no scalar LD-score slope.
+
+If the working score, effect architecture, or window is misspecified, a
+free-intercept WLS fit over \(R_c\) targets the design-dependent projection
+
+\[
+b_{R,w}^*
+=\frac{\sum_{j\in R_c}w_j(L_j-\bar L_w)(\mu_j-\bar\mu_w)}
+       {\sum_{j\in R_c}w_j(L_j-\bar L_w)^2},\qquad
+\mu_j=E[z_j^2\mid X,V_c]. \tag{M14}
+\]
+
+It depends on the regression set and weights; it is \(\tau^2\) only when the
+mean model is correct. Fixing the intercept at one changes this pseudo-target.
+
+Under the oracle, the intercept is exactly one. For a fixed misspecified
+operator \(P_*\), however, the noise baseline is variant-specific:
+
+\[
+b_j(P_*)=
+\frac{x_j^TP_*V_{\mathrm{true}}P_*x_j}{x_j^TP_*x_j}. \tag{M15}
+\]
+
+It can correlate with \(L_j\), so a single fitted intercept is not uniquely
+"residual environmental confounding"; it can also reflect covariance or scale
+misspecification. If \(\widehat P_c\) is fitted from the same phenotype, even
+(M15) is not a fixed-operator conditional identity. The fit must be handled
+jointly or repeated inside an outer resampling scheme. Section 13 retains the
+empirical verdict for the intended application, but the algebra does not grant
+the intercept a stronger interpretation.
+
+### 9.1 Regression variance, weights, and uncertainty
+
+Let \(Q_T=\operatorname{diag}(q_j:j\in T_c)\),
+\(A=X_{T_c}^TP_cX_{S_c}\), \(B=Q_T^{-1/2}A\), and define
+
+\[
+R_T=Q_T^{-1/2}X_{T_c}^TP_cX_{T_c}Q_T^{-1/2},\qquad
+\Gamma=\operatorname{Cov}(z_{T_c}\mid X,V_c)
+=R_T+B\Omega_\beta B^T. \tag{M16}
+\]
+
+For the diagonal architecture, its off-diagonal entries are
+
+\[
+\Gamma_{jl}=r_{jl}^{(P_c)}+
+\sum_{k\in S_c}\tau_k^2q_k
+r_{jk}^{(P_c)}r_{lk}^{(P_c)},\qquad
+\Gamma_{jj}=1+\sum_{k\in S_c}\tau_k^2q_k
+\{r_{jk}^{(P_c)}\}^2. \tag{M17}
+\]
+
+Under jointly Gaussian effects and residual noise, Isserlis' identity gives
+
+\[
+\operatorname{Cov}(z_j^2,z_l^2\mid X,V_c)=2\Gamma_{jl}^2,\qquad
+\operatorname{Var}(z_j^2\mid X,V_c)=2\Gamma_{jj}^2. \tag{M18}
+\]
+
+Non-Gaussian fourth cumulants add to (M18); they do not alter (M6). With
+\(s_R=(z_j^2:j\in R_c)\), design \(D_R=(\mathbf1,L_R)\), and
+\(H_R=2\Gamma_R\circ\Gamma_R\), oracle optimal linear weighting on the
+estimable subspace is
+
+\[
+\widehat\theta_{\mathrm{GLS}}
+=(D_R^TH_R^{+}D_R)^{-1}D_R^TH_R^{+}s_R. \tag{M19}
+\]
+
+For singular \(H_R\), (M19) additionally requires
+\(\operatorname{col}(D_R)\subseteq\operatorname{col}(H_R)\) and
+\(D_R^TH_R^+D_R\) nonsingular. Otherwise the zero-variance directions impose
+exact constraints that must be included explicitly (or redundant outcomes must
+be removed). When \(H_R\) is positive definite, \(H_R^+\) is the ordinary
+inverse. Because \(H_R\) depends on unknown parameters and \(z^2\) is not
+Gaussian, (M19) is an oracle linear-weighting result, not a claim of globally
+efficient likelihood inference.
+
+There is no extra standalone \(q_j^{-1}\) regression weight: standardizing the
+score in (M5) already makes its null variance one. The \(q_k\)'s enter the mean
+and \(\Gamma\). A feasible diagonal Gaussian working weight is
+
+\[
+w_j^{\mathrm{diag}}=\{2\widehat\mu_j^2\}^{-1},\qquad
+\widehat\mu_j=\widehat\alpha+\widehat\tau^2L_j. \tag{M20}
+\]
+
+This is what `two_step=True` in `pldsc/regression.py` approximates. It ignores
+the off-diagonal overlap in (M18). Conventional LDSC's additional LD-overlap
+weight is not automatically valid after changing both the score and the
+metric; exact GLS needs the full \(\Gamma\), and any cheaper overlap
+approximation needs separate validation. This follows the distinction between
+heteroskedastic and LD-dependent weighting in Bulik-Sullivan et al. (2015); a
+full squared-score covariance is also used by g-LDSC (Xiong et al. 2024).
+
+**Table 2. M0 decision on regression and inference**
+
+| Item | M0 conclusion |
+|---|---|
+| Mean model | Equation (M6) is exact for fixed oracle \(P_c\) and complete \(S_c\) |
+| Exact Gaussian weights | Use (M18)–(M19); they require the full score covariance, not only \(L_j\) |
+| Cheap working weights | Equation (M20) is permissible for point fitting, but is not efficient GLS |
+| Genomic uncertainty | Use chromosome/position-sorted, LD-aware delete blocks and recompute every preliminary fit and data-dependent weight within each replicate |
+| Fitted \(V_c\) | An ordinary variant-block jackknife conditions on \(\widehat P_c\); use an outer refit/bootstrap or a joint sandwich to propagate operator uncertainty |
+| Reference LD | Raw in-sample products define the theorem; finite-reference corrections and errors-in-variables remain deployment research |
+
+The existing regression helper is therefore a fixed-operator prototype, not a
+validated genomic inference engine. A block method needs blocks spanning the
+dependence range, ordered genomic input, and a block-size sensitivity analysis;
+"200 blocks" is a convention, not a theorem (Künsch 1989). Cross-chromosome
+scores can remain dependent because they share a phenotype and use different
+LOCO operators, so pooling chromosomes also needs modeling or validation.
+
+## 10. Window approximation
+
+The theorem itself has no locality assumption: the exact score sums over all
+of \(S_c\). For a predeclared physical/genetic window \(W_j\), the omitted
+signal is
+
+\[
+\Delta_j(W_j)=\sum_{k\in S_c\setminus W_j}
+\tau_k^2q_k\{r_{jk}^{(P_c)}\}^2\geq0. \tag{M21}
+\]
+
+A threshold on each \(|r_{jk}^{(P_c)}|\) does not control the cumulative tail
+in (M21), and because it is data-dependent it also changes the estimand.
+Window convergence must therefore be checked against the full dense oracle or
+a valid bound. A large omitted remainder shows truncation error; by itself it
+does not diagnose misspecification of \(V_c\).
+
+**Empirical locality finding.** Within a physical window,
+\(r_{jk}^{(P_c)}\) was close to raw local correlation in the simulations:
+tight recombination-driven LD was nearly orthogonal to the few genome-wide
+axes down-weighted by \(V_c^{-1}\). This is an empirical result, not a
+consequence of (M6). In real multi-ancestry 1000 Genomes data, the LOCO-clean
+structure share of a ±250 kb windowed score was about 17% in the full panel and
+about 0% in EUR (`experiments/realdata_1000g_benchmarks.py`, B2); a few fixed
+PCs absorbed most of that difference (B3). The map experiment (Section 11)
+found no measurable relatedness effect on windowed regression after LMM
+association, while population structure remained the regime cov-LDSC already
+corrected.
 
 ## 11. Numerical confirmation
 
@@ -342,37 +572,50 @@ only reproduces it. This section records the honest scope so the theory
 
 ## 14. The local/non-local decomposition (organizing framework)
 
-Reframed 2026-07-18. The results above are organized by a single decomposition of
-the LD score into a linkage (local) and a structure (non-local) component:
+Reframed 2026-07-18 and qualified 2026-07-22. The results above use a declared,
+operator-dependent bookkeeping split:
 
 \[
-\ell_j=\sum_k r_{jk}^2\;\approx\;
-\underbrace{\ell_j^{\text{local}}}_{\sum_k (r_{jk}^{(P_c)})^2}
-+\underbrace{\ell_j^{\text{struct}}}_{\text{structure}},
+\ell_j=\ell_j^{(P_c)}+\Delta_j^{(P_c)},\qquad
+\ell_j^{(P_c)}=\sum_k\{r_{jk}^{(P_c)}\}^2,\quad
+\Delta_j^{(P_c)}=\ell_j-\ell_j^{(P_c)}.
+\tag{D1}
 \]
 
-where \(r_{jk}^{(P_c)}\) is the structure-whitened correlation (Sections 2, 7).
+Here \(r_{jk}^{(P_c)}\) is the operator-adjusted correlation (Sections 2, 7).
+Equation (D1) is exact only because the remainder is defined as the difference;
+the two squared row sums do not in general form an orthogonal projection
+decomposition, and \(\Delta_j^{(P_c)}\) need not be nonnegative.
+Calling that remainder "structure" requires an externally justified structure
+subspace or an empirical validation; it does not follow from linear algebra.
+
 **The split is operator-dependent** (real-data finding,
 `experiments/realdata_1000g_benchmarks.py` B2): an in-chromosome GRM whitens
 local LD along with structure (for EUR it whitens the genome-wide score down to
-the \(M/N\) noise floor), overstating \(\ell^{\text{struct}}\); a LOCO GRM cannot
-touch local LD and isolates the structure component, slightly *under*stating it
-(up-weighting of sub-1 eigenvalues plus the \(q_k\) renormalization, Section 5).
-The two operators bracket the truth; \(\ell^{\text{local}}\) here means the LOCO
-operator. The non-local component has an **exact** form, not an approximation. With
-column-standardized genotypes \(X\) (\(N\times M\)), \(r_{jk}=x_j^\top x_k/N\) and
-GRM \(K=XX^\top/M\) with eigenpairs \((\lambda_p,u_p)\); then the genome-wide LD
-score is exactly the **spectral decomposition of the GRM**:
+the \(M/N\) noise floor), while a LOCO GRM acts differently on local LD. These
+are two operational definitions, not proven upper and lower bounds on a unique
+truth.
+
+What *is* exact is a spectral identity for the **total** genome-wide correlation
+score. Let \(\widetilde x_k=x_k/\sqrt{d_k}\), so
+\(\widetilde x_k^T\widetilde x_k=N\), let
+\(\widetilde X=[\widetilde x_1,\ldots,\widetilde x_M]\), and define
+\(K_{\mathrm{corr}}=\widetilde X\widetilde X^T/M\) with eigenpairs
+\((\lambda_p,u_p)\). Then
 
 \[
-\sum_k r_{jk}^2=\frac{M}{N^2}\,x_j^\top K x_j
-=\frac{M}{N}\sum_p \lambda_p\,\operatorname{corr}(x_j,u_p)^2 .
+\sum_k r_{jk}^2
+=\frac{M}{N^2}\,\widetilde x_j^T K_{\mathrm{corr}}\widetilde x_j
+=\frac{M}{N}\sum_p \lambda_p\,
+  \operatorname{corr}(\widetilde x_j,u_p)^2. \tag{D2}
 \]
 
-This is textbook linear algebra, not an empirical discovery. The 2017 **"PC
-score"** \(s_j=\sum_{p\le k}(\lambda_p/\lambda_t)\operatorname{corr}(g_j,u_p)^2\)
-is precisely the **leading-\(k\)-eigenvector (renormalized) truncation** of this
-identity — an estimate of \(\ell^{\text{struct}}\) from the top structure axes.
+This is textbook linear algebra, not an empirical discovery, and
+\(K_{\mathrm{corr}}\) need not equal the HWE-scaled LOCO GRM in (S2). The 2017
+**"PC score"** is a renormalized leading-eigenvector truncation of (D2). It is
+an estimate of a structure component only when those selected eigenvectors are
+independently justified as structure axes; eigenvalue rank alone does not make
+that classification.
 
 **What the experiment actually shows** (`experiments/ld_decomposition.py`;
 re-derived and re-checked independently, EXTERNAL_REVIEW §3.3): the top-10-PC
@@ -392,24 +635,22 @@ the in-chromosome operator overstates both (B2), and the share rises with MAF
 (B5). The small single-ancestry windowed share
 is exactly *why* cov-LDSC suffices and why the estimator angle died (Section 13).
 
-**Unification.** Every structure-correction is an operation on this
-decomposition: cov-LDSC (\(V_c=\sigma^2 I\)) and \(P_c\) compute
-\(\ell^{\text{local}}\); the legacy WhiLD score is the special case of Section 8;
-the PC score is the leading-PC truncation of \(\ell^{\text{struct}}\). Standard
-LDSC's structure bias is
-the conflation of \(\ell^{\text{local}}\) (heritability) with
-\(\ell^{\text{struct}}\) (confounding); because \(\ell^{\text{struct}}\) is a small
-fraction of a *local* window it surfaces mainly in the intercept and long-range
-LD, not the windowed slope (consistent with Sections 10-11 and
-`map_ldsc_miscalibration.py`).
+**Unification.** Cov-LDSC, \(P_c\), WhiLD, and the PC score can all be placed on
+the same metric/eigenspace map, but they do not all compute the same uniquely
+defined \(\ell^{\text{local}}\) or \(\ell^{\text{struct}}\). The experiments show
+that the declared remainder is small in the local windows studied, which is
+consistent with Sections 10–11 and `map_ldsc_miscalibration.py`; the theorem in
+Section 4 does not supply that empirical conclusion.
 
 **Applications (diagnostics).** Decomposing \(\ell^{\text{struct}}=\sum_p(\cdot)\)
 gives a per-PC inflation spectrum (`detect_pc_inflation.py`); adding
 \(\ell^{\text{struct}}\)/squared PC loadings as an S-LDSC annotation gives a
 structure-robustness test for functional enrichment (`sldsc_pc_annotation.py`).
 
-**Remark (structure aliasing — the identifiability limit).** Take marginal,
-structure-*uncorrected* per-SNP statistics \(z_j=x_j^\top y/\sqrt N\) under
+**Remark (structure aliasing — the identifiability limit).** For this remark,
+sample-RMS standardize the columns in (D2) and write them as \(X\), with
+\(K=XX^T/M\). Take marginal, structure-*uncorrected* per-SNP statistics
+\(z_j=x_j^\top y/\sqrt N\) under
 \(y=Xb+\sum_{p\in S}u_p\gamma_p+e\): an isotropic polygenic background
 (\(E[bb^\top]=\tau^2 I\)); structure-aligned coefficients
 \(\gamma_p=\gamma_p^{\mathrm{gen}}+\gamma_p^{\mathrm{env}}\) — a genuine
@@ -421,7 +662,8 @@ standardized and \(\bar u_p=0\) — both guaranteed by column-centering, since t
 \(K\mathbf 1=0\)) and the spectral identity above,
 \[
 E[z_j^2]=1+\underbrace{\tau^2 N\,\ell_j}_{\text{ordinary-LDSC signal}}
-+\sum_{p\in S}\bigl(V_p^{\mathrm{gen}}+V_p^{\mathrm{env}}\bigr)\operatorname{corr}(x_j,u_p)^2,
++\sum_{p\in S}\bigl(V_p^{\mathrm{gen}}+V_p^{\mathrm{env}}\bigr)\operatorname{corr}(x_j,u_p)^2.
+\tag{D3}
 \]
 and the ordinary term *already* deposits genuine heritability on every structure
 axis: \(\tau^2 N\ell_j=\tau^2 M\sum_p\lambda_p\operatorname{corr}(x_j,u_p)^2\), so
@@ -531,3 +773,9 @@ clarifying/unifying exposition, not a set of novel contributions. See
    (RDR — an external anchor that breaks the aliasing).
 7. Kong et al. (2018), [The nature of nurture: effects of parental genotypes](https://doi.org/10.1126/science.aan6877)
    (transmitted/non-transmitted — the other external anchor).
+8. Isserlis (1918), [On a formula for the product-moment coefficient of any
+   order of a normal frequency distribution in any number of variables](https://doi.org/10.1093/biomet/12.1-2.134).
+9. Künsch (1989), [The jackknife and the bootstrap for general stationary
+   observations](https://doi.org/10.1214/aos/1176347265).
+10. Xiong et al. (2024), [Improved estimation of functional enrichment in SNP
+    heritability using feasible generalized least squares](https://doi.org/10.1016/j.xhgg.2024.100272).

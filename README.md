@@ -43,12 +43,13 @@ crediting Mangin 2012 / Huang 2025 / cov-LDSC / de Vlaming 2017 throughout.
 
 ## The science (record)
 
-**Central idea: the LD score decomposes into linkage + structure.** The LD score
-splits as `ℓ_j = ℓ_j^local + ℓ_j^struct` — recombination-driven linkage plus a
-population-structure component. The genome-wide LD score is *exactly* the spectral
-decomposition of the GRM, `Σ_k r_jk² = (M/N) Σ_p λ_p corr(x_j,u_p)²` (textbook
-algebra, not a new finding); the legacy "PC score" is its leading-eigenvector
-truncation — which correlates 0.99 with the non-local component but captures only
+**Central idea: compare operator-defined local/non-local LD-score components.**
+The total genome-wide correlation score has an exact spectral GRM identity,
+`Σ_k r_jk² = (M/N) Σ_p λ_p corr(x_j,u_p)²` (textbook algebra, not a new
+finding). Calling a component "structure" additionally requires a declared
+window, operator, or justified PC subspace; the split is not unique. The legacy
+"PC score" is a leading-eigenvector truncation — which correlates 0.99 with the
+declared non-local remainder but captures only
 ~37% of its magnitude ([experiments/ld_decomposition.py](experiments/ld_decomposition.py)).
 The honest headline (simulation): within the **windowed** LD score LDSC actually
 uses, structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses
@@ -57,9 +58,10 @@ died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~17%
 (multi-ancestry panel) and the genome-wide share ~90% in the panel
 ([realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
 legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
-residual-precision operator `P_c` are all ways of removing or measuring
-`ℓ^struct`, and standard LDSC's structure bias is the conflation of `ℓ^local`
-(heritability) with `ℓ^struct` (confounding). See [docs/METHOD.md](docs/METHOD.md).
+residual-precision operator `P_c` can be compared on one metric/eigenspace map.
+They do not all remove or measure one unique `ℓ^struct`, and ancestry-aligned
+genetic signal can be aliased with environmental confounding. See
+[docs/METHOD.md](docs/METHOD.md).
 
 **Applications — structure diagnostics** (all prototyped in `experiments/`):
 a per-PC inflation spectrum that maps a GWAS's confounding to specific axes
@@ -73,17 +75,21 @@ load on the same PCs, so no structure-only method can separate them.
 
 **Honest positioning.** Framework/synthesis, not a new estimator. The qualitative
 concept is established (cov-LDSC, Bhatia 2016, Price 2008, Bercovich 2025); the
-novel slices are the explicit decomposition identity, the unification, and the
-diagnostics + identifiability limit. See [docs/PRIOR_ART.md](docs/PRIOR_ART.md).
+surviving value is the explicit synthesis, diagnostics, and identifiability
+discussion—not novelty of the textbook spectral identity. See
+[docs/PRIOR_ART.md](docs/PRIOR_ART.md).
 
-**Validated machinery.** The `P_c` operator, the exact moment, the reductions to
-cov-LDSC/ordinary LDSC, and the diagnostics are derived in
+**Validated machinery.** The `P_c` operator and the fixed-operator conditional
+mean are exact. The cov-LDSC correlation geometry is an exact limit, while
+equality of full cov-LDSC/ordinary regression moments requires the scale/prior
+conditions now stated in
 [docs/METHOD.md](docs/METHOD.md), unit-tested (`pldsc/_lmm.py`), and confirmed
 across the `experiments/` arc. The earlier "LMM-matched LD score as a new
 *estimator*" angle was tested and reduces to cov-LDSC in LDSC application
 ([docs/METHOD.md](docs/METHOD.md) §13); the decomposition reframing is what
 survives and now organizes the project. The legacy WhiLD and PC-score methods are
-special cases of the decomposition, not standalone estimators; see
+related metric/eigenspace constructions, not literal special cases under the
+same effect prior and not standalone estimators; see
 [the scientific idea review](docs/IDEA_REVIEW.md).
 
 **Real data (1000 Genomes, post-archive).** The decomposition was tested on real

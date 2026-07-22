@@ -1,7 +1,6 @@
 # PLDSC development plan
 
-Date: 2026-07-17 (revised 2026-07-18 after multi-lens review and the
-application investigation)
+Date: 2026-07-17 (revised 2026-07-22 after completing and re-auditing M0)
 
 ## 1. Objective, use-case, and decision rule
 
@@ -10,47 +9,56 @@ PLDSC tests whether an LD score matched to a specified leave-one-chromosome-out
 Score regression for quantitative traits. It is not a general LDSC rewrite, and
 covariate-residualized LD is a baseline rather than the novelty claim. The
 central identity (Section 2) is already proved and independently checked, so the
-project's risk was always delivery and use-case, not the theorem. As of
-2026-07-18 both the theorem and the full MVP arc (M-spike–M5) are validated, and
-the use-case has been tested directly: the LDSC-application niche
+project's risk was always delivery and use-case, not the scalar mean identity.
+As of 2026-07-22 that identity and the dense fixed-operator oracle are
+validated; the M5 regression helper remains an inference prototype. The
+use-case has been tested directly: the LDSC-application niche
 **reduces to cov-LDSC** (Section 1.1), so PLDSC's differentiated value, if any,
 is upstream. Read Section 1.1 before the roadmap.
 
-**Reframing (2026-07-18): the central idea is the local/non-local LD-score
-decomposition.** \(\ell = \ell^{\text{local}} + \ell^{\text{struct}}\). The
-genome-wide LD score is *exactly* the GRM spectral decomposition
-\(\sum_k r_{jk}^2=(M/N)\sum_p\lambda_p\operatorname{corr}(x_j,u_p)^2\) (textbook
-algebra); the legacy PC score is its leading-eigenvector truncation (corr 0.99
-with the non-local part but only ~37% of its magnitude; see [METHOD.md](METHOD.md)
-§14). The honest number (simulation) is that structure is only ~5% of the
+**Reframing (2026-07-18; qualified 2026-07-22): the organizing idea is an
+operator-dependent local/non-local LD-score split.** The total genome-wide LD
+score has an exact GRM spectral identity (textbook algebra), but identifying a
+part of it as "structure" additionally requires a declared window, operator,
+or independently justified PC subspace. The legacy PC score is a
+leading-eigenvector truncation (corr 0.99 with the declared non-local remainder
+but only ~37% of its magnitude; see [METHOD.md](METHOD.md) §14). The honest
+number (simulation) is that this declared remainder is only ~5% of the
 *windowed* LD score LDSC uses (~50% genome-wide, which LDSC never regresses on);
 on real 1000G data the LOCO-clean windowed share is ~0% (EUR) to ~17%
 (multi-ancestry panel), the genome-wide share ~90% in the panel
 (`experiments/realdata_1000g_benchmarks.py`) — which is why
-cov-LDSC suffices. The identity's value is as an **organizing device** unifying
-cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\) operator as ways
-of removing or measuring \(\ell^{\text{struct}}\), pinning standard-LDSC structure
-bias to conflating \(\ell^{\text{local}}\) (\(h^2\)) with \(\ell^{\text{struct}}\)
-(confounding). The project is now organized as a
+cov-LDSC suffices. The identity's value is as an **organizing device** placing
+cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\) operator on one
+metric/eigenspace map. It does not uniquely separate heritability from
+confounding. The project is now organized as a
 **framework/synthesis + diagnostics** effort, not a new estimator: theory = the
 decomposition + unification + identifiability limit; applications = the structure
 diagnostics (per-PC inflation spectrum, structure-robust S-LDSC enrichment, the
 miscalibration map). Honest prior-art positioning is in [PRIOR_ART.md](PRIOR_ART.md)
 — the qualitative concept is established (cov-LDSC, Bhatia 2016, Price 2008,
-Bercovich 2025); the novel slices are the explicit identity, the unification, and
-the diagnostics.
+Bercovich 2025). The surviving value is the explicit synthesis, diagnostics,
+and unusually complete negative-results record; the spectral identity itself
+is textbook algebra, not a novel slice.
 
 ### 1.1 Use-case: the intended deliverable and its empirical verdict
 
 The intended deliverable was a calibration/confounding **diagnostic**. PLDSC's
-exact estimator consumes individual-level genotypes **and** a fitted null
-covariance \(V_c=\sigma_g^2K_{-c}+\sigma_e^2I\); a null REML fit already returns
-\(\sigma_g^2/(\sigma_g^2+\sigma_e^2)\) as SNP heritability, so **PLDSC does not
-claim a better \(h^2\) point estimate than REML on individual data** and the
-non-redundant object was to be the intercept — its displacement off 1 under a
-fitted/misspecified \(V_c\) as a mixed-model analog of the LDSC intercept. The
-slope is reported as \(\tau^2\) on the per-\(P_c\) metric (an \(h_g^2/M\)-type
-quantity), never as total heritability.
+exact conditional identity consumes individual-level genotypes and a
+**specified, fixed** null covariance
+\(V_c=\sigma_g^2K_{-c}+\sigma_e^2I\). A practical same-phenotype REML fit makes
+\(\widehat V_c\) random and requires joint or outer-resampling inference; it is
+not covered automatically by the oracle proof. A null REML fit already returns
+the variance components; their scale-aware GRM variance depends on
+\(\operatorname{tr}(K_{-c})/N\). **PLDSC does not claim a better \(h^2\) point
+estimate than REML on individual data**; the intended non-redundant object was
+the intercept. Under a fixed misspecified
+operator its baseline is generally variant-specific, so displacement off one
+can reflect covariance/scale mismatch as well as environmental confounding. The
+slope is reported as \(\tau^2\), the coefficient variance per declared
+input-standardized genotype in squared phenotype units, never as total
+heritability. The metric \(P_c\) controls association geometry, not that effect
+scale.
 
 **Empirical verdict (2026-07-18): this use-case reduces to cov-LDSC.** A direct
 test (`experiments/map_ldsc_miscalibration.py`; Section 5 of METHOD, Section 13)
@@ -101,8 +109,9 @@ or the killed `q_j` / effective-N / portability ideas as PLDSC differentiators.
 
 The original MVP was a simulation-grounded methods letter — *"an LMM-matched LD
 score that calibrates LDSC where ordinary and covariate-adjusted LD scores do
-not."* That MVP was **built (M-spike–M5) and its differentiating claim tested**,
-and the claim is **false as stated**: cov-LDSC *does* calibrate for the regime
+not."* Its core theorem, simulations, and a provisional M5 inference prototype
+were built, and its differentiating claim was tested. The claim is **false as
+stated**: cov-LDSC *does* calibrate for the regime
 (structure) that actually biases LDSC on LMM sumstats (Section 1.1). The letter
 would reduce to "use cov-LDSC," which exists — so this MVP is retired.
 
@@ -153,9 +162,12 @@ diagnostic.
 
 For target chromosome \(c\), define the null covariance
 \(V_c=\sigma_g^2K_{-c}+\sigma_e^2I\). Here \(C\) is the complete fixed-effect
-design, including the intercept. M0 will freeze genotype centering and scaling,
-the normalization of \(K_{-c}\), and the modeled target-chromosome variant set
-\(X_c=\{x_k\}\). The generalized residual precision is
+design, including the intercept. M0 now freezes the exact conventions in
+[METHOD.md](METHOD.md) §1: analysis-sample HWE genotype scaling with the realized
+column factor \(d_k=x_k^Tx_k/N\) retained; \(K_{-c}=Z_{-c}Z_{-c}^T/M_{-c}\)
+without trace renormalization; a declared phenotype scale; and distinct LOCO-GRM
+\(B_{-c}\), modeled-effect \(S_c\), tested \(T_c\), and regression
+\(R_c\subseteq T_c\) sets. The generalized residual precision is
 
 \[
 P_c=V_c^{-1}-V_c^{-1}C(C^TV_c^{-1}C)^+C^TV_c^{-1}. \tag{1}
@@ -169,15 +181,17 @@ z_j=\frac{x_j^TP_cy}{\sqrt{q_j}}. \tag{2}
 \]
 
 If
-\(y=C\alpha+X_c\beta_c+\varepsilon\),
+\(y=C\alpha+X_{S_c}\beta_{S_c}+\varepsilon\),
 \(\varepsilon\sim(0,V_c)\), and effects satisfy
-\(E[\beta_k]=0\), \(E[\beta_k\beta_l]=\tau_k^2\delta_{kl}\), and
-\(\beta_c\perp\varepsilon\mid X\), then the oracle conditional moment is
+\(E[\beta_k\mid X,V_c]=0\),
+\(\operatorname{Cov}(\beta_k,\beta_l\mid X,V_c)=\tau_k^2\delta_{kl}\), and
+\(\operatorname{Cov}(\beta_{S_c},\varepsilon\mid X,V_c)=0\), then the oracle
+conditional moment is
 
 \[
 E[z_j^2\mid X,V_c]
-=1+\sum_k\tau_k^2\frac{(x_j^TP_cx_k)^2}{q_j}
-=1+\sum_k\tau_k^2q_k\{r_{jk}^{(P_c)}\}^2. \tag{3}
+=1+\sum_{k\in S_c}\tau_k^2\frac{(x_j^TP_cx_k)^2}{q_j}
+=1+\sum_{k\in S_c}\tau_k^2q_k\{r_{jk}^{(P_c)}\}^2,\qquad j\in T_c. \tag{3}
 \]
 
 For a homoscedastic effect model \(\tau_k^2\equiv\tau^2\), the candidate
@@ -185,19 +199,18 @@ mixed-model LD score is
 
 \[
 L_j^{(P_c)}=\sum_{k\in W_j}q_k\{r_{jk}^{(P_c)}\}^2,
-\qquad E[z_j^2]\approx1+\tau^2L_j^{(P_c)}. \tag{4}
+\qquad E[z_j^2]=1+\tau^2L_j^{(P_c)}\quad\text{when }W_j=S_c. \tag{4}
 \]
 
 Equation (3) is **proved exact** under the stated assumptions and has been
 independently re-derived three times; \(P_cC=0\) annihilates the fixed-effect
 term and \(P_cV_cP_c=P_c\) pins the intercept to exactly 1. Equation (4), not
 merely \(\sum_k r_{jk}^2\), is the object to test empirically. The sum in
-Equation (3) covers all modeled target-chromosome effects; replacing it by the
-local window \(W_j\) in Equation (4) is a truncation approximation that must
-pass a window-convergence diagnostic. The \(q_k\) terms disappear only under an
-explicitly justified normalization (they cancel iff \(q_k\) is constant, e.g.
-ordinary LDSC with standardized genotypes and \(P=I\)); under a non-scalar
-\(V_c\) metric they genuinely vary and carry the novelty over cov-LDSC.
+Equation (3) covers all modeled target-chromosome effects, whether or not they
+are tested; replacing \(S_c\) by a local \(W_j\) in Equation (4) is a truncation
+approximation that must pass a window-convergence diagnostic. The \(q_k\) terms
+never cancel. A common \(q_k=q_0\) factors into the slope; variantwise
+normalization changes the coefficient variances and therefore the effect prior.
 Variants with zero or numerically negligible \(q_j\) have no defined score and
 must be rejected or excluded under a documented, scale-aware threshold.
 
@@ -206,31 +219,33 @@ must be rejected or excluded under a documented, scale-aware threshold.
 Equation (3) is exact **only** if all of the following hold; each is a
 precondition, not bookkeeping:
 
-1. **Oracle \(V_c\):** the covariance generating \(\varepsilon\) equals the
-   \(V_c\) inside \(P_c\). This is what forces the intercept to 1; a fitted or
-   misspecified \(V_c\) moves it, and that displacement is the diagnostic signal
-   of Section 1.1.
-2. **Second-moment effect model only:** just \(E[\beta_k]=0\) and
-   \(E[\beta_k\beta_l]=\tau_k^2\delta_{kl}\) are used — full independence is not
-   required, and **Gaussianity is not required**, so the M3 moment gate may draw
-   non-Gaussian effects.
-3. \(\beta_c\perp\varepsilon\).
-4. **The same \(C\)** appears in the GWAS and in \(P_c\).
-5. The Equation (3) sum ranges over the **causal** target-chromosome set; an
-   omitted causal chromosome-\(c\) SNP biases the moment.
-6. \(q_j>0\) (\(P_c\) is PSD; \(q_j=0\) iff \(x_j\in\operatorname{span}(C)\)).
+1. **Fixed oracle \(V_c\):** the covariance generating \(\varepsilon\) equals
+   the \(V_c\) inside \(P_c\). A \(\widehat V_c\) fitted from the same phenotype
+   is random and dependent; the fixed-operator identity does not automatically
+   apply to it.
+2. **Conditional second moments:** zero means, diagonal effect covariance, and
+   zero effect-noise covariance hold conditional on \(X,V_c\). Gaussianity is
+   unnecessary for Equation (3), but is required for the exact squared-score
+   covariance used by oracle GLS.
+3. **The same \(C\)** appears in the GWAS and in \(P_c\).
+4. The Equation (3) sum ranges over the complete modeled-effect set \(S_c\),
+   not merely tested or regression variants.
+5. \(j\in T_c\) and \(q_j>0\); a \(q_j\) filter does not silently redefine
+   \(S_c\).
+6. The target is the matched score statistic in Equation (2); other test
+   statistics need a derivation or validated equivalence.
 
-Locality lives in the \(P_c\) metric, not in centimorgans: define the window via
-a threshold on \(|r_{jk}^{(P_c)}|\), and treat window non-convergence as itself a
-diagnostic of \(V_c\) misspecification (it is most fragile in exactly the
-structured regime the method targets).
+The exact theorem has no locality condition. A predeclared physical/genetic
+window is an approximation whose omitted nonnegative sum must be reported or
+bounded. Thresholding individual \(|r_{jk}^{(P_c)}|\) does not control the
+cumulative tail, and non-convergence is truncation error, not by itself a
+diagnostic of \(V_c\) misspecification.
 
-Before implementation is promoted, the derivation must also state:
+The completed M0 derivation now states:
 
-1. the effect-size scale and exact slope estimand (\(\tau^2\) on the per-\(P_c\)
-   metric, an \(h_g^2/M\)-type quantity, not total \(h^2\));
-2. whether modeled-effect, tested, and regression-variant sets coincide and,
-   if not, how their filters enter the summation;
+1. the effect-size scale and exact slope estimand (\(\tau^2\) per declared
+   input-standardized genotype; not total \(h^2\));
+2. how \(B_{-c},S_c,T_c,R_c\), and \(W_j\) differ and enter the model;
 3. whether \(V_c\) is known or uses fitted variance components (MVP: known /
    deliberately-misspecified; Phase 2: fitted);
 4. whether the target statistic is a score, Wald, likelihood-ratio, or
@@ -238,27 +253,26 @@ Before implementation is promoted, the derivation must also state:
 5. whether a separate finite-sample correction is appropriate for a
    population/reference-LD estimand; no adjusted \(r^2\) is inserted into the
    exact conditional identity in Equation (3), which conditions on \(X\);
-6. the regression variance, weighting, and block-resampling model rather than
-   assuming conventional LDSC choices remain valid;
-7. what the intercept represents under environmental covariance
-   misspecification and directional LD;
+6. the full Gaussian score covariance, oracle GLS, the diagonal working weight,
+   and why conventional LDSC overlap weights and block choices need validation;
+7. that a fixed misspecified operator gives a variant-specific baseline, while
+   fitted-operator uncertainty needs an outer refit/bootstrap or joint sandwich;
 8. **the deployment regime.** The exact \(P_c\) requires individual genotypes
-   and \(V_c\). A summary-statistics-only path (a reference-panel approximation
-   of \(P_c\)) is the eventual product; its approximation error is a named
-   Phase-2 research question, and until then the exact \(P_c\) is the oracle to
-   validate against, never the shipped artifact.
+   and \(V_c\). If the archived project were revived, a summary-statistics-only
+   path would require a reference-panel approximation of \(P_c\); its
+   approximation error remains unresolved research. The exact \(P_c\) is the
+   oracle, not a shipped artifact.
 
 ### 2.2 Relation to the legacy WhiLD score
 
 The 2017 WhiLD score computed ordinary LDSC on genotypes whitened by the
 Cholesky factor of the inverse of a \(w\)-weighted hybrid GRM/covariance matrix.
-On paper this is the Equation (4) object with metric \(M^{-1}\) instead of
-\(V_c^{-1}\), \(q_k\equiv1\), and no covariate projection — so \(P_c\)
-essentially supplies the derivation WhiLD never had. M0 nests WhiLD as this
-named special case, yielding a WhiLD \(\rightarrow\) correct-metric \(\rightarrow\)
-add-projection \(\rightarrow\) add-\(q_k\) ablation ladder that isolates which
-correction buys calibration. The unstable pseudoinverse-plus-Cholesky
-*estimator* is **not** implemented (see Section 4).
+It is a useful metric analogue of Equation (4), not a literal special case of
+the same homoscedastic-effect model with \(q_k\equiv1\): re-standardizing a
+column changes its coefficient variance by \(q_k\). The qualitative WhiLD
+\(\rightarrow\) correct-metric \(\rightarrow\) add-projection \(\rightarrow\)
+explicit-\(q_k\) ablation ladder remains useful. The unstable
+pseudoinverse-plus-Cholesky estimator is **not** implemented (see Section 4).
 
 ### 2.3 Motivation
 
@@ -277,16 +291,15 @@ before M0 (Section 7).
 
 ## 3. Milestone roadmap
 
-The roadmap is split into an **MVP** track (the first result) and a **Phase 2**
-track (deferred; not a blocker for the MVP). Nothing in Phase 2 is scheduled
-until the M-spike and the M3 moment gate pass.
+The following is the **historical** roadmap used to make the kill/continue
+decisions. The repository is now archived; no Phase 2 item is scheduled.
 
 **Table 1a. MVP milestones (first result, `v0.x`)**
 
 | Milestone | Deliverable | Gate before proceeding |
 |---|---|---|
 | M-spike. Kill-or-continue | Throwaway dense \(V_c,P_c,q_j,z_j\) on one tiny structured simulation. Readout A: size of ordinary- and cov-LDSC miscalibration on LOCO-LMM z-scores. Readout B: empirical \(E[z_j^2]\) vs Equation (3), and windowed \(L_j\) vs full-chromosome remainder | **Explicit go/no-go.** If Readout A shows negligible miscalibration, the estimator is unnecessary and the project pivots (Section 1.4). If Readout B falsifies Equation (3) empirically at a scale not explained by the assumptions in 2.1, stop. 200-replicate pilot suffices to see gross miscalibration |
-| M0. Freeze the theorem (light) | `docs/METHOD.md` deriving Equations (1)-(4), the assumption list (2.1), slope estimand, genotype/effect/GRM scaling, variant sets, WhiLD-as-special-case (2.2), and limiting cases | **Timeboxed to days with a named owner** (the 2017 death was an unwritten, unowned derivation, not a hard proof). With declared normalization, the moment reduces to fixed-covariate LDSC when \(V_c=\sigma^2I\) and to ordinary LDSC up to a known scale with only an intercept. No months-long "independent algebra review" blocking gate — the algebra is already verified |
+| M0. Freeze the theorem (light) | `docs/METHOD.md` deriving Equations (1)-(4), the assumption list (2.1), slope estimand, genotype/effect/GRM scaling, variant sets, WhiLD relation (2.2), limiting cases, and Gaussian inference covariance | **Completed and re-audited 2026-07-22.** The fixed-covariate correlation geometry is exact; equality to a conventional cov-LDSC row-sum moment additionally requires constant residual genotype norms or a changed effect prior. The ordinary row-sum form is exact with sample-RMS columns and an asymptotic limit under the frozen HWE scaling; a literal conventional LDSC slope also requires the matching statistic scale |
 | M1. Harden the fixed-covariate baseline (`v0.1`) | Complete the array API, deterministic simulator, an internal full-projector oracle fixture, a cov-LDSC comparison, and minimal CI; numerical kernels reject missing values and defer imputation to I/O | Small well-conditioned fixtures agree at `rtol=0, atol=1e-12` (tests must set `rtol=0` explicitly); invariance to full-rank covariate reparameterization; a GitHub Actions run executes the suite on the pinned interpreter; missing-value and zero-variance guards are covered |
 | M2. Build a dense LMM oracle | Private small-matrix implementation of \(P_c\), \(q_j\), \(z_j\), and Equations (3)-(4), accepting supplied \(K_{-c}\) and variance components (oracle and deliberately-misspecified) | Scale-normalized residuals for symmetry, \(P_cC=0\), and \(P_cV_cP_c=P_c\) meet condition-aware tolerances; score covariance agrees with direct calculation; the oracle path consumes **raw** \(x_j^TP_cx_k\) and does not route through the finite-sample-corrected `local_ld_scores` kernel; indefinite GRMs, singular \(V_c\), ill-conditioned designs, and negligible \(q_j\) produce explicit diagnostics |
 | M3. Falsify the oracle moment and demonstrate calibration (`v0.2`) | Repeated draws of effects and noise conditional on fixed \(X,V_c\); exact full-chromosome moment and window-truncated approximation; the intercept diagnostic under oracle vs deliberately-misspecified \(V_c\) | **The pivotal gate.** Per-variant/bin Monte Carlo residuals support Equation (3) with covariance-aware uncertainty and no trend by MAF, \(q_j\), ancestry loading, or GRM leverage; the omitted-window remainder is reported; under a known-misspecified \(V_c\) the intercept moves as predicted while ordinary/cov-LDSC do not calibrate |
@@ -302,25 +315,33 @@ until the M-spike and the M3 moment gate pass.
 | M6c. Interoperate (`v0.4`) | PLINK 2 adapter, minimal CLI, provenance sidecars, only scientifically justified LDSC-format output | One end-to-end PGEN fixture passes; optional dependencies stay isolated; output round-trips with all required count metadata |
 | M7. Validate and release (`v1.0`) | Synthetic phenotypes on real genotypes, independent reproduction, stable schemas/API, archival release, limited real-trait analyses | Every preregistered gate passes; conclusions survive ancestry, window, GRM, and approximation sensitivity analyses; all headline results reproduce from committed configurations |
 
-Current status (2026-07-18): the MVP arc is built and validated end-to-end.
+Current status (2026-07-22): the fixed-operator mean/oracle arc is built and
+validated; genomic and fitted-operator inference is not validated end-to-end.
 The **M-spike** passed (`experiments/m_spike_kill_or_continue.py`): Eq (3)
 confirmed numerically and PLDSC calibrates where ordinary LDSC does not. **M0**
-is written (`docs/METHOD.md`). **M1** is hardened: CI workflow, `rtol=0`
+is completed and re-audited (`docs/METHOD.md`), including the scaling, variant
+sets, qualified limiting cases, score covariance, and inference requirements.
+**M1** is hardened: CI workflow, `rtol=0`
 tolerance gate, dependency floor raised, invariance/guard tests added. **M2**
-landed as the tested `pldsc/_lmm.py` oracle (with `pldsc/simulate.py`); **M3**
-(`experiments/m3_relatedness_admixture.py`) shows PLDSC beats cov-LDSC
-specifically under relatedness; **M4** fitted-component science is validated by a
-local REML (intercept `1.010 ± 0.078`), with external GEMMA byte-parity
+landed as the tested `pldsc/_lmm.py` oracle (with `pldsc/simulate.py`); the
+historical **M3** full-score null-operator experiment
+(`experiments/m3_relatedness_admixture.py`) showed a relatedness difference,
+but the later windowed use-case test found no practical cov-LDSC edge. **M4**
+fitted-component sensitivity was probed by a local REML (intercept
+`1.010 ± 0.078`), with external GEMMA byte-parity
 specified in [GEMMA_PARITY.md](GEMMA_PARITY.md) and deferred to Linux; **M5**
-(`pldsc/regression.py` + `experiments/m5_inference.py`) provides block-jackknife
-inference and quantifies the fitted-`V_c` intercept-SE requirement. 29 tests
+(`pldsc/regression.py` + `experiments/m5_inference.py`) provides a
+fixed-operator regression/jackknife prototype and illustrates the fitted-\(V_c\)
+intercept-SE requirement. It does not validate genomic block choice,
+cross-chromosome covariance, recomputed two-step weights, or operator
+uncertainty. 30 tests
 pass. **Then the use-case was investigated directly** and angle #1 ("LDSC
 miscalibrated for LMM sumstats") came back negative for PLDSC
 (`experiments/map_ldsc_miscalibration.py`): the bias is a structure effect
 cov-LDSC already fixes, and relatedness does not reach the local LD-score
-regression (Section 1.1). Remaining, contingent on the Section 1.1 decision: the
-within-family kill-test; else a theory note. Deferred regardless: the GEMMA
-cross-check on Linux, at-scale `V_c`-uncertainty propagation, and Phase-2
+regression (Section 1.1). The within-family kill-test also came back negative,
+and the project was archived. Unresolved work is recorded, not scheduled: the
+GEMMA cross-check on Linux, at-scale `V_c`-uncertainty propagation, and Phase-2
 scale/interop (M6). **After two external reviews (2026-07-18):** the decomposition
 was restated *exactly* as the GRM spectral identity (not an empirical discovery)
 and the honest windowed ~5% (simulation) figure led; one **non-circular** robustness result was
@@ -330,28 +351,30 @@ full** — it is a pairwise-\(r^2\) QC method (pruning/clumping/FST/PCA) with a 
 rank-K projection and no heritability content, so it does not collide with the
 heritability-facing claims (see [PRIOR_ART.md](PRIOR_ART.md)).
 
-### 3.1 Forward roadmap (decomposition-framed paper)
+### 3.1 Historical decomposition-framed paper roadmap (inactive)
 
-Tables 1a/1b document the **completed estimator-MVP foundation** — the proved
+Tables 1a/1b document the estimator-MVP foundation — the proved
 moment (Eq 3), the dense \(P_c\) oracle, the calibration/relatedness experiments,
-and the inference layer. That foundation stands and is reused, but the framing has
-moved (Section 1) from "a new LMM-matched estimator" to a **framework/synthesis +
-diagnostics** paper built on the local/non-local decomposition. Forward
-deliverables and status:
+and the provisional inference layer. Before the stop decision, the framing moved
+from "a new LMM-matched estimator" to a possible **framework/synthesis +
+diagnostics** paper. The following records those candidate deliverables; it is
+not an active roadmap.
+
+**Table 1c. Historical decomposition-framed deliverables**
 
 | Deliverable | Track | Status |
 |---|---|---|
-| D1. Theory: exact spectral decomposition \(\ell=\ell^{local}+\ell^{struct}\); PC score as its leading-eigenvector truncation; unification of cov-LDSC/WhiLD/PC-score/\(P_c\); identifiability-limit theorem | theory | METHOD §14 written; identity stated exactly; limit stated, not yet a formal proof |
+| D1. Theory: exact spectral identity for the total score; operator-defined local/non-local remainder; PC-score truncation; metric/eigenspace map for cov-LDSC/WhiLD/PC-score/\(P_c\); identifiability-limit theorem | theory | METHOD §14 written and qualified: the total-score identity is exact, while labeling an eigencomponent “structure” requires an external axis definition |
 | D2. Diagnostics: per-PC inflation spectrum; structure-robust S-LDSC enrichment (PC-loading annotation); the miscalibration map | applications | prototyped (`detect_pc_inflation`, `sldsc_pc_annotation`, `map_ldsc_miscalibration`) with honest caveats; not yet real-data |
 | D3. Prior-art positioning | positioning | Bercovich 2025 gate **closed** (full read); broader landscape sweep still to re-run |
 | D4. One non-circular robustness result | validation | **done** (`misspecified_background.py`): null intercept robust to sparse/directional off-chr background |
 | D5. Real-data survey / efficient decomposition engine | efficiency + empirics | scoped ([REAL_DATA_SURVEY.md](REAL_DATA_SURVEY.md)); gated on an efficient \(P_c\) engine; not started |
 | D6. Alternative differentiated application: within-family matched covariance | application | **kill-tested, NEGATIVE** (`within_family_killtest.py`); option (a) closed |
 
-The honest gate for the paper: D6 (the last candidate differentiated application)
-has now failed its kill-test, so the choice narrows to whether **D1 + D3 + D2/D4**
-is a clarifying contribution on its own (a theory/methods note) or whether the
-project stops. That is the central open decision (Section 1.1's (b) vs (c)).
+The honest gate for the paper was whether, after D6 failed, **D1 + D3 + D2/D4**
+formed a clarifying contribution on their own (a theory/methods note) or the
+project should stop. That decision is no longer open: Section 1.1 records the
+stop/archive decision; this table remains only as historical provenance.
 
 GEMMA is the first external association benchmark (Phase 2) because it implements
 an exact LMM suitable for checking a dense implementation
@@ -402,7 +425,8 @@ point Monte Carlo standard-error caps are reserved for the final confirmatory
 figures**, subject to a predeclared compute cap.
 
 The legacy WhiLD/PC-score constructions are **paper-only comparators** (Section
-2.2): derived as special cases and used in the ablation ladder, but the unstable
+2.2): placed on the same metric/eigenspace ablation ladder, with their distinct
+normalization and effect-prior assumptions retained; the unstable
 pseudoinverse-plus-Cholesky estimator and the eigenvalue-weighted PC score are
 not implemented as release code. Only ordinary LD and cov-LDSC are implemented
 baselines.
@@ -529,8 +553,8 @@ the Phase-2 tail (M4-M7) is regenerated once M3 passes.
 |---|---|---|
 | C1 | `docs: fix the PLDSC use-case, estimand, and M0 ownership` | Section 1.1 use-case, estimand labels, intercept-displacement = confounding, named M0 owner |
 | C2 | `feat+test: dense P_c oracle and kill-or-continue spike` | Readout A miscalibration + Readout B Monte Carlo moment; raw cross-products; seed + bit generator replay |
-| C3 | `docs: legacy triage, WhiLD-as-special-case, authorship note` | Every 2017 number marked non-citable-until-reproduced; WhiLD derived as Equation (4) special case; co-author/scope paragraph |
-| M0 | `docs: derive the PLDSC mixed-model moment` | Rendered equations, assumption list, reductions; named owner sign-off |
+| C3 | `docs: legacy triage, WhiLD relation, authorship note` | Every 2017 number marked non-citable-until-reproduced; WhiLD recorded as a metric analogue with its prior-scale caveat; co-author/scope paragraph |
+| M0 | `docs: complete the PLDSC mixed-model contract` | Rendered equations; frozen scales and sets; qualified reductions; exact Gaussian score covariance; working-weight and resampling limits; named owner sign-off |
 | M1a | `feat: harden fixed-covariate LD scores` | Unit and cov-LDSC fixture tests; `rtol=0, atol=1e-12` |
 | M1b | `build+ci: add supported Python pin and Actions` | Clean build and green Actions run on the pinned pair |
 | M2a | `test: specify mixed-model oracle identities` | Scale-aware reference assertions |
@@ -565,6 +589,11 @@ because the version number looks lonely.
     of pruning and clumping in structured populations](https://doi.org/10.1093/genetics/iyaf009).
 11. Huang et al. (2025), [Interpreting SNP heritability in admixed
     populations](https://doi.org/10.1093/genetics/iyaf100).
+12. Isserlis (1918), [On a formula for Gaussian product moments](https://doi.org/10.1093/biomet/12.1-2.134).
+13. Künsch (1989), [The jackknife and the bootstrap for general stationary
+    observations](https://doi.org/10.1214/aos/1176347265).
+14. Xiong et al. (2024), [Improved estimation of functional enrichment in SNP
+    heritability using feasible generalized least squares](https://doi.org/10.1016/j.xhgg.2024.100272).
 
 Additional comparators surfaced by the 2026 landscape scan, to position against
 once confirmed (verify identifiers before citing): S-LDSC baseline-LD model

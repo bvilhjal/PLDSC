@@ -1,17 +1,18 @@
 """M5: LD-score-regression inference, and the fitted-V_c intercept-SE caveat.
 
-Builds on the tested pldsc.regression (block-jackknife) and the pldsc._lmm
-oracle. Two arms per replicate on an admixture+relatedness cohort:
+Builds on the pldsc.regression OLS path with a delete-one-SNP jackknife and the
+pldsc._lmm oracle. Two arms per replicate on an admixture+relatedness cohort:
 
-  ORACLE arm  z^2 and L from the true P_c   -> the jackknife SE should give
-              nominal coverage of intercept (=1) and slope (=tau^2).
+  ORACLE arm  z^2 and L from the true P_c   -> probe toy fixed-operator
+              coverage of intercept (=1) and slope (=tau^2).
   FITTED arm  z^2 and L from a REML-fitted P_hat_c -> the jackknife SE (which
               holds V_hat_c fixed) MISSES the variance-component uncertainty, so
-              the intercept under-covers. Adding the propagated term
-              (dIntercept/dh^2)^2 * Var(h^2_hat) should restore ~95%.
+              the intercept may under-cover at scale. The displayed propagated
+              term is illustrative, not a validated correction.
 
-This makes concrete the requirement M4 surfaced: a fitted-V_c intercept SE must
-propagate variance-component uncertainty.
+This illustrates the requirement M4 surfaced: a fitted-V_c intercept SE must
+propagate variance-component uncertainty. It is not a validation of genomic
+blocks, recomputed weights, or a deployable fitted-V_c correction.
 
 Run:  conda run -n pldsc python experiments/m5_inference.py
 """
@@ -111,7 +112,7 @@ def main():
         return (f"    {label:34s} coverage={coverage(est, truth, se)*100:5.1f}%  "
                 f"empirical_sd={np.std(est):.4f}  mean_reported_se={np.mean(se):.4f}")
 
-    print("\n  ORACLE V_c (jackknife SE should be well-calibrated):")
+    print("\n  ORACLE V_c (toy delete-one-SNP coverage probe):")
     print(line("intercept (truth 1)", o_int, 1.0, o_int_se))
     print(line("slope (truth tau2)", o_slp, tau2, o_slp_se))
 
@@ -133,14 +134,16 @@ def main():
     print(f"    h2_hat = {h2_hat.mean():.3f} +/- {h2_hat.std():.3f} (true {h2_true:.2f})")
 
     print("\n" + "=" * 74)
-    print("Reading: the block jackknife is well-calibrated at a fixed operator")
-    print("(both arms ~95%). At only M=80 target SNPs the regression intercept is")
+    print("Reading: the delete-one-SNP jackknife covers in this toy fixed-operator")
+    print("experiment (both arms ~95%); this is not a genomic-block validation.")
+    print("At only M=80 target SNPs the regression intercept is")
     print("noise-dominated, so V_hat_c uncertainty is negligible and coverage is")
     print("fine either way. But that V_hat_c term is a SHARED systematic that does")
     print("NOT shrink with M, while the regression SE does (~1/sqrt(M)); past the")
-    print("crossover M above it dominates and the jackknife-only intercept SE will")
+    print("crossover M above it dominates and the jackknife-only intercept SE may")
     print("under-cover -- so at realistic M the M5 design must propagate variance-")
-    print("component uncertainty. The slope stays well-calibrated throughout.")
+    print("component uncertainty. The extrapolation is illustrative, not a finished")
+    print("correction; an outer refit/bootstrap or joint sandwich is still needed.")
 
 
 if __name__ == "__main__":

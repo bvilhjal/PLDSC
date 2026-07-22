@@ -1,14 +1,18 @@
-"""LD Score regression with block-jackknife inference (milestone M5).
+"""LD Score regression with a provisional block-jackknife helper (milestone M5).
 
 Weighted least-squares regression of a per-variant statistic (chi^2 or z^2) on
-an LD score, with a delete-a-block jackknife for standard errors -- the standard
-LDSC inference scheme. Kept separate from score construction: it consumes an LD
-score and a statistic and knows nothing about how either was built.
+an LD score, with a delete-a-block jackknife for provisional standard errors.
+Kept separate from score construction: it consumes an LD score and a statistic
+and knows nothing about how either was built.
 
 The intercept SE reported here is the *regression* SE at a fixed operator. When
 the LD score / statistic come from a fitted V_c, that operator is itself
-uncertain; see ``experiments/m5_inference.py`` for propagating variance-
-component uncertainty into the intercept SE (the requirement M4 surfaced).
+uncertain; ``experiments/m5_inference.py`` illustrates that omitted uncertainty
+but does not provide a validated propagation correction.
+The caller must supply chromosome/position-sorted observations and choose blocks
+that cover the dependence range. Two-step weights are estimated once from the
+full data and held fixed across replicates, so this helper is not a complete
+genomic block-jackknife implementation; see ``docs/METHOD.md`` Section 9.1.
 """
 from __future__ import annotations
 
@@ -57,11 +61,14 @@ def ld_score_regression(
         If true, apply a *simplified* LDSC-style heteroscedasticity weighting: a
         first pass predicts ``E[chi2]`` and reweights by ``1 / (2 E[chi2]^2)``
         (clipped at ``E[chi2] >= 1``). Note this is the heteroscedasticity term
-        only; full LDSC additionally down-weights by the sampling variance of the
-        LD score itself (Bulik-Sullivan 2015). Composes with ``weights`` if both
-        are given.
+        only; full LDSC additionally down-weights redundant correlated outcomes
+        using an LD-overlap approximation (Bulik-Sullivan 2015). That factor is
+        not automatically valid for a changed metric. Composes with ``weights``
+        if both are given. The preliminary weights are not recomputed inside
+        delete-block replicates.
     n_blocks
-        Number of contiguous jackknife blocks (capped at the number of points).
+        Number of contiguous array-order jackknife blocks (capped at the number
+        of points). Input genomic order is assumed and is not checked.
 
     Returns
     -------

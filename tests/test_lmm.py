@@ -61,7 +61,7 @@ class ResidualPrecisionIdentityTests(unittest.TestCase):
 
 
 class ReductionTests(unittest.TestCase):
-    """The oracle must reduce to cov-LDSC and to ordinary LDSC (Section M7)."""
+    """Check the limiting geometries under their explicit scale conditions."""
 
     def setUp(self):
         self.rng = np.random.default_rng(np.random.PCG64(2))
@@ -114,6 +114,40 @@ class MomentTests(unittest.TestCase):
         moment = oracle_moment(self.P, self.X, tau2)
         expected = 1.0 + tau2 * ld_scores(self.P, self.X)
         np.testing.assert_allclose(moment, expected, rtol=0, atol=1e-12)
+
+    def test_score_covariance_allows_distinct_effect_and_test_sets(self):
+        # METHOD M6/M16: tested variants need not equal modeled-effect variants.
+        X_effect = self.rng.standard_normal((self.N, 3))
+        X_test = self.rng.standard_normal((self.N, 4))
+        effect_var = np.array([0.1, 0.2, 0.4])
+
+        _, q_test = score_pieces(self.P, X_test)
+        q_inv_sqrt = np.diag(1.0 / np.sqrt(q_test))
+        cross = X_test.T @ self.P @ X_effect
+        B = q_inv_sqrt @ cross
+        R = q_inv_sqrt @ (X_test.T @ self.P @ X_test) @ q_inv_sqrt
+        expected_cov = R + B @ np.diag(effect_var) @ B.T
+
+        phenotype_cov = (
+            self.V + X_effect @ np.diag(effect_var) @ X_effect.T
+        )
+        direct_cov = (
+            q_inv_sqrt
+            @ X_test.T
+            @ self.P
+            @ phenotype_cov
+            @ self.P
+            @ X_test
+            @ q_inv_sqrt
+        )
+        np.testing.assert_allclose(
+            direct_cov, expected_cov, rtol=0, atol=1e-9
+        )
+
+        expected_moment = 1.0 + (cross * cross) @ effect_var / q_test
+        np.testing.assert_allclose(
+            np.diag(expected_cov), expected_moment, rtol=0, atol=1e-10
+        )
 
     def test_windowed_ldscore_is_at_most_full_sum(self):
         M = self.X.shape[1]
