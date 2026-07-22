@@ -5,3 +5,4 @@ __pycache__/
 build/
 dist/
 .scratch_1000g/
+out.pdf
