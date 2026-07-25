@@ -27,8 +27,11 @@ it reproduces the brute-force benchmark to `3e-13` on real chr22 and the driver
 reproduces the B2 LOCO shares (FULL 17%/90%, EUR −0%/−4%). Genetic-distance (cM)
 windows are supported via the Beagle GRCh37 map, surfacing a first new finding:
 the *windowed* structure share depends on the window unit (FULL chr22: 17% at
-250 kb vs ~11% at 0.25 cM), because a fixed physical window spans variable
-genetic distance. What remains is the full 22-autosome run (data acquisition,
+±250 kb vs ~11% at ±0.25 cM), because a fixed physical window spans variable
+genetic distance. **It also depends on the width, and at LDSC's own default
+(±1 cM) the FULL-panel share is 29.3%** — so 29%, not 17%, is the figure any
+practitioner-facing claim should quote. What remains is the full 22-autosome run
+(data acquisition,
 `realdata_genome_loco.py --plan`) and questions 2–4.
 
 ## Questions the survey answers (that simulations cannot)

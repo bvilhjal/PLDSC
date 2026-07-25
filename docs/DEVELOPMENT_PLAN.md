@@ -25,9 +25,10 @@ leading-eigenvector truncation (corr 0.99 with the declared non-local remainder
 but only ~37% of its magnitude; see [METHOD.md](METHOD.md) §14). The honest
 number (simulation) is that this declared remainder is only ~5% of the
 *windowed* LD score LDSC uses (~50% genome-wide, which LDSC never regresses on);
-on real 1000G data the LOCO-clean windowed share is ~0% (EUR) to ~17%
-(multi-ancestry panel), the genome-wide share ~90% in the panel
-(`experiments/realdata_1000g_benchmarks.py`) — which is why
+on real 1000G data the LOCO-clean windowed share is ~0% (EUR) to ~29% at LDSC's
+±1 cM window (multi-ancestry panel; 17% at ±250 kb), the genome-wide share ~90%
+in the panel (`experiments/realdata_1000g_benchmarks.py`,
+`experiments/realdata_genome_loco.py`) — which is why
 cov-LDSC suffices. The identity's value is as an **organizing device** placing
 cov-LDSC, the legacy WhiLD score, the PC score, and the \(P_c\) operator on one
 metric/eigenspace map. It does not uniquely separate heritability from

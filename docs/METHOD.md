@@ -522,8 +522,10 @@ tight recombination-driven LD was nearly orthogonal to the few genome-wide
 axes down-weighted by \(V_c^{-1}\). This is an empirical result, not a
 consequence of (M6). In real multi-ancestry 1000 Genomes data, the LOCO-clean
 structure share of a ±250 kb windowed score was about 17% in the full panel and
-about 0% in EUR (`experiments/realdata_1000g_benchmarks.py`, B2); a few fixed
-PCs absorbed most of that difference (B3). The map experiment (Section 11)
+about 0% in EUR (`experiments/realdata_1000g_benchmarks.py`, B2); at the ±1 cM
+window LDSC actually uses it is about 29% in the full panel
+(`experiments/realdata_genome_loco.py`), so the share depends on the window unit
+as well as its width. A few fixed PCs absorbed most of that difference (B3). The map experiment (Section 11)
 found no measurable relatedness effect on windowed regression after LMM
 association, while population structure remained the regime cov-LDSC already
 corrected.
@@ -771,7 +773,26 @@ fixed environmental axis shift does not *asymptotically* — in finite samples t
 environmental shift leaks a spurious interaction (median t \(\approx3.8\) at
 \(N=600\)), so channel (ii) requires a calibrated null and has limited power at
 realistic architectures (`experiments/local_adaptation_channel.py`, verdict
-MARGINAL). So the honest statement is
+MARGINAL).
+
+**Correction to the calibration claim (2026-07-25).** That leakage is *not*
+intrinsic to the channel; it is a self-term collinearity. The LD-smeared
+annotation score \(\ell_j(a)=\sum_{k\in W_j}r_{jk}^2 a_k\), with
+\(a_k=\operatorname{corr}(x_k,u_p)^2\), contains a whole copy of the raw loading
+\(a_j\) because \(r_{jj}^2=1\): measured
+\(\operatorname{corr}(a,\ell(a))=+0.82\) with the self term and \(+0.14\)
+without. Regressing \(z_j^2\) on \([1,\ \ell_j^{\mathrm{local}},\ a_j,\
+\ell_j(a)]\) with the self term dropped **centres the null at zero** — median
+\(t\) of \(-0.31\) to \(-0.08\) under a purely environmental axis shift, against
+\(+7.6\) to \(+13.4\) for the S-LDSC convention (which keeps the self term and
+omits \(a_j\)). So channel (ii) does not need an empirically calibrated
+threshold after all. Its *power* is unchanged and still low (0.06–0.19), so the
+MARGINAL verdict stands and the scope statement below is unaffected
+(`experiments/raw_loading_control.py`). The same self term is why a smeared
+PC-loading annotation cannot separate confounding from ancestry-differentiated
+architecture in S-LDSC — see [PROJECT_DIRECTIONS.md](PROJECT_DIRECTIONS.md) §D1.
+
+So the honest statement is
 *non-identifiability from the second moments of structure-only statistics*,
 confined to the directional component.
 

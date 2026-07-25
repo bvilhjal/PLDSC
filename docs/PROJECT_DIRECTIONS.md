@@ -248,17 +248,32 @@ because it is the best bet.
 
 Steps 1 and 2 are each a day and each can close a direction. Neither has been run.
 
-## 7. Corrections to the current record
+## 7. Corrections to the current record — APPLIED (2026-07-25)
 
-- **README, "29 tests"** — the suite is now **59** (`test_genome` 21, `test_ld` 19,
-  `test_lmm` 13, `test_regression` 6).
-- **WHEN_STRUCTURE_MATTERS, "~17%"** — that is the 250 kb physical-window figure;
-  the cM-window (LDSC-relevant) figure from the LOCO driver is **29.3%**. The
-  two-moment table should quote the cM number, with the physical number as the
-  window-unit-dependence remark.
-- **`identifiability_aliasing.py`'s "shared nonzero interaction is a finite-sample
-  orthogonalization residual"** — §4.1 above localizes it further: it is the
-  self-term collinearity between `a_j` and `ℓ_j(a)` (`corr = +0.82` with the self
-  term, `+0.14` without). Dropping the self term centres that null at zero. Worth
-  recording in METHOD §14's scope paragraph, since it changes the stated
-  requirement for "a calibrated null" on that channel.
+- [x] **README, "29 tests"** — the suite is **59** (`test_genome` 21, `test_ld` 19,
+  `test_lmm` 13, `test_regression` 6). Fixed.
+- [x] **The "~17%" windowed share quoted as a headline** — that is the ±250 kb
+  *physical*-window figure. LDSC's default window is ±1 cM, where the FULL-panel
+  share is **29.3%** ([realdata_genome_loco.py](../experiments/realdata_genome_loco.py)),
+  so the practitioner-facing claim was understated by ~1.7×. The share depends on
+  the window's **unit as well as its width**: 29.3% at ±1 cM, 17% at ±250 kb,
+  ~11% at ±0.25 cM. Every place the number was quoted as a general headline now
+  leads with the cM figure and keeps the physical one as the window-unit remark:
+  [WHEN_STRUCTURE_MATTERS](WHEN_STRUCTURE_MATTERS.md) (two-moment table, headline
+  paragraph, §2 outline), [README](../README.md),
+  [DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md) §1, [NOTE_OUTLINE](NOTE_OUTLINE.md) §2,
+  [METHOD](METHOD.md) §10, [REAL_DATA_SURVEY](REAL_DATA_SURVEY.md), and the
+  `realdata_1000g_structure.py` correction block and B1–B6 verdict in
+  [experiments/README](../experiments/README.md).
+  **Not changed:** the B1–B6 result tables themselves and
+  [EXTERNAL_REVIEW](EXTERNAL_REVIEW.md), which are dated records of specific
+  ±250 kb runs and of a review round — correct as written, and rewriting them
+  would falsify a history.
+- [x] **`identifiability_aliasing.py`'s "finite-sample orthogonalization
+  residual"** — localized: it is the self-term collinearity between `a_j` and
+  `ℓ_j(a)` (`corr = +0.82` with the self term, `+0.14` without), and dropping the
+  self term centres that null at zero. Recorded as a named correction in
+  [METHOD §14](METHOD.md#14-the-localnon-local-decomposition-organizing-framework)'s
+  scope paragraph, which no longer claims channel (ii) needs an empirically
+  calibrated threshold. The MARGINAL verdict is unaffected — the fix is to the
+  null, not the power.

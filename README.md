@@ -54,8 +54,9 @@ declared non-local remainder but captures only
 The honest headline (simulation): within the **windowed** LD score LDSC actually
 uses, structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses
 on that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
-died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~17%
-(multi-ancestry panel) and the genome-wide share ~90% in the panel
+died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~29%
+at LDSC's ±1 cM window (multi-ancestry panel; 17% at ±250 kb — the window unit
+matters) and the genome-wide share ~90% in the panel
 ([realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
 legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
 residual-precision operator `P_c` can be compared on one metric/eigenspace map.
@@ -105,7 +106,7 @@ co-attenuated.
 
 **Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
 outlines a practice-facing alternative to the archived theory note: lead with
-the empirical magnitudes (windowed structure share ~0% single-ancestry vs ~17%
+the empirical magnitudes (windowed structure share ~0% single-ancestry vs ~29%
 multi-ancestry) and a two-moment decision rule (relatedness → intercept,
 structure → slope) rather than with theory claims the prior-art sweep graded
 partial-or-occupied. Gating task is a prior-art check on that framing.
