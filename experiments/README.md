@@ -727,3 +727,63 @@ genome-wide aggregate:
   prints the manifest (~15 GB phase-3 VCFs; maps and panel already local). Gated
   on that download — a large resource commitment, so it is deliberately not run
   automatically.
+
+## `raw_loading_control.py` — the raw ancestry loading as an S-LDSC control
+
+Post-archive (2026-07-25), written for [docs/PROJECT_DIRECTIONS.md](../docs/PROJECT_DIRECTIONS.md)
+§D1. Follows up `identifiability_aliasing.py`, `local_adaptation_channel.py` and
+`sldsc_pc_annotation.py`.
+
+The mechanism tested: environmental confounding along an axis enters `E[z_j^2]`
+through the SNP's **own** loading `a_j = corr(x_j,u_1)^2` and is not propagated by
+LD; an ancestry-differentiated genetic architecture enters through the **LD-smeared**
+score `ell_j(a) = sum_{k in W_j} r_jk^2 a_k`. They are separable regressors — but
+only after the self term is dropped, because `r_jj^2 = 1` puts a copy of `a_j`
+inside `ell_j(a)`. S-LDSC's annotation LD scores include that self term.
+Admixed cohort (fst=0.15, rho=0.9), 5 chromosomes x 400 variants, 1.0 cM windows,
+PCG64 seed 20260725.
+
+**Part 1 — collinearity and null calibration** (4 realizations x 60 phenotype
+reps; ENV/DIR/HET arms as in `local_adaptation_channel.py`):
+
+| quantity | value |
+|---|---|
+| `corr(a, ell(a))` without the self term | +0.10 to +0.14 |
+| `corr(a, ell(a))` with the self term (S-LDSC convention) | **+0.82** |
+| median `t` under a purely environmental axis shift — S-LDSC-convention statistic | **+7.6 to +13.4** |
+| median `t`, same data — raw/smeared split | **−0.31 to −0.08** |
+| median `t`, same data — naive interaction test | +0.65 → +1.34 (worsens with `N`) |
+
+**Part 2 — the practical case** (3 realizations x 40 reps, `N=600`). `tau` on the
+functional annotation's LD score under CONF (no true enrichment, environmental
+axis shift) vs ENRICH (true 4x enrichment, no confounding):
+
+| design | correlated: `tau` CONF (want 0) | correlated: `tau` ENRICH | control: ENRICH retained |
+|---|---|---|---|
+| A standard S-LDSC | **2.54e+01** | 2.77e+00 (1.00x) | 1.00x |
+| B + smeared PC annotation | −2.61e+00 (−0.10x) | 1.15e−01 (0.04x) | 0.97x |
+| C + **raw** loading | **8.5e−03 (0.00x)** | 3.23e−01 (0.12x) | **1.02x** |
+| D + both | 5.4e−02 (0.00x) | 3.88e−01 (0.14x) | 1.01x |
+
+### Verdict: the split fixes the null and the false enrichment, not the power
+
+- **Standard S-LDSC on an ancestry-correlated annotation gives a `tau` ~9x larger
+  under pure environmental confounding (25.4) than under a genuine 4x enrichment
+  (2.77)** — the same failure `sldsc_pc_annotation.py` found at x3.5, worse at a
+  stronger gradient.
+- **The raw loading dominates the smeared PC annotation on both axes**: it removes
+  the false enrichment completely (0.00x, where B over-corrects to −0.10x) and is
+  essentially free on an ancestry-independent annotation (1.02x retained).
+- **Neither fix rescues genuine ancestry-correlated enrichment** (0.12x / 0.04x) —
+  the §14 identifiability limit, unchanged. Frame as a sensitivity analysis with a
+  well-calibrated null, not as an unbiased estimator.
+- **The anti-conservatism flagged in `local_adaptation_channel.py` is the self-term
+  collinearity, not the channel.** Dropping the self term centres the null at zero,
+  so that channel does not need an empirically calibrated threshold after all.
+- **Honest negative:** the split does not improve *power* on the heteroscedastic
+  channel (0.06–0.19 at a calibrated threshold, no better than the naive test).
+  Whether it has power at `M ~ 1e6` (where `t` scales roughly as `sqrt(M)`) is
+  untested, and is the open question.
+- Caveats: `M ~ 2000`, `N = 600`, unweighted OLS S-LDSC, no jackknife SEs, one
+  structure axis, simulated AR1 LD. Numbers are directional; the `rel-A` ratio is
+  meaningless where the baseline is ~0 (the control CONF row).
