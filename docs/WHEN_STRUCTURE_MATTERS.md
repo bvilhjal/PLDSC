@@ -30,14 +30,24 @@ Two nuisances, two different moments, two different remedies:
 | nuisance | magnitude | lands on | remedy |
 |---|---|---|---|
 | **Relatedness** in the LD panel | `O(1/N_eff)` per pair; up to ~19 LD-score units accumulated at S=2000 in a 16-sib design | **intercept** (near-uniform across variants) | compute LD from unrelateds; if impossible, the `N_eff` correction of METHOD §10.1 |
-| **Population structure** | `O(1)`, does not vanish with N — but only ~0% (EUR) to ~17% (multi-ancestry) of the *windowed* score | **slope** | cov-LDSC, and a handful of PCs suffices (B3) |
+| **Population structure** | `O(1)`, does not vanish with N — but only ~0% (EUR) to ~29% (multi-ancestry) of the *windowed* score at LDSC's ±1 cM window | **slope** | cov-LDSC, and a handful of PCs suffices (B3) |
 
 The headline practitioner result: **in a single-ancestry cohort the windowed
 structure share is ~0%, so cov-LDSC is unnecessary; in a multi-ancestry panel it
-is ~17%, and 2–10 hard-projected PCs capture essentially all of what a full GLS
-whitening would remove.** The genome-wide share (~90% in a multi-ancestry panel)
-is the number people intuit, and it is irrelevant, because LDSC never regresses
-on the genome-wide score.
+is ~29% at LDSC's default ±1 cM window, and 2–10 hard-projected PCs capture
+essentially all of what a full GLS whitening would remove.** The genome-wide
+share (~90% in a multi-ancestry panel) is the number people intuit, and it is
+irrelevant, because LDSC never regresses on the genome-wide score.
+
+**Quote the cM number, not the physical one.** The windowed share depends on both
+the width *and the unit* of the window, because a fixed physical window spans
+variable genetic distance: on the FULL panel it is **29.3% at ±1 cM**, 17% at
+±250 kb, and ~11% at ±0.25 cM
+([realdata_genome_loco.py](../experiments/realdata_genome_loco.py);
+[realdata_1000g_benchmarks.py](../experiments/realdata_1000g_benchmarks.py) B2).
+LDSC's default window is ±1 cM, so **29%** is the practitioner-facing figure and
+the ±250 kb result belongs in the window-unit remark. Earlier drafts of this note
+led with 17%, understating the effect by ~1.7×.
 
 ## Section structure
 
@@ -47,8 +57,10 @@ on the genome-wide score.
 2. **Structure: how much is actually in the window?** The B1–B6 benchmarks
    ([realdata_1000g_benchmarks.py](../experiments/realdata_1000g_benchmarks.py)):
    density-robustness (B1), the LOCO-vs-in-chromosome operator bracket (B2), the
-   ancestry gradient (B6), the MAF gradient (B5). Headline: genome-wide ~90% vs
-   windowed ~17% in the multi-ancestry panel, ~0% in EUR.
+   ancestry gradient (B6), the MAF gradient (B5), plus the genome-wide LOCO
+   driver's cM windows. Headline: genome-wide ~90% vs windowed ~29% (±1 cM) in
+   the multi-ancestry panel, ~0% in EUR — with the window-unit dependence
+   (29% at ±1 cM, 17% at ±250 kb, ~11% at ±0.25 cM) stated as its own result.
 3. **How many PCs is enough?** B3: top-2 eigenvectors capture 92% of the
    genome-wide score; hard-projecting 2 PCs leaves 8% of what `P_c` removes.
    Real-data support for "cov-LDSC ≈ the GLS operator," stated as practical

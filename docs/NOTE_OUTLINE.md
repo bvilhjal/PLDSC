@@ -76,7 +76,8 @@ result (the identifiability limit formalizes a known confounding).
    decomposition as an organizing device and its consequences.
 2. **The decomposition** — the spectral identity; local vs non-local; PC score as
    truncation; the honest magnitudes (simulation: windowed ~5%, genome-wide ~50%;
-   real 1000G, LOCO-clean: windowed ~0% EUR / ~17% FULL, genome-wide ~90% FULL —
+   real 1000G, LOCO-clean: windowed ~0% EUR / ~29% FULL at ±1 cM (17% at
+   ±250 kb), genome-wide ~90% FULL —
    `realdata_1000g_benchmarks.py` B2/B6).
 3. **Unification** — the four methods as one ladder; hard projection vs GLS `P_c`;
    the exactness/assumptions table.

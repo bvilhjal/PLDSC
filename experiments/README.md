@@ -548,7 +548,8 @@ top-10 PC score.
 > **Correction (2026-07-19, see `realdata_1000g_benchmarks.py` B2 below):** these
 > shares used an **in-chromosome GRM**, which removes local LD along with
 > structure and thereby overstates the structure share. The LOCO-clean numbers
-> are: genome-wide ~0–5% (EUR) / ~90% (FULL); windowed ~0% (EUR) / ~17% (FULL).
+> are: genome-wide ~0–5% (EUR) / ~90% (FULL); windowed ~0% (EUR) / ~17% (FULL)
+> at ±250 kb, ~29% (FULL) at the ±1 cM window LDSC actually uses.
 > The corr(ℓ^struct, PC score) findings are unaffected.
 
 ### Verdict: the framework is real; the sim's quantitative "~5% windowed" is not
@@ -605,7 +606,8 @@ scores (up-weighting of sub-1 eigenvalues + the q-renormalization of METHOD §5)
 visible as the small negative EUR shares. The two operators bracket the truth:
 **the honest structure share of the genome-wide LD score is ~90% in a
 multi-ancestry panel and only ~0–5% in single-ancestry cohorts; in ±250 kb
-windows it is ~17% (FULL) vs ~0% (EUR).** The sim's "5% in windows" was the
+windows it is ~17% (FULL) vs ~0% (EUR), and ~29% (FULL) at the ±1 cM window
+LDSC actually uses (`realdata_genome_loco.py`).** The sim's "5% in windows" was the
 right order for single-ancestry cohorts, wrong for multi-ancestry panels — and
 the pilot's "19–62% in windows" overstated both.
 
