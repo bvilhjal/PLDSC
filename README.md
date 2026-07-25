@@ -30,7 +30,7 @@ record rather than pursued to publication.** What the search covered and found:
 
 **Durable value of this repo:** (1) a small, tested, CI-green implementation of the
 mixed-model residual-precision operator `P_c` and the LD-score decomposition
-(`pldsc/`, 29 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
+(`pldsc/`, 59 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
 including the adversarially-checked structure-aliasing remark in §14); (3) an
 unusually candid **negative-results and prior-art record** (`experiments/`,
 [docs/PRIOR_ART.md](docs/PRIOR_ART.md), [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),
@@ -86,6 +86,22 @@ resulting LD-score bias is large but near-uniform, so it moves the LDSC
 readout on a related in-sample panel is not. This does **not** revive the
 relatedness case for `P_c` (§13) — it is an intercept effect whose standard
 remedy is to compute LD from unrelateds.
+
+**Project-direction review (2026-07-25).** [docs/PROJECT_DIRECTIONS.md](docs/PROJECT_DIRECTIONS.md)
+reviews the whole record and asks what a *differentiated* revival would look like.
+Diagnosis: every framing that died was a variant of "a better estimator of `h²`
+under structure," which is bounded by the windowed structure share this repo itself
+measured; the claims that survived four prior-art sweeps were all *measurements and
+corrections*, never constructions. It proposes four directions with kill-tests, two
+of which cost a day each and have not been run. The highest-ranked one is backed by
+a new experiment ([raw_loading_control.py](experiments/raw_loading_control.py)):
+S-LDSC's annotation LD scores include the `r_jj² = 1` self term, which makes the raw
+ancestry loading and its LD-smeared score 0.82-collinear — so standard S-LDSC
+returns a `τ` **~9× larger under pure environmental confounding than under a genuine
+4× enrichment** on an ancestry-correlated annotation, and adding the *raw*
+(un-smeared) loading removes it at ~no cost to genuine enrichment elsewhere. The
+§14 identifiability limit is unchanged: ancestry-correlated real enrichment is still
+co-attenuated.
 
 **Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
 outlines a practice-facing alternative to the archived theory note: lead with
