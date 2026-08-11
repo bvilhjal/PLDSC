@@ -277,3 +277,27 @@ Steps 1 and 2 are each a day and each can close a direction. Neither has been ru
   scope paragraph, which no longer claims channel (ii) needs an empirically
   calibrated threshold. The MARGINAL verdict is unaffected — the fix is to the
   null, not the power.
+
+## 8. Gate outcomes (2026-08-11)
+
+The two one-day gates of §6 have now both been run, on real 1000G phase-3 data.
+
+- **D2 — CLOSED, caveat paragraph.** The tr-ratio gate
+  ([relatedness_d2_killtest.py](../experiments/relatedness_d2_killtest.py))
+  found the naive `nu - 1` under-subtraction is real on every standard panel
+  (PC-adjusted `N_eff` ratios: EUR 0.80, AFR 0.86, AMR 0.88, FULL 0.55), but
+  propagating it to the LDSC intercept
+  ([d2_intercept_propagation.py](../experiments/d2_intercept_propagation.py))
+  gives a shift of ~0.005 at chi2 slope 0.05 and ~0.03 at slope 0.3, against a
+  typical real intercept SE of ~0.01 — and the corrected scores recover 1.00.
+  The durable output is a quantified caveat for the note, not a paper.
+- **D1(a) — SURVIVES, narrowed.** The annotation-loading gate
+  ([d1_annotation_loading_gate.py](../experiments/d1_annotation_loading_gate.py),
+  full write-up [D1_ANNOTATION_GATE](D1_ANNOTATION_GATE.md)): on the real
+  baseline-LD v2.2 set, max |corr| with FULL-panel PC loadings is 0.12, carried
+  by the ancestry-informative annotations (LLD_AFR, predicted allele age; MAF
+  bins 0.06-0.07; mainstream functional <= 0.055). The claim narrows to
+  ancestry-informative annotations in multi-ancestry S-LDSC. Next gate: (b)
+  at-scale S-LDSC with the real LLD_AFR / allele-age annotations, tau_CONF with
+  vs without the raw-loading control — then the scoped prior-art sweep on the
+  survivor, per §6.
