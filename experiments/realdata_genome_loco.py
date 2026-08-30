@@ -41,6 +41,11 @@ The download is ~15 GB of phase-3 VCFs (chr1 1.1 GB ... chr22 0.2 GB); the
 parser/cacher in `realdata_1000g_benchmarks.py` already streams and thins them.
 The genetic maps are the 22.8 MB Beagle GRCh37 set already in
 `.scratch_1000g/maps/`. See `download_plan()` for the concrete manifest.
+(Reproducibility note, 2026-08-30: the scratch tree was rebuilt on 2026-08-11
+with chr21/chr22 + baselineLD only -- the maps, the chr10 VCF and the chr10
+cache are no longer present, so regenerating the 3-chromosome figures below
+requires re-fetching them per the download plan. The D1/D2 gate runs are
+unaffected.)
 """
 from __future__ import annotations
 
@@ -174,7 +179,9 @@ def download_plan():
     print("  VCFs (~15 GB total), stream-parsed by realdata_1000g_benchmarks.py:")
     for c in range(1, 23):
         print(f"    chr{c}: {base.format(c=c)}")
-    print("  genetic maps: already in .scratch_1000g/maps/ (Beagle GRCh37, 22.8 MB)")
+    print("  genetic maps: expected in .scratch_1000g/maps/ (Beagle GRCh37, "
+          "22.8 MB; absent from the 2026-08-11 scratch rebuild -- re-fetch "
+          "per download_plan() to regenerate the cM-window figures)")
     print("  panel: .scratch_1000g/samples.panel (already present)")
     print("  GRM fodder: thin each chromosome to a common-SNP subset; ~50-100k")
     print("  SNPs genome-wide is ample. Per-target LD scores hold one chromosome.")

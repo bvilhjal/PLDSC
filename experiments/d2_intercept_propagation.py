@@ -88,7 +88,7 @@ def propagate(name: str, G: np.ndarray, pos: np.ndarray, rng) -> None:
 def main():
     t0 = time.time()
     print("D2 intercept propagation: naive vs corrected noise-floor subtraction")
-    samples, G22, pos22 = bench.load_chrom(22)  # t25 cache from the kill-test
+    samples, G22, pos22 = bench.load_chrom(22)  # default THIN[22]=10 cache (t10)
     s21, G21, _ = bench.load_chrom(21)
     assert s21 == samples
     pop, superpop = bench.load_panel()

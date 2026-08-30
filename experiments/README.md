@@ -789,3 +789,69 @@ axis shift) vs ENRICH (true 4x enrichment, no confounding):
 - Caveats: `M ~ 2000`, `N = 600`, unweighted OLS S-LDSC, no jackknife SEs, one
   structure axis, simulated AR1 LD. Numbers are directional; the `rel-A` ratio is
   meaningless where the baseline is ~0 (the control CONF row).
+
+## `relatedness_d2_killtest.py` — D2 gate: effective pair df vs naive on real panels
+
+PROJECT_DIRECTIONS §4/§6 step 1. Compares the effective pair df
+`tr(Ã)²/tr(Ã²)` (split-half cross-product estimate; a finite-SNP GRM inflates
+`tr(Ã²)` by ~N²/M) against the naive `ν−1` on 1000G phase-3 chr21+chr22
+(EUR/AFR/AMR/FULL), PC-adjusted (intercept + 10 GRM PCs), plus simulated
+full-sib positive controls.
+
+| panel (PC-adjusted N_eff/naive ratio) | ratio |
+|---|---|
+| EUR | 0.80 |
+| AFR | 0.86 |
+| AMR | 0.88 |
+| FULL | **0.55** |
+
+- The naive `ν−1` under-subtraction is real on **every** standard panel, but
+  the window-accumulated excess (0.5–1.1 LD-score units at S=2000) sits 5–50×
+  below the sib-panel regimes of METHOD §10.1 (5–24 units).
+- Intercept-only GRMs conflate ancestry sharing with relatedness (FULL ratio
+  0.033 → 0.55 after PC adjustment).
+- Note: the script's "naive" for the PC rows is `n − n_pcs − 1`; the package
+  default (`residual_df − 1`, design `[1, PCs]`) is one smaller — an O(1/N)
+  difference, negligible at these N, but the recorded ratios inherit it.
+- **Verdict:** intermediate — propagation to an actual LDSC intercept is the
+  deciding measurement (next entry).
+
+## `d2_intercept_propagation.py` — D2 gate: does the under-subtraction move the intercept?
+
+Monte-Carlo LDSC regressions on 1000G chr22 (EUR and FULL, PC-residualized
+scores) with known chi² slope, comparing the naive `ν−1` denominator against
+the N_eff-corrected scores. (chr22 loads the default t10 cache here, not the
+kill-test's t25.)
+
+| chi² slope | intercept shift (naive vs corrected) | scale |
+|---|---|---|
+| 0.05 | ~0.005 | N=100k |
+| 0.3 | **~0.03** | biobank |
+
+- Shifts match the analytic `slope × mean(bias)` prediction.
+- The "corrected scores recover 1.00" half is by construction (the simulation
+  defines the corrected score as truth); the naive-vs-corrected delta is the
+  evidence.
+- **Verdict (per the script's own pre-stated rule, |shift| well under ~0.01
+  kills / at-or-above keeps alive):** kills at typical slope (0.005), keeps
+  the barometer caveat alive at biobank-scale slope (0.03 ≈ 3× a typical
+  intercept SE, with FULL the standard multi-ancestry panel). The 2026-08-11
+  "does not move materially / CLOSED" framing overstated the slope-0.3 arm;
+  see PROJECT_DIRECTIONS §8 for the corrected two-regime verdict.
+
+## `d1_annotation_loading_gate.py` — D1(a) gate: annotation × PC-loading correlations on real annotations
+
+PROJECT_DIRECTIONS §6 step 2. Correlates the real baseline-LD v2.2 chr22
+annotation set (96 annotations, 8,781/9,654 SNPs position-matched) against
+FULL-panel PC loadings (chr21 GRM → chr22 loadings; LOCO-clean).
+max |corr| = **0.12** (median 0.025), carried by the ancestry-informative
+annotations (LLD_AFR, predicted allele age; MAF bins 0.06–0.07); mainstream
+functional annotations ≤ 0.055; 10/2/0 annotations above 0.1/0.15/0.2.
+
+- **Verdict:** D1 survives narrowed to ancestry-informative annotations in
+  multi-ancestry S-LDSC; the deciding at-scale kill-test (b) is still pending.
+  The 0.10–0.14 mechanism window from `raw_loading_control.py` is a different
+  quantity (loading vs its own smeared score) — the bridge is an analogy, not
+  a measurement; see D1_ANNOTATION_GATE.md "Caveats".
+- Caveats: chr22 only, chr21-only GRM (~4k SNPs; correlations are lower
+  bounds), 91% position match with the uncharacterized 9% unmatched.

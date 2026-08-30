@@ -49,15 +49,18 @@ The total genome-wide correlation score has an exact spectral GRM identity,
 finding). Calling a component "structure" additionally requires a declared
 window, operator, or justified PC subspace; the split is not unique. The legacy
 "PC score" is a leading-eigenvector truncation — which correlates 0.99 with the
-declared non-local remainder but captures only
-~37% of its magnitude ([experiments/ld_decomposition.py](experiments/ld_decomposition.py)).
+declared non-local remainder
+([experiments/ld_decomposition.py](experiments/ld_decomposition.py)) and, on the
+external review's independent re-derivation, captures only
+~37% of its magnitude ([docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md) §3.3).
 The honest headline (simulation): within the **windowed** LD score LDSC actually
 uses, structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses
 on that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
 died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~29%
 at LDSC's ±1 cM window (multi-ancestry panel; 17% at ±250 kb — the window unit
 matters) and the genome-wide share ~90% in the panel
-([realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
+([experiments/realdata_genome_loco.py](experiments/realdata_genome_loco.py);
+±250 kb runs in [experiments/realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
 legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
 residual-precision operator `P_c` can be compared on one metric/eigenspace map.
 They do not all remove or measure one unique `ℓ^struct`, and ancestry-aligned
@@ -94,7 +97,8 @@ Diagnosis: every framing that died was a variant of "a better estimator of `h²`
 under structure," which is bounded by the windowed structure share this repo itself
 measured; the claims that survived four prior-art sweeps were all *measurements and
 corrections*, never constructions. It proposes four directions with kill-tests, two
-of which cost a day each and have not been run. The highest-ranked one is backed by
+of which cost a day each; **both were run on 2026-08-11** (see the gate-outcomes
+paragraph below). The highest-ranked one is backed by
 a new experiment ([raw_loading_control.py](experiments/raw_loading_control.py)):
 S-LDSC's annotation LD scores include the `r_jj² = 1` self term, which makes the raw
 ancestry loading and its LD-smeared score 0.82-collinear — so standard S-LDSC
@@ -103,6 +107,23 @@ returns a `τ` **~9× larger under pure environmental confounding than under a g
 (un-smeared) loading removes it at ~no cost to genuine enrichment elsewhere. The
 §14 identifiability limit is unchanged: ancestry-correlated real enrichment is still
 co-attenuated.
+
+**Gate outcomes (2026-08-11).** The two one-day gates of the project-direction
+review were run on real 1000G phase-3 data
+([docs/PROJECT_DIRECTIONS.md](docs/PROJECT_DIRECTIONS.md) §8,
+[docs/D1_ANNOTATION_GATE.md](docs/D1_ANNOTATION_GATE.md)):
+**D1 survives narrowed** — on the real baseline-LD v2.2 annotation set, the
+mainstream functional annotations correlate ≤0.055 with FULL-panel PC loadings,
+but the ancestry-informative ones (LLD_AFR, predicted allele age, MAF bins)
+reach 0.12, enough to keep the self-term-collinearity question open pending
+the at-scale S-LDSC kill-test (b); the 0.10–0.14 mechanism comparison is an
+analogy between two different quantities, not a measurement.
+**D2 splits by regime** — the naive `ν−1` noise floor under-subtracts on every
+standard panel (effective-df ratios EUR 0.80 / AFR 0.86 / AMR 0.88 / FULL
+0.55), but the induced LDSC-intercept shift is ~0.005 at typical slope
+(immaterial) and ~0.03 at slope 0.3 (≈3× a typical intercept SE, material
+with a multi-ancestry reference panel): a two-regime caveat for the note,
+which an earlier "CLOSED" verdict overstated.
 
 **Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
 outlines a practice-facing alternative to the archived theory note: lead with

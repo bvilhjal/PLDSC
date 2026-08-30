@@ -46,10 +46,18 @@ mainstream baseline-LD set. What keeps it from being a clean kill is the
 mechanism D1 is about: in
 [raw_loading_control.py](../experiments/raw_loading_control.py) the S-LDSC
 self-term pathology appeared when the *underlying* SNP-level correlation
-between annotation and axis was only 0.10–0.14 — the self term inflates that to
-0.82 collinearity inside the LD-smeared annotation. `LLD_AFR` and predicted
-allele age sit at 0.12, inside that window. The pathology threshold is not
-"high correlation"; it is "correlation in the range the self term can weaponize."
+between a PC loading and its own self-dropped LD-smeared score was only
+0.10–0.14 — the self term inflates that to 0.82 collinearity inside the
+LD-smeared annotation. That 0.10–0.14 is a *different quantity* from what this
+gate measures (corr(annotation, PC loading)); the two are related only by
+analogy, and the analogy is the weakest link in this verdict: it equates
+"an annotation correlated 0.12 with an ancestry axis" with "a loading whose
+smearing self-correlates at 0.10–0.14", without measuring the annotation's
+own LD-smearing behaviour. `LLD_AFR` and predicted allele age sit at 0.12,
+inside that window under the analogy. The pathology threshold is not "high
+correlation"; it is "correlation in the range the self term can weaponize" —
+and whether an annotation-loading at 0.12 is in that range is precisely what
+kill-test (b) must establish rather than assume.
 
 ## Caveats on this measurement
 

@@ -70,7 +70,15 @@ led with 17%, understating the effect by ~1.7×.
    The `ν−1` correction is wrong by up to 4.7× on a related panel; the resulting
    LD-score bias is large but near-uniform, so h² survives and the intercept
    does not. Practical consequence: **an LDSC intercept computed against an
-   in-sample related LD panel is not a clean confounding barometer.**
+   in-sample related LD panel is not a clean confounding barometer.** The
+   2026-08-11 gate round quantifies the practical size on real panels
+   ([relatedness_d2_killtest.py](../experiments/relatedness_d2_killtest.py),
+   [d2_intercept_propagation.py](../experiments/d2_intercept_propagation.py)):
+   the naive denominator under-subtracts on every standard panel (N_eff ratios
+   EUR 0.80 / AFR 0.86 / AMR 0.88 / FULL 0.55), which moves the intercept by
+   ~0.005 at typical chi² slope (immaterial, SE ~0.01) but ~0.03 at biobank
+   slope with the FULL multi-ancestry panel — so the barometer caveat is
+   material exactly at biobank scale.
 5. **The decision rule.** A short table: cohort type → is the windowed share
    material → what to run. Plus the honest boundary: the operator-dependence of
    the split (B2), and the fact that the correction is conservative (it removes

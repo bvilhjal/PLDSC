@@ -78,7 +78,8 @@ result (the identifiability limit formalizes a known confounding).
    truncation; the honest magnitudes (simulation: windowed ~5%, genome-wide ~50%;
    real 1000G, LOCO-clean: windowed ~0% EUR / ~29% FULL at ±1 cM (17% at
    ±250 kb), genome-wide ~90% FULL —
-   `realdata_1000g_benchmarks.py` B2/B6).
+   `realdata_genome_loco.py` for the ±1 cM aggregate;
+   `realdata_1000g_benchmarks.py` B2/B6 for the ±250 kb runs).
 3. **Unification** — the four methods as one ladder; hard projection vs GLS `P_c`;
    the exactness/assumptions table.
 4. **The identifiability limit** — the proposition + proof; the corollary
