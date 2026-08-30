@@ -103,7 +103,6 @@ def part1_scale_not_confounding(rng, cs):
     for kind, nf, s in [("homog", 120, 2), ("homog", 60, 4),
                         ("admix", 120, 2), ("admix", 60, 4)]:
         G, chrom = build(kind, rng, cs, nf, s)
-        N = G.shape[0]
         Zoff = standardize(G[:, chrom != 0])
         K = (Zoff @ Zoff.T) / Zoff.shape[1]
         B = fam_block(nf, s)

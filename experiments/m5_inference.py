@@ -27,7 +27,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))  # repo root, for `pldsc`
 sys.path.insert(0, _HERE)                    # experiments, for the REML helper
 
-from pldsc._lmm import ld_scores, null_inflation, residual_precision  # noqa: E402
+from pldsc._lmm import ld_scores, residual_precision  # noqa: E402
 from pldsc.regression import ld_score_regression  # noqa: E402
 from pldsc.simulate import grm, simulate_admixture, standardize  # noqa: E402
 from m4_fitted_vc import reml_fit  # noqa: E402
@@ -126,7 +126,7 @@ def main():
     se_vc = float(np.sqrt(var_vc))
     M = Xc.shape[1]
     crossover_M = M * (se_reg / se_vc) ** 2  # where the two components are equal
-    print(f"\n  intercept variance decomposition (fitted arm):")
+    print("\n  intercept variance decomposition (fitted arm):")
     print(f"    regression SE (jackknife, shrinks ~1/sqrt(M)) = {se_reg:.3f}  at M={M}")
     print(f"    V_hat_c SE (shared systematic, ~const in M)   = {se_vc:.3f}  "
           f"[dIntercept/dh2={dg_dh2:.2f} x sd(h2_hat)={h2_hat.std():.3f}]")

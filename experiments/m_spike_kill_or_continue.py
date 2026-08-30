@@ -265,22 +265,22 @@ def run_scenario(name, rng, chrom_sizes, n_found, n_sib, fst, rho,
           f"sib/pop={n_sib}  reps={n_rep}")
     print(f"  sigma_g2={sigma_g2} sigma_e2={sigma_e2}  tau2={tau2:.4g}  "
           f"mean full L={np.mean(L_pldsc_full):.3f}")
-    print(f"\n  [Readout B] oracle moment Eq(3) vs Monte Carlo")
+    print("\n  [Readout B] oracle moment Eq(3) vs Monte Carlo")
     print(f"    max |E[z^2]_MC - Eq3| / MCSE   = {np.max(np.abs(resid_sigma)):.2f} sigma "
           f"(should be O(1-3) if correct)")
     print(f"    RMS standardized residual      = {np.sqrt(np.mean(resid_sigma**2)):.2f} sigma")
     print(f"    mean |E[z^2]_MC - Eq3|         = {np.mean(np.abs(z2['pldsc']-mu_eq3)):.4f}")
     print(f"    window truncation |Lwin-Lfull|/Lfull: median={np.median(trunc):.3f} "
           f"max={np.max(trunc):.3f}")
-    print(f"\n  [Readout A1] confounding under a NULL target chr (tau2=0): mean z^2")
-    print(f"               (calibrated intercept = 1; excess = residual confounding)")
+    print("\n  [Readout A1] confounding under a NULL target chr (tau2=0): mean z^2")
+    print("               (calibrated intercept = 1; excess = residual confounding)")
     print(f"    ordinary OLS    mean z^2 = {null_conf['ord']:7.3f}   "
           f"(confounding = {null_conf['ord']-1:+.3f})")
     print(f"    cov-adj OLS     mean z^2 = {null_conf['cov']:7.3f}   "
           f"(confounding = {null_conf['cov']-1:+.3f})")
     print(f"    mixed-model Pc  mean z^2 = {null_conf['pldsc']:7.3f}   "
           f"(confounding = {null_conf['pldsc']-1:+.3f})")
-    print(f"\n  [Readout A2] regressor bias: regress the SAME calibrated oracle z^2")
+    print("\n  [Readout A2] regressor bias: regress the SAME calibrated oracle z^2")
     print(f"               on each LD score  (want intercept a=1, slope b=tau2={tau2:.4g})")
     for label, (a, b, r2) in reg_on_oracle.items():
         print(f"    {label:20s}  a={a:7.3f}   b={b:.4g}   R^2={r2:.3f}")

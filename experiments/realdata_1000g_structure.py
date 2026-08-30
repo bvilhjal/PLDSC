@@ -109,7 +109,6 @@ def ldscores_blocked(X, window):
     N, M = X.shape
     ell_win = np.zeros(M)
     ell_full = np.zeros(M)
-    p = np.arange(M)
     B = 2000
     for lo in range(0, M, B):
         hi = min(M, lo + B)

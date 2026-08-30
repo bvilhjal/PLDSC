@@ -15,3 +15,8 @@ packages = ["pldsc"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pldsc.__version__" }
+
+[tool.ruff]
+# Family convention: pyflakes-only, by design. Long lines and multi-statement
+# lines are intentional; do not reformat or add style rules.
+lint.select = ["F"]

@@ -194,7 +194,7 @@ def _analyze_impl(name, G, chrom, pos, sigma_g2, sigma_e2, target_h2_infl,
     print(f"\n{'='*74}\nSCENARIO: {name}")
     print(f"  N={N}  target-chr SNPs={Mc}  sigma_g2={sigma_g2} sigma_e2={sigma_e2}")
     print(f"  clearly-related pairs (GRM off-diag>0.35): {n_rel}  mean={rel_mean:.2f}")
-    print(f"\n  mean null chi^2 (LDSC-intercept confounding; want 1.000):")
+    print("\n  mean null chi^2 (LDSC-intercept confounding; want 1.000):")
     print(f"    ordinary  ( 0 PC)  : {null_chi2(projector(one)):.3f}")
     for k in pc_list:
         Ck = np.column_stack((one, pcs_all[:, :k]))

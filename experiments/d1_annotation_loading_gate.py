@@ -53,7 +53,6 @@ def load_annotations(pos_wanted: np.ndarray):
             if bp in wanted:
                 rows[bp] = [float(x) for x in parts[4:]]
     names = header[4:]
-    idx = [wanted[bp] for bp in rows]
     A = np.full((len(pos_wanted), len(names)), np.nan)
     for r, (bp, vals) in enumerate(rows.items()):
         A[wanted[bp]] = vals

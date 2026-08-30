@@ -26,7 +26,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pldsc._lmm import null_inflation, residual_precision  # noqa: E402
-from pldsc.simulate import ar1_haps, grm, standardize  # noqa: E402
+from pldsc.simulate import ar1_haps, standardize  # noqa: E402
 
 SEED = 20260718
 CHROMS = [150, 600]          # target chr 0; chr 1 is the off-chromosome background

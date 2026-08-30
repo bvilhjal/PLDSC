@@ -36,7 +36,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pldsc._lmm import null_inflation, residual_precision  # noqa: E402
-from pldsc.simulate import ar1_haps, grm, simulate_admixture, standardize  # noqa: E402
+from pldsc.simulate import ar1_haps, simulate_admixture, standardize  # noqa: E402
 
 SEED = 20260719
 CHROMS = [150, 600]         # chr0 = target; chr1 = off-chromosome background

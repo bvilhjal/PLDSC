@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import gzip
 import os
-import sys
 import time
 
 import numpy as np
