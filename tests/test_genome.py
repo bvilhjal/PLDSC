@@ -148,6 +148,10 @@ class StructureShareTests(unittest.TestCase):
         w = np.array([2.0, 2.0])
         self.assertAlmostEqual(structure_share(o, w), 0.5, places=12)
 
+    def test_rejects_length_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "same length"):
+            structure_share(np.array([2.0, 3.0]), np.array([2.0, 3.0, 4.0]))
+
 
 class InterpolateCmTests(unittest.TestCase):
     def test_linear_map_interpolates_exactly(self):

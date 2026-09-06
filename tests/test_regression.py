@@ -67,6 +67,34 @@ class LdScoreRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least 4"):
             ld_score_regression(np.arange(3.0), np.arange(3.0))
 
+    def test_rejects_non_finite_input(self):
+        x = np.linspace(0.0, 50.0, 40)
+        y = 1.0 + 0.1 * x
+        bad_y = y.copy()
+        bad_y[3] = np.nan
+        with self.assertRaisesRegex(ValueError, "finite"):
+            ld_score_regression(bad_y, x)
+        bad_x = x.copy()
+        bad_x[3] = np.inf
+        with self.assertRaisesRegex(ValueError, "finite"):
+            ld_score_regression(y, bad_x)
+
+    def test_rejects_non_positive_weights(self):
+        x = np.linspace(0.0, 50.0, 40)
+        y = 1.0 + 0.1 * x
+        w = np.ones(40)
+        w[7] = 0.0
+        with self.assertRaisesRegex(ValueError, "positive"):
+            ld_score_regression(y, x, weights=w)
+        w[7] = -1.0
+        with self.assertRaisesRegex(ValueError, "positive"):
+            ld_score_regression(y, x, weights=w)
+
+    def test_degenerate_ldscore_raises_valueerror_not_linalgerror(self):
+        y = np.arange(40.0)
+        with self.assertRaisesRegex(ValueError, "singular"):
+            ld_score_regression(y, np.ones(40))
+
 
 if __name__ == "__main__":
     unittest.main()

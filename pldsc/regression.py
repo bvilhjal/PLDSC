@@ -38,7 +38,13 @@ def _wls_beta(x: Float, y: Float, w: Float) -> Float:
     """WLS of ``y ~ 1 + x`` with weights ``w``; returns ``[intercept, slope]``."""
     X = np.column_stack((np.ones_like(x), x))
     XtW = X.T * w
-    return np.linalg.solve(XtW @ X, XtW @ y)
+    try:
+        return np.linalg.solve(XtW @ X, XtW @ y)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError(
+            "singular weighted design (constant ldscore, or a jackknife "
+            "replicate whose kept points carry no weight)"
+        ) from exc
 
 
 def ld_score_regression(
@@ -79,6 +85,8 @@ def ld_score_regression(
     ld = np.asarray(ldscore, dtype=np.float64)
     if chi2.ndim != 1 or chi2.shape != ld.shape:
         raise ValueError("chi2 and ldscore must be 1-D arrays of equal length")
+    if not np.all(np.isfinite(chi2)) or not np.all(np.isfinite(ld)):
+        raise ValueError("chi2 and ldscore must contain only finite values")
     n = chi2.size
     if n < 4:
         raise ValueError("need at least 4 points for a block jackknife")
@@ -90,6 +98,10 @@ def ld_score_regression(
         w = np.asarray(weights, dtype=np.float64)
         if w.shape != chi2.shape:
             raise ValueError("weights must match chi2 shape")
+        if not np.all(np.isfinite(w)):
+            raise ValueError("weights must contain only finite values")
+        if np.any(w <= 0.0):
+            raise ValueError("weights must be strictly positive")
         tag = "user"
     if two_step:
         b0 = _wls_beta(ld, chi2, w)

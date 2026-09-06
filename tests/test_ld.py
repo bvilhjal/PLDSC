@@ -145,6 +145,12 @@ class EffectivePairDfTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "finite"):
             effective_pair_df(bad)
 
+    def test_rejects_asymmetric_relationship(self):
+        bad = np.eye(6)
+        bad[0, 1] = 0.5
+        with self.assertRaisesRegex(ValueError, "symmetric"):
+            effective_pair_df(bad)
+
 
 class PairDfOverrideTests(unittest.TestCase):
     def setUp(self):

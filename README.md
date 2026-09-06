@@ -30,7 +30,7 @@ record rather than pursued to publication.** What the search covered and found:
 
 **Durable value of this repo:** (1) a small, tested, CI-green implementation of the
 mixed-model residual-precision operator `P_c` and the LD-score decomposition
-(`pldsc/`, 59 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
+(`pldsc/`, 66 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
 including the adversarially-checked structure-aliasing remark in §14); (3) an
 unusually candid **negative-results and prior-art record** (`experiments/`,
 [docs/PRIOR_ART.md](docs/PRIOR_ART.md), [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),

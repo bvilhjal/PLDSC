@@ -108,6 +108,8 @@ def effective_pair_df(
         raise ValueError("relationship must be a square matrix")
     if not np.all(np.isfinite(A)):
         raise ValueError("relationship must contain only finite values")
+    if not np.allclose(A, A.T):
+        raise ValueError("relationship must be symmetric")
 
     design = _design_matrix(A.shape[0], covariates)
     q, _ = np.linalg.qr(design)

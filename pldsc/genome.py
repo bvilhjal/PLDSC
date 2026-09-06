@@ -162,6 +162,11 @@ def windowed_scores(
     coordinate (physical bp or genetic cM) and ``window`` is in the same units.
     Banded: O(M * variants-per-window * N), feasible genome-wide. Variants are
     assumed sorted by ``coord`` (as they come off a single chromosome).
+
+    Unlike :func:`pldsc.ld.local_ld_scores`, correlations are not clipped to
+    [-1, 1] and the self term is not pinned to exactly 1: with unit-norm columns
+    both effects are roundoff-level, and the spectral identity validation
+    depends on this staying the raw quadratic form.
     """
     Xn = np.asarray(Xn, dtype=np.float64)
     coord = np.asarray(coord, dtype=np.float64)
@@ -192,6 +197,8 @@ def structure_share(ordinary: ArrayLike, whitened: ArrayLike) -> float:
     """
     ordinary = np.asarray(ordinary, dtype=np.float64)
     whitened = np.asarray(whitened, dtype=np.float64)
+    if ordinary.shape != whitened.shape:
+        raise ValueError("ordinary and whitened must have the same length")
     fo = ordinary.mean()
     if fo == 0.0:
         raise ValueError("mean ordinary LD score is zero")
