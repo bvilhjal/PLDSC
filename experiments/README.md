@@ -886,3 +886,51 @@ Pre-stated rule: PASS if the GC+STRAT three-term intercept is within 0.02 of
 - **Consequence.** The ppb use is not recommended on this evidence. To come
   back in, it needs a re-stated rule or a real-data check: GC-corrected
   against non-GC sumstats of one trait, with external 1000G loadings.
+
+## `multiancestry_meta_sim.py` — Monte Carlo check of the meta-analysis LD score (MA2, MA6)
+
+Multi-ancestry direction ([docs/MULTI_ANCESTRY.md](../docs/MULTI_ANCESTRY.md)).
+Setup: two simulated ancestries sharing Balding–Nichols frequencies (fst 0.1)
+with different LD lengths; GWAS N = 3000 + 1500, h² = 0.5, M = 2000; reference
+panels are independent of the GWAS samples. LDSC is OLS, and
+ĥ²/h² = slope·M/N/h².
+
+- **Default run (400-person panels): FAIL**, pre-stated rules (i) and (ii).
+  Even the single-ancestry arm returned 0.80. The cause is errors-in-variables
+  from small panels on this toy's narrow LD-score spread (SD 0.32 around a
+  mean of 1.9). `--baseline-check` shows 0.852 / 0.971 / 1.017 at panel sizes
+  400 / 1500 / 6000, and 1.038 in-sample.
+- **Post-failure rerun `--n-ref 6000`,** with rules written before it ran:
+  PASS.
+  - The correct meta score recovers h² within 5%: 0.962–1.047, MC SE
+    0.02–0.03.
+  - Slope ratios match the panel-predicted κ within 0.004:
+    - E-only: 0.608 vs 0.610, 0.547 vs 0.548, 0.738 vs 0.742, 0.679 vs 0.681;
+    - the ρ = 1 score when true ρ = 0.6: 0.890 vs 0.889, 0.905 vs 0.906.
+
+## `multiancestry_1000g_meta.py` — what a EUR LD score costs a multi-ancestry meta (1000G chr22)
+
+The first real-data step. Data: 1000G phase 3 chr22 from the S3 mirror (v5a),
+SHAPEIT4 GRCh37 map, ±1 cM windows, superpopulation panels (n = 347–661).
+From these the script computes:
+
+- within- and cross-ancestry LD scores;
+- the meta score MA2;
+- κ = ĥ²/h² when the meta is regressed on the EUR score.
+
+No GWAS is needed.
+
+- **Kill rule (pre-stated): KEEP.** The rule cell is EUR 0.75 + one other
+  superpopulation, ρ = 0.8, sample-size weights. As pre-stated, κ = 0.716
+  AFR / 0.811 EAS / 0.821 SAS / 0.850 AMR.
+- **Corrected computation, after a robustness check (Table D): still KEEP.**
+  The correction scales regressors by per-SNP N_j, as LDSC does, and restricts
+  regression SNPs to EUR MAF ≥ 0.05. κ = 0.750 / 0.841 / 0.868 / 0.907 (OLS)
+  and 0.750 / 0.845 / 0.870 / 0.896 (LDSC-style weights). The as-stated
+  computation overstated both the slope loss and the intercept inflation.
+- **Robust to density:** the 1-in-3 cache (`--thin 3`) moves κ by ≤ 0.015.
+- **LD mismatch dominates:** κ < 1 even at ρ = 1 (EUR 0.75 + AFR: 0.788).
+- **ρ is not identifiable from the meta alone:** corr(within, cross) is
+  0.80–0.99 across SNPs.
+- **Caveats:** one chromosome; superpopulations as ancestry proxies; a single
+  genetic map; the effect-scale assumption A1. See MULTI_ANCESTRY §7.

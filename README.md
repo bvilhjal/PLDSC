@@ -4,7 +4,33 @@ PLDSC is a clean restart of the 2017 `newldsc` research prototype. The project
 studies LD Score regression when GWAS samples contain population structure or
 when association statistics come from covariate-adjusted or mixed models.
 
-## Status: CONCLUDED / archived (2026-07-19)
+## Current direction (2026-09-25): LDSC on multi-ancestry data
+
+The project now asks one question: **what goes wrong when LDSC-based tools
+run on multi-ancestry data, how big is the error, and what is the fix?**
+See [docs/STRATEGY.md](docs/STRATEGY.md) for the plan and
+[docs/MULTI_ANCESTRY.md](docs/MULTI_ANCESTRY.md) for the math.
+
+The core result so far is the LD score a fixed-effect meta-analysis of
+ancestry-specific GWAS actually follows:
+
+    L_j = Σ_ab ω_ab,j ρ_ab ℓ^ab_j,  ℓ^ab_j = Σ_k r^a_jk r^b_jk
+
+This combines within- and cross-ancestry LD with the meta's weights. It is
+implemented in `pldsc.multiancestry`, verified exactly in-sample, and checked
+by Monte Carlo with out-of-sample panels. On 1000G chr22, take a meta that is
+75% EUR, 25% one other superpopulation, with ρ = 0.8. The standard EUR LD
+score then understates h² by:
+
+- 25% with AFR;
+- 16% with EAS;
+- 13% with SAS;
+- 9–10% with AMR.
+
+Most of that loss is LD mismatch, not effect heterogeneity. The estimator line
+below remains concluded.
+
+## Estimator line: CONCLUDED / archived (2026-07-19)
 
 **Outcome: the machinery is correct and well-tested, but an exhaustive search
 found no differentiated contribution, so the project is archived as an honest
@@ -30,7 +56,7 @@ record rather than pursued to publication.** What the search covered and found:
 
 **Durable value of this repo:** (1) a small, tested, CI-green implementation of the
 mixed-model residual-precision operator `P_c` and the LD-score decomposition
-(`pldsc/`, 66 tests); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
+(`pldsc/`, 66 tests at archive; 81 with the 2026-09-25 multi-ancestry module); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
 including the adversarially-checked structure-aliasing remark in §14); (3) an
 unusually candid **negative-results and prior-art record** (`experiments/`,
 [docs/PRIOR_ART.md](docs/PRIOR_ART.md), [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),
@@ -125,9 +151,9 @@ standard panel (effective-df ratios EUR 0.80 / AFR 0.86 / AMR 0.88 / FULL
 with a multi-ancestry reference panel): a two-regime caveat for the note,
 which an earlier "CLOSED" verdict overstated.
 
-**Strategy review (2026-09-24).** [docs/STRATEGY.md](docs/STRATEGY.md) asks
-how to make the project relevant, not how to revive it. It proposes three
-tracks:
+**Strategy review (2026-09-24; superseded 2026-09-25).** The first version of
+[docs/STRATEGY.md](docs/STRATEGY.md), kept in git history, asked how to make
+the project relevant, not how to revive it. It proposed three tracks:
 
 - **A. The family's LD-reference auditor.** A panel card, a per-axis
   stratification fingerprint and annotation–ancestry flags. The consumers
@@ -142,7 +168,9 @@ tracks:
 A new-estimator revival is explicitly not recommended. The one probe run for
 the review, [gc_vs_stratification.py](experiments/gc_vs_stratification.py),
 failed its pre-stated rule. The mechanism held, but the tolerance was badly
-posed, so the ppb use it tested is not recommended on that evidence.
+posed, so the ppb use it tested is not recommended on that evidence. On
+2026-09-25 the three tracks were narrowed to Track C's question, which is
+the current direction above.
 
 **Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
 outlines a practice-facing alternative to the archived theory note: lead with
@@ -213,6 +241,22 @@ or LOCO implementation. Covariates are treated as fixed: when PCs are estimated
 from the same genotypes, the residual-rank finite-sample correction is only
 approximate. The appropriate window is population- and data-dependent; 20 cM
 is not a universal default.
+
+Multi-ancestry LD scores for a meta-analysis, and what a single-ancestry
+score would cost it (see [docs/MULTI_ANCESTRY.md](docs/MULTI_ANCESTRY.md)):
+
+```python
+from pldsc import (cross_ancestry_ld_scores, meta_weights, meta_ld_scores,
+                   single_reference_bias)
+
+s = cross_ancestry_ld_scores([eur, afr], positions_cm, window_cm=1.0)
+omega, n_j = meta_weights([n_eur, n_afr], s.available, scheme="sample_size")
+L = meta_ld_scores(s, omega, rho=[[1, 0.8], [0.8, 1]])
+kappa = single_reference_bias(L, s.scores[0, 0], sample_sizes=n_j).kappa
+```
+
+The panels must share variants and the counted allele. Within-ancestry scores
+get the usual noise-floor correction; cross-ancestry scores need none.
 
 Run the tests with:
 
