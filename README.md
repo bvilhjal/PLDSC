@@ -125,6 +125,25 @@ standard panel (effective-df ratios EUR 0.80 / AFR 0.86 / AMR 0.88 / FULL
 with a multi-ancestry reference panel): a two-regime caveat for the note,
 which an earlier "CLOSED" verdict overstated.
 
+**Strategy review (2026-09-24).** [docs/STRATEGY.md](docs/STRATEGY.md) asks
+how to make the project relevant, not how to revive it. It proposes three
+tracks:
+
+- **A. The family's LD-reference auditor.** A panel card, a per-axis
+  stratification fingerprint and annotation–ancestry flags. The consumers
+  already exist: SMARTpred's LDSC intercept gate, LDpred3's LDSC-initialized
+  h², gwfm and LDpred3-funct priors on baseline-LD v2.2, and LDpred3-atw's
+  reference builds.
+- **B. A sharp result: do functional PGS priors learn ancestry?** This is D1's
+  kill-test (b), then propagation into the family's funct mode.
+- **C. A measurement paper with a casualty: what an LD reference costs in
+  multi-ancestry meta-analyses.**
+
+A new-estimator revival is explicitly not recommended. The one probe run for
+the review, [gc_vs_stratification.py](experiments/gc_vs_stratification.py),
+failed its pre-stated rule. The mechanism held, but the tolerance was badly
+posed, so the ppb use it tested is not recommended on that evidence.
+
 **Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
 outlines a practice-facing alternative to the archived theory note: lead with
 the empirical magnitudes (windowed structure share ~0% single-ancestry vs ~29%

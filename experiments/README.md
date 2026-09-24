@@ -855,3 +855,34 @@ functional annotations ≤ 0.055; 10/2/0 annotations above 0.1/0.15/0.2.
   a measurement; see D1_ANNOTATION_GATE.md "Caveats".
 - Caveats: chr22 only, chr21-only GRM (~4k SNPs; correlations are lower
   bounds), 91% position match with the uncharacterized 9% unmatched.
+
+## `gc_vs_stratification.py` — strategy probe: does a raw-loading regressor separate GC from stratification?
+
+Strategy review (2026-09-24, [docs/STRATEGY.md](../docs/STRATEGY.md) §3.1). The
+sibling ppb rescales z by the LDSC intercept, and its docs say the intercept
+cannot separate genomic-control (GC) deflation from stratification. Question:
+does adding the raw loading, `χ² ~ 1 + ℓ + a`, fix that? Toy: admixed, N=1200,
+M≈2000, 1 cM windows, h²=0.5, no PC adjustment, oracle in-sample loading,
+λ_GC=1.2, stratification tuned to add 0.2 to mean χ² (both illustrative).
+Pre-stated rule: PASS if the GC+STRAT three-term intercept is within 0.02 of
+1/λ = 0.833 and the two-term intercept misses by more than 0.05.
+
+| quantity | default (4×100) | diagnostic (12×500) |
+|---|---|---|
+| GC+STRAT three-term intercept − 1/λ | −0.044 (se 0.023) | −0.036 (se 0.007) |
+| paired stratification shift, two-term intercept | +0.266 (0.070) | +0.515 (0.021) |
+| paired stratification shift, three-term intercept | −0.002 (0.011) | −0.008 (0.003) |
+| structure-free cohort, plain two-term intercept (`--homogeneous-check`) | — | 0.956 (0.013) |
+
+- **Verdict: FAIL by the pre-stated rule**, at both precisions. The
+  diagnostic rerun was run after the failure and does not replace the verdict.
+- **The mechanism holds.** In paired comparisons, stratification moves the
+  three-term intercept by < 0.01 against +0.27 to +0.52 for the two-term
+  intercept.
+- **The −4% miss is this toy's baseline LDSC bias.** Plain LDSC in a cohort
+  with no structure gives 0.956. The AR1 LD here extends well past the
+  window. The rule was badly posed: its reference should have been the
+  structure-free intercept, at ≥ 3 MC SE.
+- **Consequence.** The ppb use is not recommended on this evidence. To come
+  back in, it needs a re-stated rule or a real-data check: GC-corrected
+  against non-GC sumstats of one trait, with external 1000G loadings.
