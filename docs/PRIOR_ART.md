@@ -1,5 +1,9 @@
 # Prior-art positioning
 
+> **Archive note (added 2026-09-25).** The do-not-re-open register for the
+> concluded estimator line, and the model for the live project's step-2
+> sweep (STRATEGY §4). Not the current landscape — that is STRATEGY §5.
+
 Date: 2026-07-19
 
 **Status: FULL 5-cluster prior-art sweep now run** (`workflows/scripts/pldsc-prior-art-sweep.js`,

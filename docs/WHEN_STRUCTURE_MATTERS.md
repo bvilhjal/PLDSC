@@ -1,6 +1,9 @@
 # When does population structure actually break LDSC? — note outline
 
-Date: 2026-07-23. Status: **proposed**, post-archive. Direction chosen after the
+Date: 2026-07-23. Status: **stopped as a standalone note (2026-09-25)** — its
+content folds into the live project as MULTI_ANCESTRY.md §5's pooled case (see
+STRATEGY.md §6, "what we stop"); §4's two-regime intercept numbers remain
+source material. The line below records how it started. Direction chosen after the
 relatedness-pivot idea (taking `P_c` to livestock/plant/founder panels) was
 argued down — see "Why this and not the estimator" below.
 

@@ -31,7 +31,8 @@ Construction claims are the most refutable kind — one adversarial sweep kills
 them, and this project ran four. Measurement claims can only be *superseded*, and
 this project is unusually well equipped to make them: an exact `O(M N²)`
 genome-wide spectral score with no `M × M` matrix, LOCO, cM windows, 59 passing
-tests, and a demonstrated willingness to publish its own negative numbers.
+tests (81 as of 2026-09-25 — see [README.md](../README.md)), and a demonstrated
+willingness to publish its own negative numbers.
 
 **The one-line recommendation: stop asking "can I estimate `h²` better?" and start
 asking "what is the field computing wrong, and by how much?"** The instrument is
@@ -234,7 +235,10 @@ because it is the best bet.
   and a bad headline.
 - **Don't spend the 22-autosome download until a decision depends on it.** Right
   now it is infrastructure with no attached decision. D3 attaches one; D1(a) and
-  D2 are cheaper and might redirect it.
+  D2 are cheaper and might redirect it. *(Superseded, 2026-09-25: the live
+  direction did attach a decision — the genome-wide κ is STRATEGY §4 step 1,
+  so the download is now the first thing to spend. See
+  [scripts/fetch_1000g.py](../scripts/fetch_1000g.py).)*
 
 ## 6. Suggested order
 

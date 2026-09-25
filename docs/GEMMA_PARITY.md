@@ -1,5 +1,9 @@
 # M4 GEMMA score-test parity protocol
 
+> **Archive note (added 2026-09-25).** Parity protocol for the concluded
+> estimator line, not the current project — see
+> [READING_ORDER.md](READING_ORDER.md).
+
 Date: 2026-07-18
 
 ## Status and scope

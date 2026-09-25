@@ -1,5 +1,10 @@
 # PLDSC scientific idea review
 
+> **Archive note (added 2026-09-25).** Historical record of the concluded
+> estimator line, not the current project — see
+> [READING_ORDER.md](READING_ORDER.md). Eq. (7) below is superseded by
+> [METHOD.md](METHOD.md) §10.1.
+
 Date: 2026-07-17
 
 ## 1. Verdict
@@ -161,6 +166,11 @@ For complete fixed covariates, the first implementation uses residual rank
 \[
 \widetilde r^2=r^2-\frac{1-r^2}{\nu-1}. \tag{7}
 \]
+
+*(Superseded, 2026-07-23: the `\nu-1` denominator assumes independent rows and
+under-subtracts by up to 4.7× on a related panel — the correct one is
+`tr(Ã)²/tr(Ã²)`, `pldsc.effective_pair_df`. See
+[METHOD.md](METHOD.md) §10.1.)*
 
 With only an intercept, Equation (7) reduces to the usual \(N-2\)
 denominator. It is a finite-sample adjustment for the fixed-covariate baseline,

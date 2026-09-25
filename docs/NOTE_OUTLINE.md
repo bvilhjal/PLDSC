@@ -1,5 +1,10 @@
 # Theory/methods note — outline (working draft)
 
+> **Archive note (added 2026-09-25).** Historical record of the concluded
+> estimator line — the note "was not pursued" and stays that way. See
+> [READING_ORDER.md](READING_ORDER.md) / [STRATEGY.md](STRATEGY.md) §6
+> before building on anything here.
+
 Date: 2026-07-18 (sweep verdict added 2026-07-19). Direction chosen by the user
 after the within-family kill-test came back negative: **(b) a clean theory/methods
 note** (no differentiated application).

@@ -1,228 +1,87 @@
 # PLDSC
 
-PLDSC is a clean restart of the 2017 `newldsc` research prototype. The project
-studies LD Score regression when GWAS samples contain population structure or
-when association statistics come from covariate-adjusted or mixed models.
+PLDSC studies LD Score regression when GWAS samples contain population
+structure. The live project (since 2026-09-25) asks one question: **what
+goes wrong when LDSC-based tools run on multi-ancestry data, how big is
+the error, and what is the fix?** — plan and gates in
+[docs/STRATEGY.md](docs/STRATEGY.md), math in
+[docs/MULTI_ANCESTRY.md](docs/MULTI_ANCESTRY.md), how to read this repo in
+[docs/READING_ORDER.md](docs/READING_ORDER.md).
 
-## Current direction (2026-09-25): LDSC on multi-ancestry data
+## The headline so far (1000G chr22)
 
-The project now asks one question: **what goes wrong when LDSC-based tools
-run on multi-ancestry data, how big is the error, and what is the fix?**
-See [docs/STRATEGY.md](docs/STRATEGY.md) for the plan and
-[docs/MULTI_ANCESTRY.md](docs/MULTI_ANCESTRY.md) for the math.
+Take a fixed-effect meta-analysis that is 75% EUR and 25% one other 1000G
+superpopulation, with trans-ancestry genetic correlation ρ = 0.8. If LDSC
+regresses it on the standard 1000G **EUR** LD score, it understates h² by:
 
-The core result so far is the LD score a fixed-effect meta-analysis of
-ancestry-specific GWAS actually follows:
+| other 25% | h² understated by | κ = ĥ²/h² |
+|---|---|---|
+| AFR | 25% | 0.750 |
+| EAS | 16% | 0.841 |
+| SAS | 13% | 0.868 |
+| AMR | 9–10% | 0.907 / 0.896 |
 
-    L_j = Σ_ab ω_ab,j ρ_ab ℓ^ab_j,  ℓ^ab_j = Σ_k r^a_jk r^b_jk
+Most of the loss is **LD mismatch, not effect heterogeneity**: even at
+ρ = 1, κ = 0.79 for EUR + AFR. The intercept moves little (+0.00 to +0.03
+of the LD-driven excess χ² at 75% EUR). Two honest negatives from the same
+run: a meta cannot separate LD mismatch from effect heterogeneity
+(MULTI_ANCESTRY Table 5), and the first κ computation overstated the loss
+— the pre-stated verdict and the corrected numbers are both recorded
+(Table 4). κ needs no GWAS: it is a property of the panels, the ancestry
+mix and ρ (MA6).
 
-This combines within- and cross-ancestry LD with the meta's weights. It is
-implemented in `pldsc.multiancestry`, verified exactly in-sample, and checked
-by Monte Carlo with out-of-sample panels. On 1000G chr22, take a meta that is
-75% EUR, 25% one other superpopulation, with ρ = 0.8. The standard EUR LD
-score then understates h² by:
+## Run it in 60 seconds
 
-- 25% with AFR;
-- 16% with EAS;
-- 13% with SAS;
-- 9–10% with AMR.
+No download, no genotypes — reproduce the headline tables from the
+committed 2 MB LD-score bundle ([examples/mini](examples/mini)):
 
-Most of that loss is LD mismatch, not effect heterogeneity. The estimator line
-below remains concluded.
+```bash
+python examples/reproduce_chr22_tables.py     # Tables 3-5 in ~0.6 s
+```
 
-## Estimator line: CONCLUDED / archived (2026-07-19)
+The Monte Carlo validation of the machinery (no data, seeded, ~20-35 s) —
+**pass `--n-ref 6000`**:
 
-**Outcome: the machinery is correct and well-tested, but an exhaustive search
-found no differentiated contribution, so the project is archived as an honest
-record rather than pursued to publication.** What the search covered and found:
+```bash
+python experiments/multiancestry_meta_sim.py --n-ref 6000   # 3x PASS
+```
 
-- The **LMM-matched LD score as a new estimator** reduces to cov-LDSC in the
-  summary-statistics LDSC setting (structure is what biases LDSC, and cov-LDSC
-  already fixes it; relatedness does not reach the windowed regression). See
-  [docs/METHOD.md](docs/METHOD.md) §13, [map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py).
-- The **within-family / sib-GWAS** angle was kill-tested and failed: the surviving
-  within-family genetic covariance is a homoscedastic scale (`M_B R M_B = 0.5 M_B`)
-  that a standard sib-GWAS's cluster-robust / effective-N SE already removes
-  ([within_family_killtest.py](experiments/within_family_killtest.py)).
-- The **theory** (local/non-local decomposition, unification, identifiability
-  limit) is real but textbook-adjacent and largely occupied: the identity is a GRM
-  quadratic form; the GLS operator is Mangin 2012; the aliasing corollary is
-  Huang 2025 / Sotoudeh 2026; unification-of-estimators is MQS/GEMMA. Full
-  adversarial prior-art sweep in [docs/PRIOR_ART.md](docs/PRIOR_ART.md).
-- A structured **contribution-ideation** pass (15 candidates, adversarially
-  vetted) produced one high-death-prior long-shot (a within-sample
-  local-adaptation test for wild-population studies) and otherwise confirmed the
-  wall. The decision was to stop.
+The no-flag default is the 400-person-panel run that *records the
+pre-registered failure* in MULTI_ANCESTRY §6: it prints (i) FAIL (ii) FAIL
+by design. Running it once to see a recorded failure is instructive; it
+is not a bug.
 
-**Durable value of this repo:** (1) a small, tested, CI-green implementation of the
-mixed-model residual-precision operator `P_c` and the LD-score decomposition
-(`pldsc/`, 66 tests at archive; 81 with the 2026-09-25 multi-ancestry module); (2) a verified theory write-up ([docs/METHOD.md](docs/METHOD.md),
-including the adversarially-checked structure-aliasing remark in §14); (3) an
-unusually candid **negative-results and prior-art record** (`experiments/`,
-[docs/PRIOR_ART.md](docs/PRIOR_ART.md), [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),
-[docs/NOTE_OUTLINE.md](docs/NOTE_OUTLINE.md)) documenting precisely where a natural
-idea does and does not buy anything. If revived, the honest ceiling is a short
-clarifying/negative-results note ([docs/NOTE_OUTLINE.md](docs/NOTE_OUTLINE.md)),
-crediting Mangin 2012 / Huang 2025 / cov-LDSC / de Vlaming 2017 throughout.
+The real-data chr22 experiment itself (needs `.scratch_1000g/`, see
+below) then runs in seconds:
 
----
+```bash
+python experiments/multiancestry_1000g_meta.py    # Tables 2-5, ~4 s
+```
 
-## The science (record)
+## Install and environment
 
-**Central idea: compare operator-defined local/non-local LD-score components.**
-The total genome-wide correlation score has an exact spectral GRM identity,
-`Σ_k r_jk² = (M/N) Σ_p λ_p corr(x_j,u_p)²` (textbook algebra, not a new
-finding). Calling a component "structure" additionally requires a declared
-window, operator, or justified PC subspace; the split is not unique. The legacy
-"PC score" is a leading-eigenvector truncation — which correlates 0.99 with the
-declared non-local remainder
-([experiments/ld_decomposition.py](experiments/ld_decomposition.py)) and, on the
-external review's independent re-derivation, captures only
-~37% of its magnitude ([docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md) §3.3).
-The honest headline (simulation): within the **windowed** LD score LDSC actually
-uses, structure is only **~5%** (it is ~50% genome-wide, but LDSC never regresses
-on that) — which is precisely *why* cov-LDSC suffices and the new-estimator angle
-died. **On real 1000G data** the LOCO-clean windowed share is ~0% (EUR) to ~29%
-at LDSC's ±1 cM window (multi-ancestry panel; 17% at ±250 kb — the window unit
-matters) and the genome-wide share ~90% in the panel
-([experiments/realdata_genome_loco.py](experiments/realdata_genome_loco.py);
-±250 kb runs in [experiments/realdata_1000g_benchmarks.py](experiments/realdata_1000g_benchmarks.py)). The value of the identity is as an **organizing device**: cov-LDSC, the
-legacy whitened-LD (WhiLD) score, the PC score, and the mixed-model
-residual-precision operator `P_c` can be compared on one metric/eigenspace map.
-They do not all remove or measure one unique `ℓ^struct`, and ancestry-aligned
-genetic signal can be aliased with environmental confounding. See
-[docs/METHOD.md](docs/METHOD.md).
-
-**Post-archive theory addendum (2026-07-22).** [Section 15 of the method
-note](docs/METHOD.md#15-theory-addendum-assortative-mating-and-genetic-nurture)
-now records two complementary limits. Assortative mating creates signed,
-trait-aligned cross-autosome GPD that a squared LD score cannot identify as mate
-choice; under random mating and the usual isotropic-effect assumptions, pure
-parental genetic nurture can produce a textbook LDSC slope even when direct SNP
-heritability is zero. Offspring GWAS plus offspring LD alone cannot causally
-identify mate choice or parental nurture. This synthesis extends the
-interpretation/identification record; it does not revive the archived \(P_c\)
-estimator claim.
-
-**Post-archive correctness fix (2026-07-23).** [METHOD §10.1](docs/METHOD.md#101-relatedness-in-the-ld-panel-the-residual-df-correction)
-records one channel through which relatedness *does* reach the LD score, and
-which the implementation had wrong: the Eq. (7) noise-floor subtraction
-`(ν−1)` assumes independent rows and under-subtracts by up to 4.7× on a
-related panel. The correct denominator is `tr(Ã)²/tr(Ã²)`
-(`pldsc.effective_pair_df`, verified in
-[relatedness_effective_df.py](experiments/relatedness_effective_df.py)). The
-resulting LD-score bias is large but near-uniform, so it moves the LDSC
-**intercept**, not the slope: h² is protected, an intercept-based confounding
-readout on a related in-sample panel is not. This does **not** revive the
-relatedness case for `P_c` (§13) — it is an intercept effect whose standard
-remedy is to compute LD from unrelateds.
-
-**Project-direction review (2026-07-25).** [docs/PROJECT_DIRECTIONS.md](docs/PROJECT_DIRECTIONS.md)
-reviews the whole record and asks what a *differentiated* revival would look like.
-Diagnosis: every framing that died was a variant of "a better estimator of `h²`
-under structure," which is bounded by the windowed structure share this repo itself
-measured; the claims that survived four prior-art sweeps were all *measurements and
-corrections*, never constructions. It proposes four directions with kill-tests, two
-of which cost a day each; **both were run on 2026-08-11** (see the gate-outcomes
-paragraph below). The highest-ranked one is backed by
-a new experiment ([raw_loading_control.py](experiments/raw_loading_control.py)):
-S-LDSC's annotation LD scores include the `r_jj² = 1` self term, which makes the raw
-ancestry loading and its LD-smeared score 0.82-collinear — so standard S-LDSC
-returns a `τ` **~9× larger under pure environmental confounding than under a genuine
-4× enrichment** on an ancestry-correlated annotation, and adding the *raw*
-(un-smeared) loading removes it at ~no cost to genuine enrichment elsewhere. The
-§14 identifiability limit is unchanged: ancestry-correlated real enrichment is still
-co-attenuated.
-
-**Gate outcomes (2026-08-11).** The two one-day gates of the project-direction
-review were run on real 1000G phase-3 data
-([docs/PROJECT_DIRECTIONS.md](docs/PROJECT_DIRECTIONS.md) §8,
-[docs/D1_ANNOTATION_GATE.md](docs/D1_ANNOTATION_GATE.md)):
-**D1 survives narrowed** — on the real baseline-LD v2.2 annotation set, the
-mainstream functional annotations correlate ≤0.055 with FULL-panel PC loadings,
-but the ancestry-informative ones (LLD_AFR, predicted allele age, MAF bins)
-reach 0.12, enough to keep the self-term-collinearity question open pending
-the at-scale S-LDSC kill-test (b); the 0.10–0.14 mechanism comparison is an
-analogy between two different quantities, not a measurement.
-**D2 splits by regime** — the naive `ν−1` noise floor under-subtracts on every
-standard panel (effective-df ratios EUR 0.80 / AFR 0.86 / AMR 0.88 / FULL
-0.55), but the induced LDSC-intercept shift is ~0.005 at typical slope
-(immaterial) and ~0.03 at slope 0.3 (≈3× a typical intercept SE, material
-with a multi-ancestry reference panel): a two-regime caveat for the note,
-which an earlier "CLOSED" verdict overstated.
-
-**Strategy review (2026-09-24; superseded 2026-09-25).** The first version of
-[docs/STRATEGY.md](docs/STRATEGY.md), kept in git history, asked how to make
-the project relevant, not how to revive it. It proposed three tracks:
-
-- **A. The family's LD-reference auditor.** A panel card, a per-axis
-  stratification fingerprint and annotation–ancestry flags. The consumers
-  already exist: SMARTpred's LDSC intercept gate, LDpred3's LDSC-initialized
-  h², gwfm and LDpred3-funct priors on baseline-LD v2.2, and LDpred3-atw's
-  reference builds.
-- **B. A sharp result: do functional PGS priors learn ancestry?** This is D1's
-  kill-test (b), then propagation into the family's funct mode.
-- **C. A measurement paper with a casualty: what an LD reference costs in
-  multi-ancestry meta-analyses.**
-
-A new-estimator revival is explicitly not recommended. The one probe run for
-the review, [gc_vs_stratification.py](experiments/gc_vs_stratification.py),
-failed its pre-stated rule. The mechanism held, but the tolerance was badly
-posed, so the ppb use it tested is not recommended on that evidence. On
-2026-09-25 the three tracks were narrowed to Track C's question, which is
-the current direction above.
-
-**Proposed successor note (2026-07-23).** [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
-outlines a practice-facing alternative to the archived theory note: lead with
-the empirical magnitudes (windowed structure share ~0% single-ancestry vs ~29%
-multi-ancestry) and a two-moment decision rule (relatedness → intercept,
-structure → slope) rather than with theory claims the prior-art sweep graded
-partial-or-occupied. Gating task is a prior-art check on that framing.
-
-**Applications — structure diagnostics** (all prototyped in `experiments/`):
-a per-PC inflation spectrum that maps a GWAS's confounding to specific axes
-([detect_pc_inflation.py](experiments/detect_pc_inflation.py)); a
-structure-robust S-LDSC enrichment test via PC-loading annotations
-([sldsc_pc_annotation.py](experiments/sldsc_pc_annotation.py)); and a map of when
-LDSC on mixed-model sumstats is affected
-([map_ldsc_miscalibration.py](experiments/map_ldsc_miscalibration.py)). All share
-one **stated limit**: structure confounding and genuine ancestry-aligned signal
-load on the same PCs, so no structure-only method can separate them.
-
-**Honest positioning.** Framework/synthesis, not a new estimator. The qualitative
-concept is established (cov-LDSC, Bhatia 2016, Price 2008, Bercovich 2025); the
-surviving value is the explicit synthesis, diagnostics, and identifiability
-discussion—not novelty of the textbook spectral identity. See
-[docs/PRIOR_ART.md](docs/PRIOR_ART.md).
-
-**Validated machinery.** The `P_c` operator and the fixed-operator conditional
-mean are exact. The cov-LDSC correlation geometry is an exact limit, while
-equality of full cov-LDSC/ordinary regression moments requires the scale/prior
-conditions now stated in
-[docs/METHOD.md](docs/METHOD.md), unit-tested (`pldsc/_lmm.py`), and confirmed
-across the `experiments/` arc. The earlier "LMM-matched LD score as a new
-*estimator*" angle was tested and reduces to cov-LDSC in LDSC application
-([docs/METHOD.md](docs/METHOD.md) §13); the decomposition reframing is what
-survives and now organizes the project. The legacy WhiLD and PC-score methods are
-related metric/eigenspace constructions, not literal special cases under the
-same effect prior and not standalone estimators; see
-[the scientific idea review](docs/IDEA_REVIEW.md).
-
-**Real data (1000 Genomes, post-archive).** The decomposition was tested on real
-genotypes (phase-3 chr22/21/10; EUR/AMR/AFR/full panel): the structure share of
-the genome-wide LD score tracks λ1 (~0–5% single-ancestry, ~90% multi-ancestry,
-LOCO-clean; an in-chromosome GRM over-whitens), ~2–10 hard-projected PCs match
-the GLS operator (real-data support for the reduces-to-cov-LDSC verdict), and the
-non-local component tracks the PC score at corr 0.9–1.0. A kill-test of the one
-surviving application direction (a within-sample local-adaptation test) came back
-MARGINAL, and the intercept's robustness boundary is GRM coverage. See
-[experiments/README.md](experiments/README.md) and
-[docs/REAL_DATA_SURVEY.md](docs/REAL_DATA_SURVEY.md).
+- Python ≥ 3.11, numpy ≥ 2.0. Editable install with the test extras:
+  `python -m pip install -e ".[test]"` (also `.[plot]` for
+  `pldsc.plotting`).
+- **There is no `pldsc` conda environment.** Older experiment docstrings
+  say `conda run -n pldsc ...` — that env never existed on this machine;
+  use any 3.11+ interpreter. On the maintainer's machine the package is
+  installed editable in the shared `ldpred3-accelerate` conda env
+  (Python 3.14). The ambient base anaconda (3.10) is below the floor.
+- Checks (see [CONTRIBUTING.md](CONTRIBUTING.md)):
+  `ruff check .` and, with BLAS threads pinned,
+  `pytest -q` or `python -m unittest discover -s tests -v` (81 tests,
+  <1 s).
+- Real-data experiments read `.scratch_1000g/` (gitignored, 100%
+  data-free fresh clone). Build it with
+  `scripts/fetch_1000g.py --maps 22 --chrom 22 --panel --build-cache 22`:
+  S3 mirror primary (the EBI FTP has been unreachable from here and serves
+  a different re-release, v5b), sha256-verified against the copies that
+  produced the recorded results, both genetic-map formats included.
 
 ## First numerical slice
 
-The initial API calculates local LD scores after projecting the same fixed
-covariates used by a GWAS out of a sample-by-variant genotype matrix:
+Local LD scores with fixed covariates projected out:
 
 ```python
 from pldsc import local_ld_scores
@@ -235,15 +94,13 @@ scores = local_ld_scores(
 )
 ```
 
-It operates on one chromosome at a time, includes the LD Score self-term, and
-retains negative finite-sample-adjusted terms. It is intentionally not an LMM
-or LOCO implementation. Covariates are treated as fixed: when PCs are estimated
-from the same genotypes, the residual-rank finite-sample correction is only
-approximate. The appropriate window is population- and data-dependent; 20 cM
-is not a universal default.
+It operates on one chromosome at a time, includes the LD Score self-term,
+and retains negative finite-sample-adjusted terms. Covariates are treated
+as fixed; the appropriate window is population- and data-dependent (20 cM
+is not a universal default).
 
 Multi-ancestry LD scores for a meta-analysis, and what a single-ancestry
-score would cost it (see [docs/MULTI_ANCESTRY.md](docs/MULTI_ANCESTRY.md)):
+score costs it (docs/MULTI_ANCESTRY.md):
 
 ```python
 from pldsc import (cross_ancestry_ld_scores, meta_weights, meta_ld_scores,
@@ -255,11 +112,45 @@ L = meta_ld_scores(s, omega, rho=[[1, 0.8], [0.8, 1]])
 kappa = single_reference_bias(L, s.scores[0, 0], sample_sizes=n_j).kappa
 ```
 
-The panels must share variants and the counted allele. Within-ancestry scores
-get the usual noise-floor correction; cross-ancestry scores need none.
+The panels must share variants and the counted allele. Within-ancestry
+scores get the usual noise-floor correction; cross-ancestry scores need
+none (MA8).
 
-Run the tests with:
+## History and the archived record
 
-```text
-python -m unittest discover -s tests -v
-```
+PLDSC is a clean restart of a 2017 research prototype. Its first line —
+an estimator built on the mixed-model residual-precision operator `P_c` —
+was **concluded and archived on 2026-07-19**: the machinery was correct
+and well-tested, but four adversarial prior-art sweeps and an exhaustive
+contribution search found no differentiated contribution, so the repo
+keeps an unusually candid negative-results record instead of a paper.
+
+That record is deliberate and worth reading — it is the rigour culture
+the live project runs on (pre-registered kill rules that were honoured
+when they failed, post-rule robustness checks that broke the author's own
+headline, corrections appended above verdicts). Start from
+[docs/READING_ORDER.md](docs/READING_ORDER.md), which classifies every
+document as live or archival. The short map:
+
+- **Archive** (do not treat as backlog or current scope):
+  [docs/METHOD.md](docs/METHOD.md) (§10.1 and §14 are live),
+  [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md),
+  [docs/PRIOR_ART.md](docs/PRIOR_ART.md),
+  [docs/EXTERNAL_REVIEW.md](docs/EXTERNAL_REVIEW.md),
+  [docs/IDEA_REVIEW.md](docs/IDEA_REVIEW.md),
+  [docs/NOTE_OUTLINE.md](docs/NOTE_OUTLINE.md),
+  [docs/GEMMA_PARITY.md](docs/GEMMA_PARITY.md),
+  [docs/WHEN_STRUCTURE_MATTERS.md](docs/WHEN_STRUCTURE_MATTERS.md)
+  (source material for MULTI_ANCESTRY §5).
+- **Live, part of the archive-to-now arc:**
+  [docs/PROJECT_DIRECTIONS.md](docs/PROJECT_DIRECTIONS.md) (the
+  construction/measurement asymmetry),
+  [docs/REAL_DATA_SURVEY.md](docs/REAL_DATA_SURVEY.md),
+  [docs/D1_ANNOTATION_GATE.md](docs/D1_ANNOTATION_GATE.md)
+  (Part 2's pre-written kill rule), [experiments/README.md](experiments/README.md)
+  (dated index; the two `multiancestry_*` entries are current).
+
+Durable value of the archived line, kept and tested: the `P_c` operator
+and LD-score decomposition (`pldsc/`), the verified theory write-up
+(METHOD §1–§15, including the adversarially checked structure-aliasing
+remark §14), and the negative-results record itself.

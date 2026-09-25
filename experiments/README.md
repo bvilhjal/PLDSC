@@ -3,6 +3,42 @@
 Committed experiment configurations and their summaries (per
 `docs/DEVELOPMENT_PLAN.md` §5). Not generated bulk data.
 
+## Index (added 2026-09-25) — read the live entries first
+
+This file is ordered the way the project ran, so it *opens* with the
+concluded estimator line (2026-07-17 → 2026-07-19) and its "Verdict:
+CONTINUE" headers. Those verdicts belong to the archived line. The live
+direction ([docs/STRATEGY.md](../docs/STRATEGY.md)) is at the **bottom**
+of the file:
+
+**Live (the current direction):**
+
+| date | entry | what it is |
+|---|---|---|
+| 2026-09-25 | [`multiancestry_1000g_meta.py`](#multiancestry_1000g_meta.py--what-a-eur-ld-score-costs-a-multi-ancestry-meta-1000g-chr22) | the headline κ on 1000G chr22 (MULTI_ANCESTRY Tables 2–5) |
+| 2026-09-25 | [`multiancestry_meta_sim.py`](#multiancestry_meta_simpy--monte-carlo-check-of-the-meta-analysis-ld-score-ma2-ma6) | the Monte Carlo check (run with `--n-ref 6000`) |
+| 2026-09-24 | [`gc_vs_stratification.py`](#gc_vs_stratificationpy--strategy-probe-does-a-raw-loading-regressor-separate-gc-from-stratification) | the strategy probe (failed its rule; recorded) |
+
+**Live-adjacent (Part 2/3 evidence and the real-data infrastructure):**
+`raw_loading_control.py`, the 2026-08-11 D1/D2 gate trio
+(`d1_annotation_loading_gate.py`, `relatedness_d2_killtest.py`,
+`d2_intercept_propagation.py`), `relatedness_effective_df.py`, and the
+structure-share measurements (`realdata_1000g_structure.py`,
+`realdata_1000g_benchmarks.py`, `realdata_genome_loco.py`).
+
+**Archive:** everything from `m_spike_kill_or_continue.py` through
+`misspecified_orthogonal.py` (plus `detect_pc_inflation.py`,
+`sldsc_pc_annotation.py`, `ld_decomposition.py`, `local_adaptation_channel.py`)
+is the concluded estimator line — read as record, not backlog
+([docs/READING_ORDER.md](../docs/READING_ORDER.md)).
+
+> Environment note: entries below say `conda run -n pldsc python ...`.
+> **There is no `pldsc` conda env** and never was one on this machine; use
+> plain `python` from any 3.11+ interpreter
+> ([CONTRIBUTING.md](../CONTRIBUTING.md)). Real-data entries need
+> `.scratch_1000g/`, built by `scripts/fetch_1000g.py`; the no-download
+> entry point is `examples/reproduce_chr22_tables.py`.
+
 ## `m_spike_kill_or_continue.py` — the M-spike (kill-or-continue gate)
 
 Throwaway dense oracle that decides whether the mixed-model-matched LD score is
@@ -725,10 +761,12 @@ genome-wide aggregate:
   — the documented B2 LOCO over-whitening / q-renormalization inflation for
   low-structure cohorts, faithfully reproduced.
 - **Three chromosomes is a demonstration, not the headline.** The genome-wide
-  run needs all 22 autosomes: `python experiments/realdata_genome_loco.py --plan`
-  prints the manifest (~15 GB phase-3 VCFs; maps and panel already local). Gated
-  on that download — a large resource commitment, so it is deliberately not run
-  automatically.
+  run needs all 22 autosomes: `python scripts/fetch_1000g.py --chrom 1 ... 22
+  --maps all --panel --build-cache 1 ... 22` fetches the manifest (~15 GB
+  phase-3 VCFs, S3 mirror, sha256-verified; the maps are fetched and converted,
+  and the panel, by the same script — a fresh clone has none of them, whatever
+  older notes here say). Gated on that download — a large resource commitment,
+  so it is deliberately not run automatically.
 
 ## `raw_loading_control.py` — the raw ancestry loading as an S-LDSC control
 

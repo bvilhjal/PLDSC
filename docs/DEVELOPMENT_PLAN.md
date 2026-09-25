@@ -1,5 +1,15 @@
 # PLDSC development plan
 
+> **Archive note (added 2026-09-25).** This is the historical plan of the
+> concluded estimator line, **not the current project** — see
+> [READING_ORDER.md](READING_ORDER.md) and [STRATEGY.md](STRATEGY.md).
+> In particular: §1.3's scope ("binary traits, meta-analysis, annotations,
+> external reference panels … out of exact scope") *excludes* what PLDSC
+> now is (a meta-analysis measurement on external 1000G panels); the §1.4
+> decision rule ("PLDSC becomes a validation and interoperability
+> project") was superseded by STRATEGY §3; and §5's "there is currently no
+> `.github/workflows`" predates `ci.yml`.
+
 Date: 2026-07-17 (revised 2026-07-22 after completing and re-auditing M0)
 
 ## 1. Objective, use-case, and decision rule
@@ -336,7 +346,10 @@ fixed-operator regression/jackknife prototype and illustrates the fitted-\(V_c\)
 intercept-SE requirement. It does not validate genomic block choice,
 cross-chromosome covariance, recomputed two-step weights, or operator
 uncertainty. 30 tests
-pass. **Then the use-case was investigated directly** and angle #1 ("LDSC
+pass. *(Suite counts in this archive are as of their writing: 30 then, 59
+at the direction review, 66 at archive, 81 with the 2026-09-25
+multi-ancestry module — the canonical count is the one in
+[README.md](../README.md) and CHANGELOG.md.)* **Then the use-case was investigated directly** and angle #1 ("LDSC
 miscalibrated for LMM sumstats") came back negative for PLDSC
 (`experiments/map_ldsc_miscalibration.py`): the bias is a structure effect
 cov-LDSC already fixes, and relatedness does not reach the local LD-score
@@ -523,7 +536,8 @@ machine has no 3.10 interpreter. Raise the floor to a currently-supported pair
 (Python 3.11+/NumPy 2.0+) unless a concrete downstream consumer needs the older
 pins, and document the reason if the old floor is kept.
 
-There is currently **no `.github/workflows`**, so the M1 "wheels/tests pass"
+There is currently **no `.github/workflows`** *(superseded:
+`.github/workflows/ci.yml` now exists and runs the suite)*, so the M1 "wheels/tests pass"
 gate has no infrastructure. Add a minimal GitHub Actions workflow that runs
 `python -m unittest discover -s tests` on the pinned interpreter before the M1b
 checkpoint is claimed. Cross-software `atol=rtol=1e-12` agreement across

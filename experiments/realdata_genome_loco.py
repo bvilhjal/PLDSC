@@ -176,13 +176,20 @@ def download_plan():
             "ALL.chr{c}.phase3_shapeit2_mvncall_integrated_v5b."
             "20130502.genotypes.vcf.gz")
     print("Manifest for the full 22-autosome run:")
-    print("  VCFs (~15 GB total), stream-parsed by realdata_1000g_benchmarks.py:")
+    print("  Everything below is fetched by scripts/fetch_1000g.py (S3 `v5a`")
+    print("  primary, sha256-verified, maps converted to the plink format this")
+    print("  driver reads). One command:")
+    print("    python scripts/fetch_1000g.py --chrom 1 ... 22 --maps all \\")
+    print("        --panel --build-cache 1 ... 22")
+    print("  The per-file EBI `v5b` URLs the plan used to print (a mirror that")
+    print("  was unreachable from this environment and serves a different")
+    print("  re-release than the recorded results used):")
     for c in range(1, 23):
         print(f"    chr{c}: {base.format(c=c)}")
-    print("  genetic maps: expected in .scratch_1000g/maps/ (Beagle GRCh37, "
-          "22.8 MB; absent from the 2026-08-11 scratch rebuild -- re-fetch "
-          "per download_plan() to regenerate the cM-window figures)")
-    print("  panel: .scratch_1000g/samples.panel (already present)")
+    print("  genetic maps: .scratch_1000g/maps/, both formats, from the same")
+    print("  script (the historical Beagle plink.GRCh37 host is gone; the")
+    print("  script converts the SHAPEIT4 b37 map marker-for-marker)")
+    print("  panel: .scratch_1000g/samples.panel, from the same script")
     print("  GRM fodder: thin each chromosome to a common-SNP subset; ~50-100k")
     print("  SNPs genome-wide is ample. Per-target LD scores hold one chromosome.")
 

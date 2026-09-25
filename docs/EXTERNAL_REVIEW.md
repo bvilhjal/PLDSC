@@ -1,5 +1,10 @@
 # PLDSC — independent review: idea, theory, implementation, and plan
 
+> **Archive note (added 2026-09-25).** Historical record of the concluded
+> estimator line, not the current project — see
+> [READING_ORDER.md](READING_ORDER.md). §5.1 (circularity) and §6.1
+> (process) remain reusable as method.
+
 Date: 2026-07-18
 Reviewer: independent code/theory review (requested by the project owner).
 Scope: the whole repository at commit `f82df69` — `README.md`, all of `docs/`,
