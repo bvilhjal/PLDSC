@@ -77,9 +77,9 @@ Two negatives from the same run:
 
 | # | task | cost | gate |
 |---|---|---|---|
-| 1 | κ genome-wide: all 22 autosomes from the S3 mirror (~15 GB; the EBI FTP is blocked here) | 1–2 days | the rule-cell AFR κ stays ≤ 0.90; otherwise chr22 was unrepresentative and the claim shrinks |
-| 2 | Prior-art sweep scoped to MA2, MA6, MA8 and the measured κ (Popcorn, S-LDXR, MAMA, the 2026 meta-LDSC preprint); verify the snippet-level citations | 1 day | if MA2/κ are in print, the paper becomes the measurement plus the casualty |
-| 3 | **The casualty:** re-run one published multi-ancestry meta-analysis (GBMI or similar, reported ancestry mix) with the meta score instead of the EUR score | 1–2 weeks | h² moves by more than 2 SE, or the paper becomes a practice note |
+| 1 | κ genome-wide: all 22 autosomes via `scripts/fetch_1000g.py` (S3 mirror, ~15 GB; the EBI FTP is blocked here). **1a, part of the cost:** the VCF→cache step is `parse_and_cache`'s nested pure-Python loop (`realdata_1000g_benchmarks.py`), built for thinned chr21/22/10 only — a fast, progress-reporting, resumable parser is a real sub-task, not a detail; the download alone is the 1–2 days | 1–2 days + parser | the rule-cell AFR κ stays ≤ 0.90; otherwise chr22 was unrepresentative and the claim shrinks |
+| 2 | Prior-art sweep scoped to MA2, MA6, MA8 and the measured κ (Popcorn, S-LDXR, MAMA, the 2026 meta-LDSC preprint, Momin 2023, cov-LDSC); verify the snippet-level citations. Generalizing `workflows/scripts/pldsc-prior-art-sweep.js` from the archived claims to MA2/MA6/MA8/κ **is** this step | 1 day | if MA2/κ are in print, the paper becomes the measurement plus the casualty |
+| 3 | **The casualty, upgraded to a point estimate:** GBMI's summary statistics — including ancestry-group stratifications — are openly downloadable with no access application (external check, 2026-09-25), so **estimate ρ from the ancestry-stratified sumstats** (S-LDXR/Popcorn-style, or PLDSC's two-regressor fit with external ρ) instead of bracketing it, then recompute h² with the EUR score vs the meta score vs GBMI's published value. This is exactly the escape hatch MULTI_ANCESTRY Table 5 says is needed ("ρ has to come from ancestry-specific summary statistics"). First sub-task: verify per-trait stratified availability in the manifest before committing | 1–2 weeks | h² moves by more than 2 SE, or the paper becomes a practice note |
 | 4 | Genetic correlation: the cross-trait version of MA2, and what EUR scores do to r_g between two meta-analyses | 1 week | only if step 3 survives |
 | 5 | Part 2 (the D1(b) kill-test) | 1–2 weeks | as written in D1_ANNOTATION_GATE |
 | 6 | Family integration: SMARTpred "reference fit" (κ from a GWAS's reported ancestry mix) and LDpred3-atw Phase 0 | 1 week | after steps 1–3 |
@@ -87,11 +87,23 @@ Two negatives from the same run:
 ## 5. Landscape (single-agent check, 2026-09-24; snippet-level unless noted)
 
 - **LD mismatch in meta-analyses: partial.** GBMI used UKB-EUR LD scores on
-  its multi-ancestry meta. A 2026 bioRxiv preprint reports LDSC underestimating
-  h² on meta-analysed summary statistics without a correction; this matches the
-  direction of §2. Popcorn and S-LDXR use cross-population LD scores for
-  ancestry-specific summary statistics, not for a pooled meta. No
-  composition-matched meta score and no panel-only bias predictor were found.
+  its multi-ancestry meta. A 2026 bioRxiv preprint is now citable:
+  *"LDSC regression-based heritability estimates can be biased when summary
+  statistics are obtained from meta-analysis or imputed variants"*
+  (doi 10.64898/2026.07.05.736573, PMID 42465239) — it reports the phenomenon
+  and one magnitude (AD 0.265 → 0.160 with imputed variants) but, on the
+  available record, neither the composition-matched score MA2 nor the
+  panel-only κ; someone has planted a flag on the phenomenon, not on our
+  slice. Popcorn and S-LDXR use cross-population LD scores for
+  ancestry-specific summary statistics, not for a pooled meta; **Momin et
+  al. 2023** (*Nat Commun* 14:1152, unbiased cross-ancestry genetic
+  correlation) is explicitly about LDSC-based cross-ancestry bias and
+  belongs in the step-2 sweep; **cov-LDSC** (Yao et al. 2019, *Genetics*)
+  already quantifies 10–60 % h² underestimation for *admixed* samples on
+  EUR panels — different object (admixture within a sample, not a meta
+  across ancestries), but the distinction must be stated early or a
+  referee will state it for us. No composition-matched meta score and no
+  panel-only bias predictor were found.
 - **Relatives in LD panels: open.** Pan-UKB's LD code uses raw n in its r²
   correction (code read). The NYGC 3,202-sample 1000G set includes 602 trios.
 - **False S-LDSC enrichment on ancestry-correlated annotations: mostly open.**
@@ -119,5 +131,5 @@ Two negatives from the same run:
 | chr22 is unrepresentative | κ moves | step 1 |
 | MA2 or κ is already in print (MAMA, S-LDXR supplements) | novelty shrinks to the measurement | step 2 before writing; the casualty is the differentiator |
 | No published meta moves by > 2 SE | no casualty | publish as a practice note with the κ table and a `pldsc` function |
-| ρ is unknown for most traits, and a meta cannot identify it (MULTI_ANCESTRY Table 5) | κ is a bracket, not a point | report κ over ρ ∈ [0.6, 1]; use S-LDXR/Popcorn ρ where published |
+| ρ is unknown for most traits, and a meta cannot identify it (MULTI_ANCESTRY Table 5) | κ is a bracket, not a point | step 3 estimates ρ from GBMI's ancestry-stratified sumstats; the fallback is the ρ ∈ [0.6, 1] bracket of MULTI_ANCESTRY Table 3 |
 | The model assumptions (A1 effect scale, η = 1, one genetic map) | κ shifts | MA2 carries η and τ_ab,j explicitly; add sensitivity runs in step 1 |

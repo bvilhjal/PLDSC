@@ -295,5 +295,9 @@ be bracketed, as in Table 3.
   - the measured κ on 1000G.
 
   The one recorded empirical warning that LDSC underestimates h² on
-  meta-analysed summary statistics (a 2026 bioRxiv preprint, seen only as a
-  search snippet) points the same way as Table 3.
+  meta-analysed summary statistics — a 2026 bioRxiv preprint, now citable
+  (doi 10.64898/2026.07.05.736573, PMID 42465239; reports the phenomenon
+  and one magnitude, AD 0.265 → 0.160 with imputed variants, but not MA2
+  or a panel-only κ) — points the same way as Table 3. Momin et al. 2023
+  (*Nat Commun* 14:1152) and cov-LDSC (Yao et al. 2019) are the other two
+  the step-2 sweep must position against (STRATEGY §5).
