@@ -212,6 +212,18 @@ class ReadPlinkMapTests(unittest.TestCase):
         cm = interpolate_cm(np.array([1500.0, 2500.0]), map_bp, map_cm)
         self.assertEqual(cm.shape, (2,))
 
+    def test_skips_comment_lines(self):
+        # scripts/fetch_1000g.py stamps a provenance header on the maps it
+        # converts; a prose header must not reach the float parser.
+        path = self._write(
+            "# SHAPEIT4-GRCh37-derived (scripts/fetch_1000g.py)\n"
+            "22 . 0.000000 16051347\n"
+            "22 . 0.010291 16052618\n"
+        )
+        map_bp, map_cm = read_plink_genetic_map(path)
+        np.testing.assert_allclose(map_bp, [16051347, 16052618])
+        np.testing.assert_allclose(map_cm, [0.0, 0.010291])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -220,7 +220,7 @@ def read_plink_genetic_map(path: str) -> tuple[FloatVector, FloatVector]:
     with open(path) as fh:
         for line in fh:
             parts = line.split()
-            if len(parts) < 4:
+            if len(parts) < 4 or parts[0].startswith("#"):
                 continue
             cm_list.append(float(parts[2]))
             bp_list.append(float(parts[3]))
