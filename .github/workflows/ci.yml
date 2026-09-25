@@ -1,10 +1,14 @@
-name: tests
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -12,7 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.13"]
+        # pldsc requires Python >= 3.11. 3.14 is the development
+        # interpreter (the shared ldpred3-accelerate env), 3.11 the floor.
+        python-version: ["3.11", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -22,10 +28,15 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .
-      - name: Run tests
+          pip install -e ".[test]"
+          pip install ruff
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        # Pin BLAS threads as the family does, so numerics are
+        # deterministic when numbers are compared across machines.
         env:
-          OPENBLAS_NUM_THREADS: 1
-          OMP_NUM_THREADS: 1
-          MKL_NUM_THREADS: 1
-        run: python -m unittest discover -s tests -v
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+        run: pytest -q

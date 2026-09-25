@@ -1,0 +1,84 @@
+cff-version: 1.2.0
+message: "If you use pldsc, please cite the software plus the method references below; the full method landscape (Popcorn, S-LDXR, MAMA, cov-LDSC and the 2026 meta-LDSC preprint) is maintained in docs/STRATEGY.md §5 and docs/PRIOR_ART.md."
+title: "pldsc: population-aware LD Score regression research tools"
+abstract: >-
+  Research tools for LD Score regression when GWAS samples contain
+  population structure. The live direction studies LDSC on multi-ancestry
+  data: the LD score a fixed-effect meta-analysis actually follows (MA2),
+  the factor kappa by which a single-ancestry LD score biases its h2
+  (MA6, kappa = 0.75 for 75% EUR + 25% AFR at rho = 0.8 on 1000G chr22),
+  and the corrections. Includes the archived estimator line's tested
+  machinery (the mixed-model residual-precision operator P_c, the
+  LD-score decomposition, the effective pair-df correction) and its
+  negative-results record.
+type: software
+authors:
+  - family-names: "Vilhjálmsson"
+    given-names: "Bjarni Jóhann"
+repository-code: "https://github.com/bvilhjal/PLDSC"
+license: MIT
+version: 0.1.0.dev0
+keywords:
+  - LD score regression
+  - population structure
+  - multi-ancestry meta-analysis
+  - heritability
+  - genetic correlation
+references:
+  - type: article
+    title: "LD Score regression distinguishes confounding from polygenicity in genome-wide association studies"
+    authors:
+      - family-names: Bulik-Sullivan
+        given-names: Brendan K.
+      - family-names: Loh
+        given-names: Po-Ru
+      - family-names: Finucane
+        given-names: Hilary K.
+      - family-names: Ripke
+        given-names: Stephan
+      - family-names: Yang
+        given-names: Jian
+      - family-names: Patterson
+        given-names: Nick
+      - family-names: Daly
+        given-names: Mark J.
+      - family-names: Price
+        given-names: Alkes L.
+      - family-names: Neale
+        given-names: Benjamin M.
+    journal: Nature Genetics
+    volume: 47
+    issue: 3
+    start: 291
+    end: 295
+    year: 2015
+    doi: 10.1038/ng.3211
+  - type: article
+    title: "Transethnic genetic-correlation estimates from summary statistics"
+    authors:
+      - family-names: Brown
+        given-names: Brian C.
+      - family-names: Price
+        given-names: Alkes L.
+      - family-names: Walker
+        given-names: "L. Ashley"
+      - family-names: "Weir"
+        given-names: Bruce S.
+    journal: American Journal of Human Genetics
+    volume: 99
+    issue: 1
+    start: 76
+    end: 88
+    year: 2016
+    doi: 10.1016/j.ajhg.2016.05.001
+  - type: article
+    title: "A global reference for human genetic variation"
+    authors:
+      - name: "1000 Genomes Project Consortium"
+    journal: Nature
+    volume: 526
+    issue: 7571
+    start: 68
+    end: 74
+    year: 2015
+    doi: 10.1038/nature15393

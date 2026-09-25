@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,13 +8,28 @@ dynamic = ["version"]
 description = "Population-aware LD Score regression research tools"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Bjarni J. Vilhjalmsson" },
+]
 dependencies = ["numpy>=2.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+plot = ["matplotlib>=3.8"]
+
+[project.urls]
+Repository = "https://github.com/bvilhjal/PLDSC"
+Issues = "https://github.com/bvilhjal/PLDSC/issues"
 
 [tool.setuptools]
 packages = ["pldsc"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pldsc.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 # Family convention: pyflakes-only, by design. Long lines and multi-statement
