@@ -265,10 +265,76 @@ and EAS it is weakly identified at best (variance inflation of about 3–4).
 ρ has to come from ancestry-specific summary statistics (Popcorn, S-LDXR) or
 be bracketed, as in Table 3.
 
+**Table 6. Genome-wide κ at the rule cell** (EUR 0.75 + X, ρ = 0.8;
+[multiancestry_genome_kappa.py](../experiments/multiancestry_genome_kappa.py),
+2026-10-08). The data are bigsnpr's 1000G phase-3 set (2,490 samples,
+1.66M variants), with 1,190,723 regression SNPs on 22 autosomes and the MHC
+excluded. Entries are OLS / LDSC-style weights. The SE is a 200-block
+jackknife over the genome.
+
+| X | chr22 (Table 3) | genome-wide | SE (OLS) | per chromosome (OLS) | MHC kept | IVW weights |
+|---|---|---|---|---|---|---|
+| AFR | 0.750 / 0.750 | **0.737 / 0.726** | 0.005 | 0.709–0.819 | 0.728 / 0.726 | 0.746 / 0.735 |
+| EAS | 0.841 / 0.845 | **0.846 / 0.837** | 0.008 | 0.753–0.936 | 0.820 / 0.836 | 0.849 / 0.841 |
+| SAS | 0.868 / 0.870 | **0.877 / 0.866** | 0.005 | 0.839–0.938 | 0.848 / 0.865 | 0.876 / 0.866 |
+| AMR | 0.907 / 0.896 | **0.896 / 0.891** | 0.004 | 0.849–0.939 | 0.875 / 0.890 | 0.893 / 0.890 |
+
+- **The step-1 gate passes** (AFR κ ≤ 0.90). Genome-wide κ is within 0.025
+  of chr22 in every cell.
+- **The bridge to the step-1 protocol missed its tolerance.** That protocol
+  is a 1-in-10 thinning of the full VCFs, and only chr10/21/22 are local. On
+  those three chromosomes the same code on the two variant sets differs by
+  up to 0.039 (chr10 AFR), against a pre-stated 0.03. So this table is
+  specific to its variant set, and the headline stays chr22's until the
+  thinned-VCF run.
+- Restricting regression SNPs to HapMap3 moves κ by ≤ 0.002.
+  η_X = 0.8 / 1.25 gives AFR 0.716 / 0.761 (OLS). Genome-wide corr(D, X) is
+  0.87 / 0.85 / 0.98 / 0.98, so Table 5's conclusion holds.
+- The per-chromosome outliers (chr12 EAS 0.75, chr14 0.82–0.94) come from a
+  few extreme-LD regions that dominate OLS. On chr14, 0.1% of SNPs carry 10%
+  of the EUR-score variance.
+
+**Table 7. The GBMI asthma casualty**
+([gbmi_asthma_casualty.py](../experiments/gbmi_asthma_casualty.py),
+2026-10-08). Data: GBMI release 052021 asthma, i.e. the all-biobank meta
+plus the five ancestry metas, joined to Table 6's scores by rsID. That gives
+953,596 regression SNPs. N is the effective N implied by each file's SEs,
+and at GBMI's K = 0.085 the liability conversion factor is 1.00. Rules were
+stated before the files were read. Composition by N: EUR 0.80, EAS 0.14,
+AFR, SAS and AMR 0.03 or less.
+
+| all-biobank meta regressed on | h² (SE) |
+|---|---|
+| the 1000G EUR score (GBMI's method) | 0.133 (0.012) |
+| the meta score MA2, ρ̂ EUR–EAS, other pairs ρ = 0.8 | **0.156 (0.014)** |
+| … other pairs ρ = 0.6 / 1.0 | 0.159 / 0.153 |
+| post hoc: N-weighted mean of the per-stratum h², each on its own score | 0.154 (0.012) |
+| GBMI reported (UKB LD scores, liability) | 0.085 |
+
+- **ρ is estimable only for EUR–EAS: 0.755 (SE 0.046).** The other strata
+  are too small (h² z = 2.1 / 3.4 / 0.4 for AFR / SAS / AMR), so their pairs
+  are bracketed. Their point estimates (EUR–AFR 0.73, EUR–SAS 0.83) lie
+  inside the bracket.
+- **The step-3 gate is not met robustly.** h² moves by 1.9 SE of the
+  EUR-score estimate at the central bracket, and by 1.6–2.2 SE across it. By
+  STRATEGY §7, asthma alone makes a practice note. The shift itself is
+  precise: +0.023 with a paired jackknife SE of 0.002. The gate's SE is
+  mostly sampling noise that both estimates share.
+- **Does the data agree with MA2?** The observed ratio of the two estimates
+  is 0.852 against a predicted κ of 0.850. That agreement is nearly
+  automatic, because the two regressors correlate 0.9965. The real check is
+  the post-hoc row: per-stratum estimates on matched scores average 0.154,
+  which agrees with the meta score and not with the EUR score.
+- **0.133 is not GBMI's 0.085.** The LD scores differ (UKB, denser) and
+  GBMI's N convention is not stated. If the ratio carries over, GBMI's value
+  would be about 0.10 on the meta score. That is an extrapolation, not a
+  measurement.
+
 ## 7. Scope and caveats
 
-- **One chromosome.** chr22 only, with 1000G superpopulations as ancestry
-  proxies (n = 347–661). AMR is admixed and SAS is heterogeneous.
+- **Variant sets.** Tables 2–5 are chr22, a 1-in-10 thinning of the phase-3
+  VCF. Table 6 is genome-wide on bigsnpr's set. 1000G superpopulations stand
+  in for ancestries (n = 347–661): AMR is admixed and SAS is heterogeneous.
 - **Single map.** One population-averaged genetic map (SHAPEIT4 GRCh37) is
   used for every ancestry. The phase-3 chr22 file is the S3 mirror's `v5a`
   release.

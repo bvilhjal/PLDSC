@@ -9,6 +9,22 @@ single-sourced from `pldsc.__version__`; the package is pre-release
 
 ### Added
 
+- `experiments/multiancestry_genome_kappa.py`: STRATEGY step 1, κ on all 22
+  autosomes (bigsnpr's 1000G phase-3 set). It runs the unchanged
+  `cross_ancestry_ld_scores` on segments that contain every window in full,
+  so it matches one whole-chromosome call to 1e-12 under 1 GB of memory.
+  Rules were pre-stated. G1, the step-1 gate, passes: AFR κ 0.737 / 0.726.
+  G2, the bridge to the thinned-VCF protocol, missed its 0.03 tolerance
+  (0.039), so the README headline stays chr22's. Results are in
+  `docs/MULTI_ANCESTRY.md` Table 6, with STRATEGY, STUDENT_PLAN, README and
+  the experiments index updated to match.
+- `experiments/gbmi_asthma_casualty.py`: STRATEGY step 3 on GBMI asthma.
+  ρ comes from the ancestry metas (EUR–EAS 0.755; the smaller strata are
+  bracketed), and h² of the all-biobank meta is fitted on the EUR score and
+  on the meta score. Rules were pre-stated. The gate is not met robustly:
+  h² moves 0.133 → 0.156, which is 1.9 SE at the central bracket. Results
+  are in `docs/MULTI_ANCESTRY.md` Table 7. `.scratch_gbmi/` is gitignored.
+
 - `examples/mini/chr22_ldscores.npz` (2.0 MB): the chr22 cross-ancestry
   LD-score tensor (5×5×9,654) plus masks, variances and per-ancestry MAFs,
   committed so MULTI_ANCESTRY Tables 3–5 reproduce in under a second with

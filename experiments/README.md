@@ -15,6 +15,8 @@ of the file:
 
 | date | entry | what it is |
 |---|---|---|
+| 2026-10-08 | [`gbmi_asthma_casualty.py`](#gbmi_asthma_casualtypy--the-gbmi-asthma-casualty-strategy-step-3) | step 3, ρ and h² on GBMI asthma (MULTI_ANCESTRY Table 7) |
+| 2026-10-08 | [`multiancestry_genome_kappa.py`](#multiancestry_genome_kappapy--genome-wide-κ-strategy-step-1) | step 1, genome-wide κ (MULTI_ANCESTRY Table 6) |
 | 2026-09-25 | [`multiancestry_1000g_meta.py`](#multiancestry_1000g_meta.py--what-a-eur-ld-score-costs-a-multi-ancestry-meta-1000g-chr22) | the headline κ on 1000G chr22 (MULTI_ANCESTRY Tables 2–5) |
 | 2026-09-25 | [`multiancestry_meta_sim.py`](#multiancestry_meta_simpy--monte-carlo-check-of-the-meta-analysis-ld-score-ma2-ma6) | the Monte Carlo check (run with `--n-ref 6000`) |
 | 2026-09-24 | [`gc_vs_stratification.py`](#gc_vs_stratificationpy--strategy-probe-does-a-raw-loading-regressor-separate-gc-from-stratification) | the strategy probe (failed its rule; recorded) |
@@ -972,3 +974,41 @@ No GWAS is needed.
   0.80–0.99 across SNPs.
 - **Caveats:** one chromosome; superpopulations as ancestry proxies; a single
   genetic map; the effect-scale assumption A1. See MULTI_ANCESTRY §7.
+
+## `multiancestry_genome_kappa.py` — genome-wide κ (STRATEGY step 1)
+
+This script runs the same computation on all 22 autosomes, using bigsnpr's
+`1000G_phase3_common_norel`: 2,490 samples and 1.66M variants. Get it with
+`bigsnpr::download_1000G` and put or symlink it in `.scratch_1000g/`; the
+docstring records its sha256. The tested engine runs on segments that contain
+every ±1 cM window in full. Peak memory stays under 1 GB, scores are cached
+per chromosome, and the run takes 5 minutes.
+
+- **G1 (step-1 gate): PASS.** Rule-cell AFR κ is 0.737 (OLS) / 0.726
+  (weighted). EAS, SAS and AMR are 0.846 / 0.877 / 0.896 (OLS). Every cell
+  is within 0.025 of chr22.
+- **G2 (bridge to the thinned-VCF protocol): FAILED its tolerance.** On
+  chr10/21/22 the two variant sets differ by up to 0.039, against a
+  tolerance of 0.03. The genome-wide table is therefore specific to its
+  variant set, and the headline stays chr22's until the thinned-VCF run.
+- Descriptive results: the per-chromosome profile, sensitivity rows (MHC,
+  HapMap3-only, IVW, η) and corr(D, X). See MULTI_ANCESTRY Table 6.
+
+## `gbmi_asthma_casualty.py` — the GBMI asthma casualty (STRATEGY step 3)
+
+The script estimates ρ from GBMI release 052021's asthma ancestry metas,
+using LDSC cross-ancestry moments on Table 6's scores. It then regresses
+the all-biobank meta on the EUR score and on the meta score. Data:
+`.scratch_gbmi/asthma/`, six files totalling 4.1 GB, with their sha256
+recorded in the script. It reuses the `multiancestry_genome_kappa.py` cache
+and runs in about 2 minutes (`python -I`).
+
+- **ρ:** only EUR–EAS can be estimated, at 0.755 (SE 0.046). AFR, SAS and
+  AMR are too small (h² z < 4), so those pairs are bracketed.
+- **C1 (step-3 gate): not met robustly.** h² goes from 0.133 to 0.156,
+  which is 1.9 SE at the central bracket and 1.6–2.2 SE across it. Asthma
+  alone is therefore a practice note. The shift's paired SE is 0.002.
+- **C2:** the observed ratio 0.852 matches the predicted κ 0.850, but the
+  check is nearly mechanical because the regressors correlate 0.9965.
+- **Post hoc:** per-stratum h² values, each on a matched score, average
+  0.154. That agrees with the meta-score estimate.

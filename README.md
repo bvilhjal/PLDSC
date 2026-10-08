@@ -21,6 +21,15 @@ regresses it on the standard 1000G **EUR** LD score, it understates h² by:
 | SAS | 13% | 0.868 |
 | AMR | 9–10% | 0.907 / 0.896 |
 
+**Genome-wide (2026-10-08):** the step-1 gate passes. AFR κ is 0.737 on
+1.19M regression SNPs over 22 autosomes, and every cell is within 0.025 of
+the table above (MULTI_ANCESTRY Table 6). That run used a different variant
+set, and its bridge to the chr22 protocol missed the pre-stated tolerance,
+so the table above stays the chr22 one for now. The first real casualty
+test was GBMI asthma (Table 7). There, h² moves 0.133 → 0.156 when the
+EUR score is replaced by the meta score. That is 1.9 SE, just short of the
+pre-stated 2 SE.
+
 Most of the loss is **LD mismatch, not effect heterogeneity**: even at
 ρ = 1, κ = 0.79 for EUR + AFR. The intercept moves little (+0.00 to +0.03
 of the LD-driven excess χ² at 75% EUR). Two honest negatives from the same

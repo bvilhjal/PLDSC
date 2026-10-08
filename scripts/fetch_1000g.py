@@ -35,6 +35,10 @@ What it fetches, and from where:
   baselineLD   v2.2 annotation tarball (Alkes group; the host moved from
                data.broadinstitute.org to alkesgroup.broadinstitute.org --
                both are tried). Only needed for the D1 annotation gate work.
+  bigsnpr set  not fetched here. experiments/multiancestry_genome_kappa.py
+               reads bigsnpr's 1000G_phase3_common_norel PLINK files
+               (bigsnpr::download_1000G in R); place or symlink them in
+               .scratch_1000g/. Their sha256 values are in that script.
   cache        --build-cache re-runs the thinned VCF parser in
                experiments/realdata_1000g_benchmarks.py (pure Python; budget
                minutes per chromosome).
