@@ -87,6 +87,15 @@ single-sourced from `pldsc.__version__`; the package is pre-release
 
 ### Fixed
 
+- `experiments/m_spike_kill_or_continue.py`: the two simulated populations
+  now share one ancestral spectrum per chromosome. Each had been drawn from
+  its own, so the realized Hudson F_ST was 0.26 at nominal 0.08, and 0.21 in
+  the "homogeneous" control, which is now one population. Readout B's MCSE
+  now uses Var(z²), not Var(z), and the script prints the realized F_ST.
+  The re-run keeps the CONTINUE verdict, with ordinary-OLS null inflation
+  under structure of 2.25 (was 12.3) and ~1 for all three models in the
+  control (ordinary had read 9.07). The experiments README, METHOD §11 and
+  the DEVELOPMENT_PLAN status are updated.
 - `pldsc.genome.read_plink_genetic_map` skips `#` comment lines; the
   plink-format maps written by `scripts/fetch_1000g.py` carry a provenance
   header and previously crashed the parser (regression test added).

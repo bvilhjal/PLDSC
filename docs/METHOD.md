@@ -589,14 +589,16 @@ describes is an intercept effect with a one-line remedy, whereas the biases
 
 ## 11. Numerical confirmation
 
-The M-spike (`experiments/m_spike_kill_or_continue.py`, env `pldsc`, PCG64 seed
-20260717, \(N=400\), 6000 Monte-Carlo replicates) confirms (M6): regressing the
-empirical \(E[z_j^2]\) on the full-chromosome \(L_j^{(P_c)}\) recovers
-\((\text{intercept},\text{slope})=(0.997,\ \tau^2)\); the mixed-model intercept
-under a null target chromosome is \(1.00\) in both a structured and a
-homogeneous cohort, while ordinary OLS inflates to \(9\text{–}12\); and
-\(P_c\) shrinks structure-induced cross-chromosome \(r^2\) from \(0.053\) to
-\(0.0015\). See `experiments/README.md`.
+The M-spike (`experiments/m_spike_kill_or_continue.py`, PCG64 seed 20260717,
+\(N=400\), 6000 Monte-Carlo replicates; simulator corrected and re-run
+2026-10-10) confirms (M6). Regressing the empirical \(E[z_j^2]\) on the
+full-chromosome \(L_j^{(P_c)}\) recovers
+\((\text{intercept},\text{slope})=(1.010,\ 0.98\,\tau^2)\). Under a null target
+chromosome the mixed-model intercept is \(1.00\) both in a structured cohort
+(realized \(F_{st}=0.080\), with relatives) and in a single-population one.
+Ordinary OLS inflates to \(2.25\) under structure and stays at \(1.00\) without
+it. \(P_c\) shrinks cross-chromosome \(r^2\) from \(0.0086\) to \(0.0014\). See
+`experiments/README.md`.
 
 The miscalibration map (`experiments/map_ldsc_miscalibration.py`) regresses the
 exact analytic moment on conventional LD scores across regimes (fixed \(N\),

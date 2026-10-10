@@ -52,55 +52,65 @@ Run in the project env:
 conda run -n pldsc python experiments/m_spike_kill_or_continue.py
 ```
 
-(env `pldsc`: Python 3.14, NumPy 2.4, numba 0.66; RNG bit generator PCG64,
-seed 20260717.)
+(RNG bit generator PCG64, seed 20260717; corrected run 2026-10-10 in
+`ldpred3-accelerate`: Python 3.14.6, NumPy 2.4.6.)
 
 ### Verdict: CONTINUE
 
-Two scenarios (structured two-population + sib pairs; homogeneous control),
-N=400, 240 SNPs on 3 chromosomes, 6000 Monte-Carlo replicates.
+> **Corrected 2026-10-10.** The first version drew each population from its own
+> ancestral spectrum, so the realized Hudson F_ST was 0.26 at nominal 0.08, and
+> 0.21 in the "homogeneous" control. Readout B's MCSE used Var(z) where it
+> needed Var(z^2). The numbers below come from the corrected script, which
+> prints the realized F_ST. The verdict stands, but the ordinary-LDSC effect is
+> about 9x smaller than first recorded (null excess +1.25, not +11.3). The
+> original control also failed the gate's own "all three ~1" condition
+> (ordinary OLS 9.07), and that went unnoticed.
+
+Two scenarios: two populations at F_ST 0.08 plus offspring of in-sample
+founders, and a single-population control. N=400, 240 SNPs on 3 chromosomes,
+6000 Monte-Carlo replicates.
 
 **Readout B — Eq (3) is numerically correct.** The Monte-Carlo `E[z_j^2]` matches
-the Eq (3) moment: per-SNP standardized residuals have RMS ~1.55 sigma (max ~4.3),
-which is expected because the 80 SNP means share the same MC draws and are
-correlated — the aggregate agreement rules out a systematic error. Window
-truncation (1.5 cM) drops ~12% of the full sum (median), the expected Eq-4
-approximation to quantify in M3. Separately, the slope-estimand check (this is the
-*Readout A2* "correct regressor" row, not Readout B): regressing the calibrated
-oracle `z^2` on the full-chromosome `L_j^(P_c)` recovers
-`(intercept, slope) = (0.997, 6.246e-4)` against the true `tau^2 = 6.229e-4`
-(homogeneous 0.983 / 6.111e-4 vs 5.86e-4) — the cleanest confirmation that the
-slope is `tau^2`.
+the Eq (3) moment. Per-SNP standardized residuals have RMS 0.99 sigma (max 3.0)
+in the structured scenario and 1.17 (max 3.3) in the control. Nine seeds give
+RMS 0.90–1.17. The old RMS of ~1.55 came from the MCSE formula, not from
+correlated draws. Window truncation (1.5 cM) drops ~12% of the full sum
+(median). Separately, the slope-estimand check (the *Readout A2* "correct
+regressor" row) regresses the calibrated oracle `z^2` on the full-chromosome
+`L_j^(P_c)`. It recovers `(intercept, slope) = (1.010, 5.741e-4)` against the
+true `tau^2 = 5.859e-4` (control: 0.989 / 5.206e-4 vs 5.178e-4).
 
 **Readout A1 — the calibration/confounding use-case, under a null target
 chromosome (`tau^2 = 0`).** Mean `z^2` is the LDSC-intercept-style confounding:
 
-| association model | structured | homogeneous |
+| association model | structured (F_ST 0.080) | single population |
 |---|---|---|
-| ordinary OLS | **12.29** | **9.07** |
-| covariate-adjusted OLS (intercept + 2 LOCO PCs) | 1.04 | 0.94 |
+| ordinary OLS | **2.25** | 1.00 |
+| covariate-adjusted OLS (intercept + 2 LOCO PCs) | 1.08 | 0.98 |
 | mixed-model `P_c` (PLDSC) | **1.00** | **1.00** |
 
-The mixed-model score is exactly calibrated in both; ordinary OLS is massively
-inflated because it ignores `V_c` (the polygenic-background + structure
-covariance) — the confounding PLDSC removes.
+The mixed-model score is exactly calibrated in both. Ordinary OLS inflates only
+under structure (1.96–2.80 over eight more seeds). Separate `run_scenario`
+calls split the two sources over 8 seeds. Two populations without offspring
+give ordinary 2.18 but cov-adjusted 0.97. One population with offspring gives
+ordinary 1.13 and cov-adjusted 1.10. So the ordinary-OLS excess is structure,
+which 2 PCs remove, and the cov-adjusted +0.08 is the in-sample relatives,
+which the LMM removes.
 
-**Readout A2 — LD-score choice matters.** Regressing the *same* calibrated
-oracle `z^2` on each LD score, only the correct `L^(P_c)` gives intercept ~1
-with a good fit (R^2 = 0.90); `L_ordinary` (a=1.65, R^2=0.46) and `L_cov-LDSC`
-(a=0.90, R^2=0.38) are the wrong regressor and bias the fit.
+**Readout A2 — LD-score choice matters under structure.** The *same* calibrated
+oracle `z^2` is regressed on each LD score. `L^(P_c)` gives intercept 1.01
+(R^2 = 0.79), while `L_ordinary` (a=1.35, R^2=0.09) and `L_cov-LDSC` (a=1.12,
+R^2=0.33) bias the fit. In the control all three give a≈1 (0.99, 1.03, 1.03).
 
-**Long-range LD.** `P_c` shrinks mean chr0-chr2 `r^2` from 0.053 (raw) to 0.0015
-(structured) — the structure-induced cross-chromosome LD the manuscripts were
-chasing, removed by the residual-precision metric.
+**Long-range LD.** `P_c` shrinks mean chr0-chr2 `r^2` from 0.0086 (raw) to
+0.0014 (structured). The control's raw value is 0.0025 = 1/N.
 
 ### Honest caveats / what this does NOT yet show
 
-- With two *discrete* populations, covariate-adjusted LDSC (2 fixed PCs) is
-  already ~calibrated (A1: 0.94–1.04), so this scenario does not separate PLDSC
-  from cov-LDSC on the intercept. The PLDSC-over-cov-LDSC advantage should
-  appear where fixed PCs cannot capture the covariance — cryptic relatedness and
-  continuous admixture. That is the first M3 scenario to add.
+- With two *discrete* populations, 2 fixed PCs remove the structure
+  (cov-adjusted 0.97 without relatives). What they leave (+0.08) is
+  relatedness, an intercept-type effect. M3 picks this up, and the later
+  use-case test found that it does not reach the windowed LD-score regression.
 - Everything here uses an **oracle** `V_c`. Fitted-`V_c` plug-in error (M4) is
   untested.
 - This is a throwaway spike, not the `pldsc/_lmm.py` oracle (M2) or its unit

@@ -91,12 +91,21 @@ def fit_intercept_slope(x, y):
 
 
 # --------------------------------------------------------------------------- #
-# genotype simulation: two populations, AR(1) local LD, optional sib relatedness
+# genotype simulation: one or two populations, AR(1) local LD, optional sib relatedness
 # --------------------------------------------------------------------------- #
 def bn_freqs(rng, m, fst):
     anc = rng.uniform(0.1, 0.9, size=m)
     a, b = anc * (1 - fst) / fst, (1 - anc) * (1 - fst) / fst
     return rng.beta(a, b), rng.beta(a, b)
+
+
+def hudson_fst(G, pop):
+    """Realized Hudson F_ST between pops 0 and 1 (ratio of averages, Bhatia 2013)."""
+    a, b = pop == 0, pop == 1
+    p1, p2 = G[a].mean(0) / 2, G[b].mean(0) / 2
+    n1, n2 = 2 * a.sum(), 2 * b.sum()
+    num = (p1 - p2) ** 2 - p1 * (1 - p1) / (n1 - 1) - p2 * (1 - p2) / (n2 - 1)
+    return num.sum() / (p1 * (1 - p2) + p2 * (1 - p1)).sum()
 
 
 def ar1_haps(rng, freqs, rho, n_hap):
@@ -111,12 +120,12 @@ def ar1_haps(rng, freqs, rho, n_hap):
     return (z < thr).astype(np.float64)  # allele=1 w.p. freqs
 
 
-def simulate(rng, chrom_sizes, n_found_per_pop, n_sib_per_pop, fst, rho):
+def simulate(rng, chrom_sizes, n_found_per_pop, n_sib_per_pop, fst, rho, npop=2):
     """Return genotype matrix (N x M), chrom id per SNP, cM positions, pop labels."""
-    npop = 2
-    per_pop_freqs = []
-    for _ in range(npop):
-        per_pop_freqs.append([bn_freqs(rng, m, fst)[0] for m in chrom_sizes])
+    # one ancestral draw per chromosome, shared by the populations (fst apart);
+    # separate bn_freqs calls per population would give unrelated spectra
+    pairs = [bn_freqs(rng, m, fst) for m in chrom_sizes]
+    per_pop_freqs = [[pair[g] for pair in pairs] for g in range(npop)]
     # per-chromosome founder haplotypes, per population
     genos, pops = [], []
     for g in range(npop):
@@ -153,8 +162,8 @@ def simulate(rng, chrom_sizes, n_found_per_pop, n_sib_per_pop, fst, rho):
 # the experiment for one scenario
 # --------------------------------------------------------------------------- #
 def run_scenario(name, rng, chrom_sizes, n_found, n_sib, fst, rho,
-                 sigma_g2, sigma_e2, target_h2_infl, window, n_rep, n_pc=2):
-    G, chrom, pos, pop = simulate(rng, chrom_sizes, n_found, n_sib, fst, rho)
+                 sigma_g2, sigma_e2, target_h2_infl, window, n_rep, n_pc=2, npop=2):
+    G, chrom, pos, pop = simulate(rng, chrom_sizes, n_found, n_sib, fst, rho, npop)
     N, M = G.shape
     tgt = (chrom == 0)
     off = ~tgt
@@ -214,7 +223,7 @@ def run_scenario(name, rng, chrom_sizes, n_found, n_sib, fst, rho,
         z2_null[key] = np.mean((PX.T @ E / np.sqrt(q)[:, None]) ** 2, axis=1)
 
     # ---- Readout B: MC vs Eq 3 for the oracle model ----
-    var_z2 = np.var((PXc_c.T @ Y) / np.sqrt(q_c)[:, None], axis=1)
+    var_z2 = np.var(((PXc_c.T @ Y) / np.sqrt(q_c)[:, None]) ** 2, axis=1)
     mcse = np.sqrt(var_z2 / n_rep)
     resid_sigma = (z2["pldsc"] - mu_eq3) / mcse
     trunc = np.abs(L_pldsc_win - L_pldsc_full) / L_pldsc_full
@@ -260,9 +269,11 @@ def run_scenario(name, rng, chrom_sizes, n_found, n_sib, fst, rho,
     lr_pc = pc_r2.mean()
 
     # ---- report ----
+    fst_real = f"{hudson_fst(G, pop):.4f}" if npop == 2 else "n/a (one pop)"
     print(f"\n{'='*74}\nSCENARIO: {name}")
     print(f"  N={N}  M={M}  target-chr SNPs={Mc}  fst={fst}  rho={rho}  "
           f"sib/pop={n_sib}  reps={n_rep}")
+    print(f"  realized Hudson F_ST={fst_real}")
     print(f"  sigma_g2={sigma_g2} sigma_e2={sigma_e2}  tau2={tau2:.4g}  "
           f"mean full L={np.mean(L_pldsc_full):.3f}")
     print("\n  [Readout B] oracle moment Eq(3) vs Monte Carlo")
@@ -300,9 +311,9 @@ def main():
                  window=1.5, n_rep=6000)
 
     run_scenario("HOMOGENEOUS control (single pop, fst~0, no relatives)", rng,
-                 chrom_sizes, n_found=200, n_sib=0, fst=1e-4, rho=0.6,
+                 chrom_sizes, n_found=400, n_sib=0, fst=1e-4, rho=0.6,
                  sigma_g2=0.5, sigma_e2=0.5, target_h2_infl=0.5,
-                 window=1.5, n_rep=6000)
+                 window=1.5, n_rep=6000, npop=1)
 
     print(f"\n{'='*74}")
     print("Kill-or-continue reading:")

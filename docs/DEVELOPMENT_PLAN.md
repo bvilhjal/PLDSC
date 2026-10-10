@@ -329,7 +329,16 @@ decisions. The repository is now archived; no Phase 2 item is scheduled.
 Current status (2026-07-22): the fixed-operator mean/oracle arc is built and
 validated; genomic and fitted-operator inference is not validated end-to-end.
 The **M-spike** passed (`experiments/m_spike_kill_or_continue.py`): Eq (3)
-confirmed numerically and PLDSC calibrates where ordinary LDSC does not. **M0**
+confirmed numerically and PLDSC calibrates where ordinary LDSC does not.
+*Re-run 2026-10-10 after two fixes.* First, the simulator gave each population
+its own ancestral spectrum, so the realized F_ST was 0.26 at nominal 0.08 and
+0.21 in the "homogeneous" control, which is now one population. Second,
+Readout B's MCSE used Var(z) for Var(z²). The verdict stands at a smaller
+size. Under structure (realized F_ST 0.080) the null mean z² is 2.25 for
+ordinary OLS (was 12.3), 1.08 for cov-adjusted OLS (an excess that comes from
+the relatives, not the structure) and 1.00 for P_c. The control gives ~1 for
+all three, where ordinary OLS had read 9.07. Eq (3) residuals have RMS 0.99σ
+(was 1.56σ). **M0**
 is completed and re-audited (`docs/METHOD.md`), including the scaling, variant
 sets, qualified limiting cases, score covariance, and inference requirements.
 **M1** is hardened: CI workflow, `rtol=0`
