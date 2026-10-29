@@ -5,17 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pldsc"
 dynamic = ["version"]
-description = "Population-aware LD Score regression research tools"
+description = "Fast univariate and bivariate LD Score regression and population structure research"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
     { name = "Bjarni J. Vilhjalmsson" },
 ]
-dependencies = ["numpy>=2.0"]
+dependencies = ["numpy>=2.0", "allelign>=0.1.0.dev8"]
 
 [project.optional-dependencies]
 test = ["pytest>=7"]
+fast = ["numba>=0.62"]
 plot = ["matplotlib>=3.8"]
 
 [project.urls]

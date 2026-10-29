@@ -1,0 +1,251 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=25mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\clubpenalty=10000
+\widowpenalty=10000
+\emergencystretch=2em
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+{\LARGE\bfseries PLDSC: univariate and bivariate LD Score regression\par}
+\medskip
+{\small Methods and implementation notes, 29 October 2026.\\
+Reviewed against the PLDSC 0.1.0.dev1 source tree on that date.\par}
+
+\medskip
+PLDSC estimates SNP heritability from one GWAS and genetic correlation from
+two GWAS using LD Score regression (LDSC). It also contains research tools
+for assessing LD-score mismatch in multi-ancestry meta-analyses. This report
+explains the ordinary LDSC fits, their inputs and computational design. The
+research results remain in \code{docs/MULTI\_ANCESTRY.md}; the runnable
+examples and full API guide are in \code{docs/LDSC.md}.
+
+\section{Inputs and targets}
+
+For variant $j$ in trait $t$, let $z_{tj}=b_{tj}/s_{tj}$ be the signed GWAS
+effect divided by its standard error, and let $N_{tj}$ be the appropriate
+effective sample size. For a reference LD correlation $r_{jk}$, define the
+LD score over a reference variant set $\mathcal M$ of size $M$ as
+\begin{equation}
+ \ell_j=\sum_{k\in\mathcal M} r_{jk}^{2}.
+ \label{eq:ldscore}
+\end{equation}
+The reference must match the populations and genome build of the GWAS well
+enough for the intended analysis, and the score for each regression variant
+must be associated with the correct reference row. $M$ counts the variants
+summed into the score; it is not, in general, the number of GWAS rows left
+after QC. PLDSC fits one common LD-score vector for the two traits, so a
+single reference must be appropriate for both.
+
+The targets are the SNP heritabilities $h_1^2,h_2^2$ and the additive
+genetic covariance $g_{12}$ for the modeled variant set and scale. Their
+genetic correlation is
+\begin{equation}
+ r_g=\frac{g_{12}}{\sqrt{h_1^2 h_2^2}}.
+ \label{eq:rg}
+\end{equation}
+This is a correlation of genetic components, not a phenotypic correlation or
+a causal effect. A binary trait is not automatically transformed to the
+liability scale. Reference mismatch, effect-size architecture, selection and
+imperfect LD estimates can alter the interpretation of the fitted slope.
+
+\section{The regressions}
+
+Under the standard LDSC approximation, with standardized effects having
+roughly constant variance and covariance across variants, the conditional
+moments follow Equations~\eqref{eq:univ} and~\eqref{eq:cross}
+\cite{ldsc,rgldsc}:
+\begin{align}
+ \E[z_{tj}^{2}\mid\ell_j] &\approx a_t + \frac{N_{tj}\ell_j}{M} h_t^2,
+ \label{eq:univ}\\
+ \E[z_{1j}z_{2j}\mid\ell_j] &\approx a_{12} +
+   \frac{\sqrt{N_{1j}N_{2j}}\,\ell_j}{M} g_{12}.
+ \label{eq:cross}
+\end{align}
+The slope of Equation~\eqref{eq:univ} estimates $h_t^2$; the slope of
+Equation~\eqref{eq:cross} estimates $g_{12}$. PLDSC fits both marginal
+regressions and the cross-trait regression on the \emph{same common rows}
+for a bivariate analysis, and then uses Equation~\eqref{eq:rg}. A separate
+one-trait fit can have a different $h^2$ because it can retain different
+variants. The two GWAS effects must count the same allele before their signed
+$z$-scores are multiplied.
+
+The intercepts are free by default. The marginal intercept can reflect
+confounding, genomic-control effects or model/reference mismatch; the
+cross-trait intercept can also reflect sample overlap and correlated
+confounding. These sources are not identified separately by the intercept.
+Fixing the intercept is an assumption, not a diagnostic: in the bivariate
+fit \code{constrain\_intercept} fixes only $a_{12}$, leaving $a_1,a_2$ free.
+A misspecified fixed intercept can bias the slopes.
+
+\subsection{Weights and uncertainty}
+
+PLDSC uses one-step iteratively reweighted least squares. Let
+$x_{tj}=N_{tj}\ell_j/M$ and $L_j=\max(\ell_j,1)$. A marginal fit starts with
+$\mu_{tj}=1$ and, after each fit, replaces it by
+$\max(a_t+h_t^2x_{tj},1)$. Its weights are
+\begin{equation}
+ w_{tj}=\frac{1}{2\mu_{tj}^{2}L_j}.
+ \label{eq:marginalweight}
+\end{equation}
+For the cross-trait fit, the fitted marginal means give the approximate
+bivariate-normal variance of $z_{1j}z_{2j}$. With fitted cross mean $q_j$,
+PLDSC uses
+\begin{equation}
+ w_{12,j}=\frac{1}{L_j\max(\mu_{1j}\mu_{2j}+q_j^2,10^{-6})}.
+ \label{eq:crossweight}
+\end{equation}
+The first cross fit uses $q_j=0$ when its intercept is free, or the fixed
+intercept otherwise; subsequent fits update $q_j$. By default there are two
+weight updates after the initial fit. This is a one-step estimator: PLDSC
+does not reproduce every option, including the original software's two-step
+intercept estimator, of the standalone LDSC implementation.
+
+Standard errors use a delete-a-block jackknife over contiguous variants in
+genomic order. If $\widehat\theta_{(-b)}$ is the estimate after deleting
+block $b$, with mean $\overline\theta_{(-\cdot)}$ across $B$ deletions,
+\begin{equation}
+ \widehat{\operatorname{se}}(\widehat\theta)=
+ \left[\frac{B-1}{B}\sum_{b=1}^{B}
+ (\widehat\theta_{(-b)}-\overline\theta_{(-\cdot)})^2\right]^{1/2}.
+ \label{eq:jackknife}
+\end{equation}
+Each deletion refits the weights; a bivariate deletion refits both marginals
+and the cross-trait regression before calculating $r_g$. The defaults are
+100 blocks for one trait and 200 for two, capped by the number of regression
+variants. For $r_g$, the point estimate is undefined if either marginal
+estimate is non-positive; its standard error is undefined if a required
+replicate is invalid or fewer than two blocks are available. Estimates are
+not clipped to their theoretical ranges.
+
+\section{From files to estimates}
+
+Figure~\ref{fig:workflow} summarizes the file workflow. Allelign reads each
+GWAS, checks its columns and sample sizes, filters rows, and harmonizes
+alleles to a sorted \code{.bim} or \code{.pvar} reference. Defaults remove
+non-finite effects, non-positive standard errors or sample sizes, duplicated
+identifiers, and variants with $N$ below 70\% of the median. Where available,
+MAF below 0.01 and INFO below 0.7 are filtered. Ambiguous A/T and C/G sites
+are dropped by default, and effect signs are flipped where alignment requires
+it. QC and alignment counts are returned for each trait.
+
+\begin{figure}[htbp]
+\centering\small
+\setlength{\fboxsep}{4pt}
+\fbox{\parbox[c][2.0cm][c]{0.23\linewidth}{\centering GWAS summaries\\Reference variants\\LD scores and $M$}}
+\enspace$\longrightarrow$\enspace
+\fbox{\parbox[c][2.0cm][c]{0.23\linewidth}{\centering Allelign QC\\Allele alignment\\Chi-square cap}}
+\enspace$\longrightarrow$\enspace
+\fbox{\parbox[c][2.0cm][c]{0.23\linewidth}{\centering LDSC fits\\Block jackknife\\Estimates and logs}}
+\caption{The file-based workflow for one or two traits. Bivariate fits use
+common, aligned variants passing the cap for both traits.}
+\label{fig:workflow}
+\end{figure}
+
+The wrappers then apply the per-trait cap $z_{tj}^{2}\leq
+\max(80,0.001N_{tj})$; a bivariate row must pass both caps. They do not
+automatically remove long-range LD regions or check genome builds. Such
+selection, liftover and reference suitability are the analyst's responsibility.
+A numerical \code{n\_eff} passed as a read option replaces every per-variant
+sample size. For a case-control study, a common choice is
+\begin{equation}
+ N_{\rm eff}=\frac{4}{1/N_{\rm case}+1/N_{\rm control}}.
+ \label{eq:neff}
+\end{equation}
+For compatible meta-analyses of non-overlapping cohorts, the sum of
+cohort-specific effective sizes can differ from applying Equation~\eqref{eq:neff}
+to pooled counts; choose the scale appropriate to the GWAS.
+
+Table~\ref{tab:api} separates the file-based and preprocessed-array paths.
+The latter do not perform QC, harmonization, filtering or sorting. The
+\code{ldsc\_rg} array function takes LDpred3-standardized effects; raw
+per-allele GWAS effects belong in the file wrapper or must first be converted
+to signed $z$-scores for \code{ldsc\_rg\_z}. For example, with file paths
+\code{gwas1}, \code{gwas2}, and \code{ref}, and reference-aligned
+\code{scores}, the file-based calls are:
+{\small
+\begin{verbatim}
+h2 = ldsc_h2_sumstats(gwas1, ref, scores, m_snps=M)
+rg = ldsc_rg_sumstats(gwas1, gwas2, ref, scores,
+                      m_snps=M, ncores=4)
+print(h2.estimate.h2, rg.estimate.rg, rg.estimate.rg_se)
+\end{verbatim}
+}
+Both functions are imported from \code{pldsc}. Their results also contain QC
+and alignment logs; the complete, runnable example is in the guide.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Main entry points and their inputs. The file wrappers return QC
+and alignment logs alongside the estimate.}
+\label{tab:api}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Function & Input and result\\ \midrule
+\code{ldsc\_h2\_sumstats} & One GWAS and reference: SNP heritability and SE.\\
+\code{ldsc\_rg\_sumstats} & Two GWAS and reference: genetic covariance,
+correlation and correlation SE.\\
+\code{ldsc\_h2} & Aligned arrays of $z^2$, LD scores and sample sizes.\\
+\code{ldsc\_rg\_z} & Aligned arrays of signed $z$-scores, LD scores and sample sizes.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scores, computation and evidence}
+
+\code{ld\_scores} accepts a dense correlation matrix or disjoint indexed
+blocks, including int8 and low-rank representations. Low-rank contractions
+avoid materializing the full dense matrix. Block scores omit between-block
+LD, and the optional finite-reference correction can yield non-positive
+scores. The regressions require positive scores; silently clipping them
+changes the analysis. Score construction and the choice of $M$ must match
+the intended reference, window and variant set.
+
+The regression kernels were adapted from LDpred3 and bipred and are designed
+for very fast repeated fits. With optional Numba compilation, delete-block fits traverse retained ranges without making
+a full copy for each deletion. Independent bivariate deletions can run in
+parallel; poorly conditioned fits fall back to the reference numerical path.
+Without Numba, a NumPy implementation remains available. Compilation affects
+the first call, while elapsed time and memory depend on the workload and
+hardware. The repository includes a paired warm timing driver; no quantitative
+speedup is asserted here without a corresponding measured run.
+
+\pagebreak
+The tests include an exact univariate regression line, dense and low-rank
+score checks, near-singular fits, allele flips and file-workflow checks, and
+comparisons with LDpred3 and bipred when those siblings are installed. These
+are implementation and consistency checks, not evidence of real-data
+calibration. The synthetic example exercises the API but does not model LD
+among GWAS statistics.
+
+\section{Relation to the population-structure research}
+
+The ordinary regressions above use one LD-score vector. The multi-ancestry
+research instead derives a meta-analysis score containing within- and
+cross-ancestry LD and examines the consequences of using a single-ancestry
+reference. Its ancestry-pair effect correlation is not the cross-trait $r_g$
+in Equation~\eqref{eq:rg}. In the current panel experiments, reported
+$\kappa$ values are panel plug-in slope ratios under stated assumptions;
+finite-reference noise can affect both scores, so these are not calibrated
+estimates of absolute heritability bias. The definitions, assumptions,
+experiments and results are recorded in \code{docs/MULTI\_ANCESTRY.md}.
+
+\begin{thebibliography}{9}
+\bibitem{ldsc} Bulik-Sullivan BK, Loh PR, Finucane HK, et al.
+LD Score regression distinguishes confounding from polygenicity in
+ genome-wide association studies. \emph{Nature Genetics} 47, 291--295 (2015).
+\href{https://doi.org/10.1038/ng.3211}{doi:10.1038/ng.3211}.
+\bibitem{rgldsc} Bulik-Sullivan B, Finucane HK, Anttila V, et al.
+An atlas of genetic correlations across human diseases and traits.
+\emph{Nature Genetics} 47, 1236--1241 (2015).
+\href{https://doi.org/10.1038/ng.3406}{doi:10.1038/ng.3406}.
+\end{thebibliography}
+\end{document}

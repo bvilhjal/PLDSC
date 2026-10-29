@@ -40,9 +40,9 @@ The estimator line (`P_c`, the theory note) stays concluded.
 
 **The headline so far.** Take a meta-analysis that is 75% EUR and 25% from one
 other 1000G superpopulation, with trans-ancestry genetic correlation ρ = 0.8.
-If LDSC regresses it on the EUR LD score, it underestimates h² by:
+The panel plug-in calculation gives these relative slope differences:
 
-| other 25% | h² underestimated by |
+| other 25% | panel plug-in difference |
 |---|---|
 | AFR | 25% |
 | EAS | 16% |
@@ -50,15 +50,14 @@ If LDSC regresses it on the EUR LD score, it underestimates h² by:
 | AMR | 9–10% |
 
 These are κ = 0.75 / 0.84 / 0.87 / 0.90–0.91. They are stable to SNP
-density (±0.015) and to LDSC-style weights. Most of the loss is **LD
-mismatch**: even at ρ = 1, κ = 0.79 for EUR + AFR. The intercept moves little
-(+0.00 to +0.03 of the excess χ² at 75% EUR).
+density (±0.015) and to LDSC-style weights. The plug-in difference persists at
+ρ = 1 (κ = 0.79 for EUR + AFR). Finite-panel errors mean these values are not
+calibrated estimates of absolute heritability bias (MULTI_ANCESTRY §3–4).
 
 Two negatives from the same run:
 
-- A meta-analysis alone cannot separate LD mismatch from effect heterogeneity.
-  The within and cross parts correlate 0.80–0.99 across SNPs
-  (MULTI_ANCESTRY Table 5).
+- The within and cross parts correlate 0.80–0.99 across SNPs
+  (MULTI_ANCESTRY Table 5), potentially making joint estimation imprecise.
 - The first κ computation overstated the loss. It had two defects, which a
   post-rule robustness check found. The pre-stated verdict and the corrected
   numbers are both recorded (MULTI_ANCESTRY Table 4).
@@ -81,7 +80,7 @@ Two negatives from the same run:
 |---|---|---|---|
 | 1 | **Gate passed 2026-10-08 on bigsnpr's 1000G set (Table 1). Left: the thinned-VCF bridge, which needs 1a and the download below.** κ genome-wide: all 22 autosomes via `scripts/fetch_1000g.py` (S3 mirror, ~15 GB; the EBI FTP is blocked here). **1a, part of the cost:** the VCF→cache step is `parse_and_cache`'s nested pure-Python loop (`realdata_1000g_benchmarks.py`), built for thinned chr21/22/10 only — a fast, progress-reporting, resumable parser is a real sub-task, not a detail; the download alone is the 1–2 days | 1–2 days + parser | the rule-cell AFR κ stays ≤ 0.90; otherwise chr22 was unrepresentative and the claim shrinks |
 | 2 | Prior-art sweep scoped to MA2, MA6, MA8 and the measured κ (Popcorn, S-LDXR, MAMA, the 2026 meta-LDSC preprint, Momin 2023, cov-LDSC); verify the snippet-level citations. Generalizing `workflows/scripts/pldsc-prior-art-sweep.js` from the archived claims to MA2/MA6/MA8/κ **is** this step | 1 day | if MA2/κ are in print, the paper becomes the measurement plus the casualty |
-| 3 | **Asthma run 2026-10-08 (Table 1): 1.9 SE at the central bracket, so asthma alone is a practice note. Six more traits have EUR, AFR, EAS and AMR metas (COPD, Gout, HF, IPF, Stroke, VTE). Any multi-trait test has to fix its traits and its multiplicity rule before it runs.** **The casualty, upgraded to a point estimate:** GBMI's summary statistics — including ancestry-group stratifications — are openly downloadable with no access application (external check, 2026-09-25), so **estimate ρ from the ancestry-stratified sumstats** (S-LDXR/Popcorn-style, or PLDSC's two-regressor fit with external ρ) instead of bracketing it, then recompute h² with the EUR score vs the meta score vs GBMI's published value. This is exactly the escape hatch MULTI_ANCESTRY Table 5 says is needed ("ρ has to come from ancestry-specific summary statistics"). First sub-task: verify per-trait stratified availability in the manifest before committing | 1–2 weeks | h² moves by more than 2 SE, or the paper becomes a practice note |
+| 3 | **Asthma run 2026-10-08 (Table 1): 1.9 SE at the central bracket, so asthma alone is a practice note. Six more traits have EUR, AFR, EAS and AMR metas (COPD, Gout, HF, IPF, Stroke, VTE). Any multi-trait test has to fix its traits and its multiplicity rule before it runs.** Estimate available ρ values from ancestry-stratified sumstats and use valid correlation matrices for sensitivity analyses of unavailable pairs. First verify per-trait stratified availability in the manifest. | 1–2 weeks | h² moves by more than 2 SE, or the paper becomes a practice note |
 | 4 | Genetic correlation: the cross-trait version of MA2, and what EUR scores do to r_g between two meta-analyses | 1 week | only if step 3 survives |
 | 5 | Part 2 (the D1(b) kill-test) | 1–2 weeks | as written in D1_ANNOTATION_GATE |
 | 6 | Family integration: SMARTpred "reference fit" (κ from a GWAS's reported ancestry mix) and LDpred3-atw Phase 0 | 1 week | after steps 1–3 |
@@ -133,5 +132,5 @@ Two negatives from the same run:
 | chr22 is unrepresentative | κ moves | step 1: genome-wide κ is within 0.025 of chr22 (MULTI_ANCESTRY Table 6) |
 | MA2 or κ is already in print (MAMA, S-LDXR supplements) | novelty shrinks to the measurement | step 2 before writing; the casualty is the differentiator |
 | No published meta moves by > 2 SE | no casualty | publish as a practice note with the κ table and a `pldsc` function |
-| ρ is unknown for most traits, and a meta cannot identify it (MULTI_ANCESTRY Table 5) | κ is a bracket, not a point | step 3 estimates ρ from GBMI's ancestry-stratified sumstats; the fallback is the ρ ∈ [0.6, 1] bracket of MULTI_ANCESTRY Table 3 |
+| ρ is unknown for most traits, and its precision from a meta alone is untested (MULTI_ANCESTRY Table 5) | panel plug-in κ is a sensitivity analysis, not a calibrated bias estimate | step 3 estimates ρ from ancestry-stratified sumstats and uses positive-semidefinite brackets for unavailable pairs |
 | The model assumptions (A1 effect scale, η = 1, one genetic map) | κ shifts | MA2 carries η and τ_ab,j explicitly; add sensitivity runs in step 1 |

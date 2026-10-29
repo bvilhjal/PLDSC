@@ -1,6 +1,7 @@
 # Development environment
 
-PLDSC requires Python ≥ 3.11 (`pyproject.toml`) and numpy ≥ 2.0, and is
+PLDSC requires Python ≥ 3.11 (`pyproject.toml`), NumPy ≥ 2.0 and the private
+`allelign` package, and is
 developed on Python 3.14. A default Anaconda base environment is 3.10 and
 is below both floors.
 
@@ -12,7 +13,8 @@ the maintainer's machine the package is installed editable in the shared
 sibling packages). Any 3.11+ interpreter works:
 
 ```bash
-python -m pip install -e ".[test]"      # or ".[test,plot]"
+python -m pip install -e ../allelign
+python -m pip install -e ".[test,fast]"  # add plot for the plotting extra
 ```
 
 ## Checks that CI runs
@@ -22,12 +24,11 @@ python -m pip install -e ".[test]"      # or ".[test,plot]"
 ```bash
 ruff check .                          # pyflakes only (select = ["F"]), by design
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 pytest -q
-# equivalent, no pytest needed:
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  python -m unittest discover -s tests -v
+NUMBA_DISABLE_JIT=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  pytest -q tests/test_ldsc_port.py tests/test_review_fixes.py
 ```
 
-The suite is 81 tests and runs in about a second. Pin BLAS threads as
+Pin BLAS threads as
 above when comparing numbers across machines: BLAS reductions are the one
 place threading can move the last digits. Long lines and multi-statement
 lines are intentional; do not reformat or add style rules.

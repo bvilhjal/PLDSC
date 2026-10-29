@@ -39,7 +39,7 @@ def cells(X, fE, rho):
             single_reference_bias(L, lE, sample_sizes=nj, weights=w).kappa)
 
 
-print("Table 3 (MULTI_ANCESTRY.md). kappa = h2_hat/h2 for a meta regressed on the")
+print("Table 3 (MULTI_ANCESTRY.md). Panel plug-in kappa for a meta regressed on the")
 print(f"1000G EUR score; OLS / LDSC-style weights, EUR MAF >= 0.05 ({eur_common.sum()} SNPs)")
 print(f"{'mix':>16s} " + " ".join(f"{'rho=' + str(r):>19s}" for r in RHOS))
 for X in anc[1:]:

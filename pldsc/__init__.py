@@ -1,4 +1,4 @@
-"""Population-aware LD Score regression research tools."""
+"""Fast univariate and bivariate LDSC and population structure research."""
 
 from .ld import effective_pair_df, local_ld_scores, residualize_genotypes
 from .multiancestry import (
@@ -11,10 +11,17 @@ from .multiancestry import (
     single_reference_bias,
 )
 from .regression import RegressionResult, ld_score_regression
+from .ldsc import LDSCResult, ldsc_h2, ldsc_chi2_keep
+from .ld_scores import LowRankLD, ld_scores
+from .bivariate import LDSCRgResult, ldsc_rg, ldsc_rg_z
+from .sumstats import SumstatsLDSCResult, ldsc_h2_sumstats, ldsc_rg_sumstats
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0.dev1"
 
 __all__ = [
+    "LDSCResult", "ldsc_h2", "ldsc_chi2_keep", "LowRankLD", "ld_scores",
+    "LDSCRgResult", "ldsc_rg", "ldsc_rg_z",
+    "SumstatsLDSCResult", "ldsc_h2_sumstats", "ldsc_rg_sumstats",
     "local_ld_scores",
     "residualize_genotypes",
     "effective_pair_df",

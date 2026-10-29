@@ -9,7 +9,11 @@ three ways:
 - a first measurement on real 1000 Genomes panels
   ([multiancestry_1000g_meta.py](../experiments/multiancestry_1000g_meta.py)).
 
-Equation labels MA1–MA12 are the ones the code cites.
+Equation labels MA1–MA12 are the ones the code cites. PLDSC also implements
+ordinary univariate and bivariate LDSC, described in the
+[methods report](../report/methods.pdf) and [LDSC guide](LDSC.md). The
+cross-trait genetic correlation in that report is distinct from the
+cross-ancestry effect correlations considered here.
 
 ## 1. Setting
 
@@ -94,10 +98,21 @@ LDSC regresses χ²_j on (N_j/N̄) ℓ^R_j for a reference score ℓ^R, e.g.
   (MA6) slope = (N̄ h²/M) κ, κ = Cov_w(x_L, x_R)/Var_w(x_R);
       intercept = 1 + (N̄ h²/M) · (Ē_w x_L − κ Ē_w x_R),
 
-where x_L = (N_j/N̄) L_j and x_R = (N_j/N̄) ℓ^R_j. So ĥ²/h² → κ, which is
-computable from the panels, the reported ancestry mix, and an assumed ρ. No
-GWAS is needed. For a single-ancestry GWAS with R = a, κ = 1 exactly. This is
-`single_reference_bias(L, ell_R, sample_sizes=N_j)`.
+where x_L = (N_j/N̄) L_j and x_R = (N_j/N̄) ℓ^R_j. With the true expected
+score L and the actual predictor ℓ^R, ĥ²/h² → κ. When both are estimated from
+finite panels, the panel-only calculation substitutes a noisy L for the true
+score, and its result need not equal the actual slope ratio: correlated score
+errors can mask attenuation. For identical population LD and shared effects,
+the true-score mismatch factor is one, but panel-based fits need not recover
+h². The tables below report this panel plug-in κ, not calibrated absolute
+heritability bias. `single_reference_bias` computes MA6 for its supplied inputs.
+
+A seeded known-truth example in
+[`reference_score_noise.py`](../experiments/reference_score_noise.py) uses two
+independent 500-person panels with identical population LD and ρ = 1. Across
+30 replicates the panel plug-in κ averages 0.969, while the expected EUR and
+meta regressions average 0.917 and 0.959 of true h² (ratio 0.957). This toy
+quantifies one failure mode; it does not calibrate the 1000G estimates below.
 
 ## 4. Estimation from reference panels
 
@@ -121,8 +136,9 @@ Each misstates L by about ω·|W|/n, i.e. roughly 2 LD-score units per term for
 L = D + ρ X for a common ρ, where D uses ρ = I and X is the cross part. In
 code, `meta_ld_scores(..., rho=np.eye(A))` returns D and the difference from
 `rho=ones` returns X. In principle a two-regressor LDSC of the meta χ² on
-(D, X) identifies h² and h²ρ. §6 Table 5 shows that on real panels D and X
-are too collinear for this to be useful.
+(D, X) identifies h² and h²ρ when the design has full rank. The correlations in
+§6 Table 5 imply potentially large uncertainty; practical utility requires an
+empirical precision and calibration study.
 
 ## 5. Pooled (mega-) analysis
 
@@ -135,13 +151,17 @@ pooled sample. Then, exactly given genotypes,
   (MA11) E[χ²_j | G] = (noise) + N (h²/M) L^pool_j,  L^pool_j = Σ_ab f_a f_b ρ_ab √(η_a η_b) Σ_k m^a_jk m^b_jk.
 
 **Proposition 2** (MA12: a pooled analysis ≡ an inverse-variance meta for
-discrete groups). If C contains the ancestry-group indicators, or PCs whose
-span includes them, then x̃_ij = (g_ij − ḡ_aj)/σ̃_j for i ∈ a, and
+discrete groups). If the column space of C is exactly the span of the
+ancestry-group indicators, then x̃_ij = (g_ij − ḡ_aj)/σ̃_j for i ∈ a, and
 m^a_jk = s_aj r̂^a_jk/σ̃_j. Therefore L^pool_j is exactly the
 inverse-variance L_j of MA2. This is the LD-score form of the known
 equivalence between fixed-effect meta- and mega-analysis (Lin & Zeng 2010).
+Additional covariates change this residualization; equivalence then needs
+appropriately matched covariate adjustments, and does not follow from the
+group indicators alone.
 
-A pooled analysis differs from a meta only through what the covariates miss:
+A pooled analysis may differ from this simple meta through additional
+covariate adjustments and through what the covariates miss:
 
 - group mean differences left unadjusted, which give Σ_{i∈a} x̃_ij ≠ 0. This
   is the structure channel PLDSC measured, 29% of the windowed score at
@@ -158,7 +178,8 @@ pooled panel. It applies no finite-sample correction.
 Setup: two simulated ancestries with different LD lengths; GWAS
 N = 3000 + 1500; M = 2000; h² = 0.5; 3 × 100 replicates. Entries are mean
 ĥ²/h², and "ratio" is the slope on the used score divided by the slope on the
-correct score, which is what MA6 predicts.
+estimated meta score. The reported plug-in κ uses that estimated meta score;
+its agreement with the ratio does not establish absolute calibration.
 
 | E share | ρ | weights | correct score | E-only: ratio vs predicted κ | ρ=1 score: ratio vs predicted |
 |---|---|---|---|---|---|
@@ -194,7 +215,7 @@ AMR's large within-ancestry score is its admixture LD. A 1-in-3 denser
 cache scales every entry by about 3 (EUR 30.4) and leaves κ essentially
 unchanged (Table 3).
 
-**Table 3. κ = ĥ²/h² for a meta regressed on the 1000G EUR score.** These are
+**Table 3. Panel plug-in κ for a meta regressed on the 1000G EUR score.** These are
 the corrected numbers (Table 4): N_j-scaled regressors, regression SNPs with
 EUR MAF ≥ 0.05, and sample-size weights. Each cell gives OLS / LDSC-style
 weights, 1-in-10 cache.
@@ -259,11 +280,13 @@ the N_j-scaled within part D and cross part X across SNPs (MA9), at EUR 0.75.
 | corr(D, X), 1-in-10 | 0.847 | 0.813 | 0.980 | 0.988 |
 | corr(D, X), 1-in-3 | 0.871 | 0.798 | 0.983 | 0.988 |
 
-For SAS and AMR the two parts are collinear, so ρ is not identified. For AFR
-and EAS it is weakly identified at best (variance inflation of about 3–4).
-**A meta-analysis alone cannot tell LD mismatch from effect heterogeneity.**
-ρ has to come from ancestry-specific summary statistics (Popcorn, S-LDXR) or
-be bracketed, as in Table 3.
+These are high correlations, not exact collinearity. On the 1-in-10 chr22
+bundle, the design including an intercept has rank three for SAS and AMR;
+the corresponding unweighted variance-inflation factors are about 25 and 44.
+AFR and EAS give about 3–4. Noise, panel uncertainty and LD dependence can
+further affect precision. The table alone cannot establish whether a
+two-regressor estimate is useful. Ancestry-specific summary statistics or
+valid correlation brackets offer alternative sensitivity analyses.
 
 **Table 6. Genome-wide κ at the rule cell** (EUR 0.75 + X, ρ = 0.8;
 [multiancestry_genome_kappa.py](../experiments/multiancestry_genome_kappa.py),
@@ -307,7 +330,7 @@ AFR, SAS and AMR 0.03 or less.
 |---|---|
 | the 1000G EUR score (GBMI's method) | 0.133 (0.012) |
 | the meta score MA2, ρ̂ EUR–EAS, other pairs ρ = 0.8 | **0.156 (0.014)** |
-| … other pairs ρ = 0.6 / 1.0 | 0.159 / 0.153 |
+| … other pairs ρ = 0.6 / 0.901 | 0.159 / 0.154 |
 | post hoc: N-weighted mean of the per-stratum h², each on its own score | 0.154 (0.012) |
 | GBMI reported (UKB LD scores, liability) | 0.085 |
 
@@ -316,9 +339,11 @@ AFR, SAS and AMR 0.03 or less.
   are bracketed. Their point estimates (EUR–AFR 0.73, EUR–SAS 0.83) lie
   inside the bracket.
 - **The step-3 gate is not met robustly.** h² moves by 1.9 SE of the
-  EUR-score estimate at the central bracket, and by 1.6–2.2 SE across it. By
+  EUR-score estimate at the central bracket, and by 1.8–2.2 SE across it. By
   STRATEGY §7, asthma alone makes a practice note. The shift itself is
-  precise: +0.023 with a paired jackknife SE of 0.002. The gate's SE is
+  +0.023 with a paired jackknife SE of 0.0023, refitting ρ on each genomic
+  deletion. The former fixed-ρ SE was 0.0021. These SEs condition on the LD
+  panels and pair-selection rule. The gate's SE is
   mostly sampling noise that both estimates share.
 - **Does the data agree with MA2?** The observed ratio of the two estimates
   is 0.852 against a predicted κ of 0.850. That agreement is nearly
@@ -326,9 +351,11 @@ AFR, SAS and AMR 0.03 or less.
   the post-hoc row: per-stratum estimates on matched scores average 0.154,
   which agrees with the meta score and not with the EUR score.
 - **0.133 is not GBMI's 0.085.** The LD scores differ (UKB, denser) and
-  GBMI's N convention is not stated. If the ratio carries over, GBMI's value
-  would be about 0.10 on the meta score. That is an extrapolation, not a
-  measurement.
+  GBMI's N convention is not stated. Neither comparison establishes absolute
+  calibration. The historical 1.0 upper bracket combined with ρ̂ EUR–EAS is
+  indefinite and has been replaced by the largest valid value for the full
+  and delete-block fits. The rerun uses legacy score caches: their maps and
+  score-building source were not bound in the original cache keys.
 
 ## 7. Scope and caveats
 
@@ -345,8 +372,9 @@ AFR, SAS and AMR 0.03 or less.
   moves κ by ≤ 0.015.
 - **The LDSC-style weights are a simplified version** (overcounting ×
   heteroscedasticity at mean χ² 1.5), not ldsc's two-step fit.
-- **κ is a population-regression quantity.** Finite-GWAS noise adds variance,
-  not bias.
+- **Panel plug-in κ is not the true-score κ.** Finite-reference noise affects
+  the fitted scores and their covariance; see the known-truth sensitivity in
+  `experiments/reference_score_noise.py`.
 
 ## 8. Prior art (not yet swept)
 

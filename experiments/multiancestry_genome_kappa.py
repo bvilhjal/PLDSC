@@ -210,10 +210,26 @@ def score_chromosome(panels, cm, maf_full, *, segment=SEGMENT):
                 maf=maf, reg=reg)
 
 
-def config(data_sha):
+def legacy_config(data_sha):
+    """The original cache key; it did not bind maps or implementation source."""
     return json.dumps(dict(data=data_sha, window_cm=WINDOW_CM, maf_ref=MAF_REF,
                            maf_regression=MAF_REGRESSION, pldsc=pldsc.__version__,
                            engine="cross_ancestry_ld_scores/segments"), sort_keys=True)
+
+
+def config(data_sha, chrom):
+    """Bind a score cache to its inputs, map and every score-building source."""
+    source = (os.path.join(ROOT, "pldsc", "multiancestry.py"),
+              os.path.join(ROOT, "pldsc", "ld.py"),
+              os.path.join(ROOT, "pldsc", "genome.py"),
+              os.path.join(HERE, "multiancestry_1000g_meta.py"), __file__)
+    return json.dumps(dict(schema=2, data=data_sha, chrom=chrom,
+                           map_sha256=sha256(os.path.join(MAPS, f"chr{chrom}.b37.gmap.gz")),
+                           source_sha256={os.path.relpath(p, ROOT): sha256(p) for p in source},
+                           ancestries=ANCESTRIES, window_cm=WINDOW_CM, maf_ref=MAF_REF,
+                           maf_regression=MAF_REGRESSION, segment=SEGMENT,
+                           pldsc=pldsc.__version__, engine="cross_ancestry_ld_scores/segments"),
+                      sort_keys=True)
 
 
 def save(path, cfg, **arrays):
@@ -231,7 +247,7 @@ def cached(path, cfg):
 
 def bigsnpr_chromosome(c, bim, sp, data_sha, *, check=False):
     path = os.path.join(OUT, f"chr{c}.npz")
-    cfg = config(data_sha)
+    cfg = config(data_sha, c)
     d = cached(path, cfg)
     if d is not None and not check:
         return d
@@ -269,11 +285,14 @@ def bigsnpr_chromosome(c, bim, sp, data_sha, *, check=False):
 def vcf_chromosome(c, thin):
     """The same scoring on the repo's VCF cache (2,504 samples, 1-in-thin SNPs)."""
     path = os.path.join(OUT, f"vcf_chr{c}_t{thin}.npz")
-    cfg = config(f"vcf-cache-t{thin}")
+    B.THIN[c] = thin
+    B.parse_and_cache(c)
+    paths = (*B.cache_paths(c), B.PANEL)
+    data_sha = hashlib.sha256("".join(sha256(p) for p in paths).encode()).hexdigest()
+    cfg = config(data_sha, c)
     d = cached(path, cfg)
     if d is not None:
         return d
-    B.THIN[c] = thin
     samples, G, pos = B.load_chrom(c)
     _, superpop = B.load_panel()
     sp = np.array([superpop[s] for s in samples])

@@ -1,23 +1,21 @@
 cff-version: 1.2.0
 message: "If you use pldsc, please cite the software plus the method references below; the full method landscape (Popcorn, S-LDXR, MAMA, cov-LDSC and the 2026 meta-LDSC preprint) is maintained in docs/STRATEGY.md §5 and docs/PRIOR_ART.md."
-title: "pldsc: population-aware LD Score regression research tools"
+title: "PLDSC: fast LD Score regression and population structure research"
 abstract: >-
-  Research tools for LD Score regression when GWAS samples contain
-  population structure. The live direction studies LDSC on multi-ancestry
-  data: the LD score a fixed-effect meta-analysis actually follows (MA2),
-  the factor kappa by which a single-ancestry LD score biases its h2
-  (MA6, kappa = 0.75 for 75% EUR + 25% AFR at rho = 0.8 on 1000G chr22),
-  and the corrections. Includes the archived estimator line's tested
-  machinery (the mixed-model residual-precision operator P_c, the
-  LD-score decomposition, the effective pair-df correction) and its
-  negative-results record.
+  PLDSC provides univariate and bivariate LD Score regression with optional
+  Numba acceleration and allelign-backed GWAS QC and harmonization. It also
+  studies LD scores for multi-ancestry meta-analyses and the effect of
+  reference mismatch. Panel-based kappa is a plug-in slope comparison,
+  not a calibrated estimate of absolute heritability bias. The package
+  retains the tested mixed-model and LD-score tools and the historical
+  negative-results record from its archived estimator research line.
 type: software
 authors:
   - family-names: "Vilhjálmsson"
     given-names: "Bjarni Jóhann"
 repository-code: "https://github.com/bvilhjal/PLDSC"
 license: MIT
-version: 0.1.0.dev0
+version: 0.1.0.dev1
 keywords:
   - LD score regression
   - population structure
@@ -53,6 +51,45 @@ references:
     end: 295
     year: 2015
     doi: 10.1038/ng.3211
+  - type: article
+    title: "An atlas of genetic correlations across human diseases and traits"
+    authors:
+      - family-names: Bulik-Sullivan
+        given-names: Brendan
+      - family-names: Finucane
+        given-names: Hilary K.
+      - family-names: Anttila
+        given-names: Verneri
+      - family-names: Gusev
+        given-names: Alexander
+      - family-names: Day
+        given-names: Felix R.
+      - family-names: Loh
+        given-names: Po-Ru
+      - name: ReproGen Consortium
+      - name: Psychiatric Genomics Consortium
+      - name: Genetic Consortium for Anorexia Nervosa of the Wellcome Trust Case Control Consortium 3
+      - family-names: Duncan
+        given-names: Laramie
+      - family-names: Perry
+        given-names: John R. B.
+      - family-names: Patterson
+        given-names: Nick
+      - family-names: Robinson
+        given-names: Elise B.
+      - family-names: Daly
+        given-names: Mark J.
+      - family-names: Price
+        given-names: Alkes L.
+      - family-names: Neale
+        given-names: Benjamin M.
+    journal: Nature Genetics
+    volume: 47
+    issue: 11
+    start: 1236
+    end: 1241
+    year: 2015
+    doi: 10.1038/ng.3406
   - type: article
     title: "Transethnic genetic-correlation estimates from summary statistics"
     authors:

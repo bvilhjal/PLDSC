@@ -966,7 +966,8 @@ From these the script computes:
 
 - within- and cross-ancestry LD scores;
 - the meta score MA2;
-- κ = ĥ²/h² when the meta is regressed on the EUR score.
+- a panel plug-in κ for a meta regressed on the EUR score; panel score noise
+  prevents interpreting it as calibrated absolute ĥ²/h².
 
 No GWAS is needed.
 
@@ -980,8 +981,8 @@ No GWAS is needed.
   computation overstated both the slope loss and the intercept inflation.
 - **Robust to density:** the 1-in-3 cache (`--thin 3`) moves κ by ≤ 0.015.
 - **LD mismatch dominates:** κ < 1 even at ρ = 1 (EUR 0.75 + AFR: 0.788).
-- **ρ is not identifiable from the meta alone:** corr(within, cross) is
-  0.80–0.99 across SNPs.
+- **Potentially weak precision:** corr(within, cross) is 0.80–0.99 across
+  SNPs. The SAS and AMR designs remain full rank.
 - **Caveats:** one chromosome; superpopulations as ancestry proxies; a single
   genetic map; the effect-scale assumption A1. See MULTI_ANCESTRY §7.
 

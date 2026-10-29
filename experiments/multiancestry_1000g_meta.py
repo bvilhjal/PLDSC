@@ -4,8 +4,9 @@ The first real-data step of the multi-ancestry direction (docs/STRATEGY.md,
 docs/MULTI_ANCESTRY.md). From the 1000 Genomes phase-3 superpopulation panels
 it computes the within- and cross-ancestry LD scores (MA1, MA7), the LD score
 a fixed-effect meta-analysis actually follows (MA2), and the slope factor
-kappa = h2_hat / h2 that LDSC incurs when the meta is regressed on the 1000G
-EUR score instead (MA6). No GWAS is needed: kappa is a property of the panels,
+panel plug-in kappa for a meta regressed on the 1000G EUR score (MA6). It is
+not a calibrated estimate of h2_hat / h2 because the panel scores are noisy.
+No GWAS is needed: the plug-in kappa is a property of the panels,
 the ancestry mix and the assumed trans-ancestry genetic correlation rho.
 
 Data: chr22 from the repo's t10 cache (every 10th biallelic SNP, full-panel
@@ -143,7 +144,7 @@ def main():
         within = meta_ld_scores(s, om, rho=np.eye(A))
         return b, L, within
 
-    print("\nTable B. kappa = h2_hat/h2 when the meta is regressed on the EUR score; "
+    print("\nTable B. panel plug-in kappa when the meta is regressed on the EUR score; "
           "offset/mean(L) = intercept shift as a share of the LD-driven excess chi2")
     print(f"{'mix':>16s} {'weights':>11s} " + " ".join(f"{'rho=' + str(r):>13s}" for r in RHOS))
     verdict = {}

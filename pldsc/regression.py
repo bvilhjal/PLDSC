@@ -36,15 +36,19 @@ class RegressionResult:
 
 def _wls_beta(x: Float, y: Float, w: Float) -> Float:
     """WLS of ``y ~ 1 + x`` with weights ``w``; returns ``[intercept, slope]``."""
-    X = np.column_stack((np.ones_like(x), x))
-    XtW = X.T * w
-    try:
-        return np.linalg.solve(XtW @ X, XtW @ y)
-    except np.linalg.LinAlgError as exc:
-        raise ValueError(
-            "singular weighted design (constant ldscore, or a jackknife "
-            "replicate whose kept points carry no weight)"
-        ) from exc
+    # Center after shifting to avoid cancellation for nearly constant scores.
+    x0, y0 = x[np.argmin(np.abs(x))], y[np.argmin(np.abs(y))]
+    dx, dy = x - x0, y - y0
+    sw = np.sum(w)
+    mx, my = np.dot(w, dx) / sw, np.dot(w, dy) / sw
+    dx, dy = dx - mx, dy - my
+    wx = w * dx
+    var = np.dot(wx, dx)
+    if var <= 0.0 or not np.isfinite(var):
+        raise ValueError("singular weighted design (constant ldscore, or a jackknife "
+                         "replicate whose kept points carry no weight)")
+    slope = np.dot(wx, dy) / var
+    return np.array([y0 + my - slope * (x0 + mx), slope])
 
 
 def ld_score_regression(

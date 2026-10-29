@@ -4,9 +4,9 @@ GBMI estimated SNP-heritability from its all-biobank meta-analyses with LDSC
 and UK Biobank (European) LD scores. Asthma: h2_SNP = 0.085 on the liability
 scale, with population prevalence set to the pooled sample prevalence
 (Tsuo et al. 2022, doi 10.1016/j.xgen.2022.100212, citing the GBMI flagship
-paper's Table S9, doi 10.1016/j.xgen.2022.100192). MULTI_ANCESTRY MA6 says a
-EUR score understates h2 for a multi-ancestry meta. This script measures how
-much on the real asthma meta. It estimates rho from GBMI's single-ancestry
+paper's Table S9, doi 10.1016/j.xgen.2022.100192). This script compares
+heritability estimates using EUR and meta LD scores on the real asthma meta.
+It estimates rho from GBMI's single-ancestry
 metas, as STRATEGY step 3 asks, instead of bracketing it.
 
 Data. GBMI release 052021, asthma, six files: the all-biobank meta (ALL) and
@@ -38,13 +38,16 @@ Method, fixed before the GBMI files were read (2026-10-08):
   rho_ab = g_ab / sqrt(h2_a h2_b), on the standardized scale MA2 uses. Weights
   are 1 / max(l, 1), with l the regression's own within score, or the
   geometric mean of the two for a cross regression. The intercept is free.
-  SEs come from a 200-block jackknife over contiguous variants in genome
-  order. All quantities that share a selection are deleted together, so
-  rho and the casualty difference have paired SEs.
+  SEs come from a 200-block jackknife over contiguous genomic intervals. The
+  estimated rho values are refitted on those same deletions when computing the
+  meta-score and paired differences. Eligibility and LD reference scores are
+  held fixed; their uncertainty is not captured by these SEs.
 
   rho used in MA2. A pair's estimate is used, clipped to [-1, 1], when both
-  strata have an h2 z-score > 4. Otherwise that pair is bracketed at
-  rho = 0.6 / 0.8 / 1.0 and the casualty is reported for each.
+  strata have an h2 z-score > 4. Otherwise that pair uses a common sensitivity
+  value at 0.6, 0.8, or the largest value yielding positive-semidefinite full
+  and delete-block correlation matrices. The old 1.0 upper point is invalid
+  when combined with the estimated EUR–EAS correlation.
 
   The casualty. The ALL file's chi2 is regressed on N_j l^EUR_j (what GBMI
   did, with a 1000G EUR score in place of the UKB one) and on N_j L_j. Here
@@ -70,6 +73,7 @@ the N_j = sum-of-strata row, and the liability-scale comparison with GBMI's
 denser, and its N convention is not stated.
 
 Run:  python -I experiments/gbmi_asthma_casualty.py
+Historical caches without map/source provenance require --allow-legacy-scores.
 
 Outcome (2026-10-08, 110 s; docs/MULTI_ANCESTRY.md Table 7). 953,596
 regression SNPs. Strata N sum to the ALL N (median ratio 1.011).
@@ -79,9 +83,9 @@ regression SNPs. Strata N sum to the ALL N (median ratio 1.011).
   (SE 0.046). The other pairs are bracketed. Their point estimates
   (EUR-AFR 0.73, EUR-SAS 0.83) fall inside the bracket.
   C1 NOT MET ROBUSTLY. h2_EUR is 0.133 (SE 0.012). h2_meta is 0.159 / 0.156 /
-     0.153 at brackets 0.6 / 0.8 / 1.0. The shift is 2.2 / 1.9 / 1.6 SE(h2_EUR),
+     0.154 at valid brackets 0.6 / 0.8 / 0.901. The shift is 2.2 / 1.9 / 1.8 SE(h2_EUR),
      so at the central bracket asthma is a practice note. The shift itself is
-     precise: +0.023 with a paired SE of 0.002. The gate's SE is mostly
+     +0.023 with a paired SE of 0.0023 after propagating rho. The gate's SE is mostly
      genome-wide noise that the two estimates share.
   C2 consistent (ratio 0.852 vs kappa 0.850). Table C4 shows the check is
      nearly mechanical: the two regressors correlate 0.9965.
@@ -90,13 +94,13 @@ Post hoc (Table C4): the composition-weighted mean of the per-stratum h2,
 each on its own ancestry's score, is 0.154 (SE 0.012). That matches h2_meta
 (0.156) and is 14% above GBMI's method on the same scores (0.133). GBMI's
 0.085 is not comparable to 0.133: the LD scores differ (UKB, denser) and
-GBMI's N convention is unstated. If the ratio carries over to GBMI's scores,
-their value would be about 0.10 on the meta score. That is an extrapolation,
-not a measurement.
+GBMI's N convention is unstated. These results do not establish calibration
+of either score against the true heritability.
 """
 from __future__ import annotations
 
 import gzip
+import argparse
 import hashlib
 import os
 import sys
@@ -143,11 +147,37 @@ def sha256(path):
     return h.hexdigest()
 
 
-def load_scores():
+def load_scores(*, allow_legacy=False):
+    """Load only caches bound to the current panel, maps and scoring source."""
     chroms = list(range(1, 23))
-    ds = [np.load(os.path.join(GK.OUT, f"chr{c}.npz"), allow_pickle=False) for c in chroms]
+    got = {k: GK.sha256(f"{GK.BFILE}.{k}") for k in GK.CHECKSUMS}
+    data_sha = hashlib.sha256("".join(got[k] for k in sorted(got)).encode()).hexdigest()
+    ds = []
+    legacy = []
+    for c in chroms:
+        d = np.load(os.path.join(GK.OUT, f"chr{c}.npz"), allow_pickle=False)
+        cfg = str(d["config"])
+        if cfg != GK.config(data_sha, c):
+            if not allow_legacy or cfg != GK.legacy_config(data_sha):
+                raise ValueError(f"chr{c} score cache does not match current inputs, map and source; "
+                                 "rebuild with experiments/multiancestry_genome_kappa.py "
+                                 "or explicitly use --allow-legacy-scores for historical caches")
+            legacy.append(c)
+        j = len(d["pos"])
+        a = len(ANC)
+        if (d["scores"].shape != (a, a, j) or d["available"].shape != (a, j)
+                or d["variances"].shape != (a, j) or d["maf"].shape != (a, j)
+                or d["rsid"].shape != (j,) or np.any(np.diff(d["pos"]) < 0)
+                or int(d["n_reference"]) < j):
+            raise ValueError(f"chr{c} score cache has inconsistent dimensions or ordering")
+        ds.append(d)
+    if legacy:
+        print("  [warning] legacy score caches have unverified map and source provenance: "
+              + ", ".join(map(str, legacy)))
     D = GK.pooled(ds, chroms)
     D["M"] = sum(int(d["n_reference"]) for d in ds)
+    if np.unique(D["rsid"]).size != D["rsid"].size:
+        raise ValueError("reference score cache contains duplicated rsIDs")
     return D
 
 
@@ -218,6 +248,62 @@ def block_stats(x, y, w, blocks):
     return np.add.reduceat(cols, blocks, axis=0)
 
 
+def block_stats_at_indices(x, y, w, indices, edges):
+    """WLS sums on the same genomic deletions as a different SNP subset."""
+    group = np.searchsorted(edges[1:-1], indices, side="right")
+    B = len(edges) - 1
+    return np.stack([np.bincount(group, weights=v, minlength=B)
+                     for v in (w, w*x, w*y, w*x*x, w*x*y)], axis=1)
+
+
+def varying_predictor_deletions(x, y, w, starts, derivatives, deltas):
+    """Delete-block WLS slopes when a fitted predictor changes per deletion.
+
+    ``derivatives[k]`` is dx/d(rho_k) and ``deltas[b,k]`` is the change in
+    that fitted correlation after deleting block b. Block sufficient sums avoid
+    constructing and fitting a full predictor for every deletion.
+    """
+    base = block_stats(x, y, w, starts)
+    kept = base.sum(axis=0) - base
+    sw, sx, sy, sxx, sxy = kept.T
+    def kept_sum(v):
+        s = np.add.reduceat(v, starts)
+        return s.sum() - s
+    for k, dk in enumerate(derivatives):
+        delta = deltas[:, k]
+        sx = sx + delta * kept_sum(w * dk)
+        sxy = sxy + delta * kept_sum(w * dk * y)
+        sxx = sxx + 2.0 * delta * kept_sum(w * x * dk)
+        for l in range(k + 1):
+            sxx = sxx + (1.0 if l == k else 2.0) * delta * deltas[:, l] * kept_sum(w * dk * derivatives[l])
+    return (sw * sxy - sx * sy) / (sw * sxx - sx * sx)
+
+
+def largest_psd_bracket(rho, usable, rho_deleted=None):
+    """Largest shared unknown correlation valid for the full and delete fits."""
+    matrices = [rho]
+    if rho_deleted is not None and np.all(np.isfinite(rho_deleted[:, usable])):
+        matrices.extend(rho_deleted)
+    def feasible(r):
+        return all(np.linalg.eigvalsh(np.where(usable, matrix, r))[0] >= -1e-12
+                   for matrix in matrices)
+    # The two usual lower sensitivity points need not be feasible for an
+    # arbitrary set of estimated correlations.
+    low = next((v for v in (0.8, 0.6, 0.0) if feasible(v)), None)
+    if low is None:
+        raise ValueError("no valid uniform bracket for the estimated correlations")
+    if feasible(1.0):
+        return 1.0
+    high = 1.0
+    for _ in range(50):
+        mid = (low + high) / 2.0
+        if feasible(mid):
+            low = mid
+        else:
+            high = mid
+    return max(0.0, low - 1e-10)
+
+
 def slope_full_and_deleted(S):
     """Slope and intercept from the full sums and from each delete-one-block sum."""
     def solve(T):
@@ -249,13 +335,17 @@ def liability(h2_obs50, K):
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--allow-legacy-scores", action="store_true",
+                    help="allow historical caches whose map and score source are unverified")
+    args = ap.parse_args()
     t0 = time.time()
     for name, tok in STRATA.items():
         path = os.path.join(GBMI_DIR, PATTERN.format(tok))
         got = sha256(path)
         if SHA256 and got != SHA256.get(name):
             print(f"  [warn] {name} sha256 {got[:12]}... differs from the recorded download")
-    D = load_scores()
+    D = load_scores(allow_legacy=args.allow_legacy_scores)
     M = D["M"]
     base = GK.regression_set(D)
     print(f"1000G scores: {D['rsid'].size} regression variants, M = {M}, "
@@ -315,6 +405,7 @@ def main():
     A = len(ANC)
     rho_hat = np.eye(A)
     usable = np.eye(A, dtype=bool)
+    pair_selection = {}
     for i in range(A):
         for k in range(i + 1, A):
             a, b = ANC[i], ANC[k]
@@ -330,6 +421,8 @@ def main():
             ok = h2z[a] > Z_MIN and h2z[b] > Z_MIN and np.isfinite(full)
             rho_hat[i, k] = rho_hat[k, i] = np.clip(full, -1.0, 1.0) if ok else np.nan
             usable[i, k] = usable[k, i] = ok
+            if ok:
+                pair_selection[i, k] = sel
             print(f"  {a}-{b}: rho {full:.3f} (SE {se:.3f}) on {sel.sum()} variants"
                   f"{'' if ok else '  [bracketed]'}")
 
@@ -352,18 +445,52 @@ def main():
     bl = block_starts(idx.size)
     y = Z[iA][idx] ** 2
 
-    def casualty(rho, n_j, label):
+    # Re-estimate every usable correlation on the casualty's physical genomic
+    # deletions. The per-pair regression rows can differ from the casualty rows.
+    edges = np.r_[0, idx[bl[1:]], D["rsid"].size]
+    rho_deleted = np.broadcast_to(rho_hat, (len(bl), A, A)).copy()
+    for (i, k), selection in pair_selection.items():
+        a, b = ANC[i], ANC[k]
+        ia, ib = names.index(a), names.index(b)
+        ii = np.flatnonzero(selection)
+        la, lb, lab = S[i, i, ii], S[k, k, ii], S[i, k, ii]
+        wa, wb = 1.0 / np.maximum(la, 1.0), 1.0 / np.maximum(lb, 1.0)
+        wc = 1.0 / np.sqrt(np.maximum(la, 1.0) * np.maximum(lb, 1.0))
+        rows = ((N[ia, ii] * la, Z[ia, ii] ** 2, wa),
+                (N[ib, ii] * lb, Z[ib, ii] ** 2, wb),
+                (np.sqrt(N[ia, ii] * N[ib, ii]) * lab, Z[ia, ii] * Z[ib, ii], wc))
+        deleted = [slope_full_and_deleted(block_stats_at_indices(x, v, wt, ii, edges))[1][0]
+                   for x, v, wt in rows]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            rho_d = np.where((deleted[0] > 0) & (deleted[1] > 0),
+                             deleted[2] / np.sqrt(deleted[0] * deleted[1]), np.nan)
+        rho_deleted[:, i, k] = rho_deleted[:, k, i] = np.clip(rho_d, -1.0, 1.0)
+
+    def casualty(rho, n_j, label, *, propagate_rho=True):
         L = meta_ld_scores(sub["scores"], om, rho=rho)
         (bE, aE), (bEd, _) = slope_full_and_deleted(block_stats(n_j * lE, y, w, bl))
         (bL, aL), (bLd, _) = slope_full_and_deleted(block_stats(n_j * L, y, w, bl))
+        fixed_bLd = bLd.copy()
+        pairs = list(pair_selection) if propagate_rho else []
+        deleted_matrices = np.where(usable[None, :, :], rho_deleted, rho[None, :, :])
+        valid_deleted = (np.all(np.isfinite(deleted_matrices)) and
+                         all(np.linalg.eigvalsh(r)[0] >= -1e-10 for r in deleted_matrices))
+        if pairs and valid_deleted:
+            derivatives = [n_j * 2.0 * om[i, k] * sub["scores"][i, k] for i, k in pairs]
+            deltas = np.stack([rho_deleted[:, i, k] - rho[i, k] for i, k in pairs], axis=1)
+            bLd = varying_predictor_deletions(n_j * L, y, w, bl, derivatives, deltas)
+        elif pairs:
+            bLd = np.full_like(bLd, np.nan)
         hE, hL = bE * M, bL * M
         seE, seL = jk_se(hE, bEd * M), jk_se(hL, bLd * M)
         se_diff = jk_se(hL - hE, (bLd - bEd) * M)
         ratio, ratio_d = hE / hL, bEd / bLd
         kap = single_reference_bias(L, lE, sample_sizes=n_j, weights=w).kappa
+        fixed_diff = jk_se(hL - hE, (fixed_bLd - bEd) * M)
         print(f"  {label}: h2_EUR {hE:.4f} (SE {seE:.4f}, int {aE:.3f}) | h2_meta {hL:.4f} "
               f"(SE {seL:.4f}, int {aL:.3f}) | diff {hL - hE:+.4f} = {(hL - hE) / seE:+.1f} SE(h2_EUR) "
-              f"(paired SE {se_diff:.4f}) | ratio {ratio:.3f} (SE {jk_se(ratio, ratio_d):.3f}) vs kappa {kap:.3f}")
+              f"(paired SE {se_diff:.4f}; fixed-rho {fixed_diff:.4f}) | ratio {ratio:.3f} "
+              f"(SE {jk_se(ratio, ratio_d):.3f}) vs panel plug-in kappa {kap:.3f}")
         return hE, hL, seE, ratio, jk_se(ratio, ratio_d), kap
 
     n_all = N[iA][idx]
@@ -373,14 +500,21 @@ def main():
     else:
         primary = None
         brackets = []
-        for r in RHO_BRACKET:
+        upper = largest_psd_bracket(rho_hat, usable, rho_deleted)
+        candidates = sorted(set((0.6, 0.8, upper)))
+        for r in candidates:
             R = np.where(usable, rho_hat, r)
-            brackets.append((r, casualty(R, n_all, f"rho estimated where usable, else {r}")))
+            if np.linalg.eigvalsh(R)[0] < -1e-10:
+                print(f"  rho estimated where usable, else {r:.4f}: invalid correlation matrix; skipped")
+                continue
+            brackets.append((r, casualty(R, n_all, f"rho estimated where usable, else {r:.4f}")))
     for r in RHO_BRACKET:
         R = np.full((A, A), r)
         np.fill_diagonal(R, 1.0)
-        casualty(R, n_all, f"all pairs rho = {r} (bracket)")
+        casualty(R, n_all, f"all pairs rho = {r} (bracket)", propagate_rho=False)
     R_used = rho_hat if usable.all() else np.where(usable, rho_hat, 0.8)
+    if np.linalg.eigvalsh(R_used)[0] < -1e-10:
+        raise ValueError("central rho matrix is not positive semidefinite")
     casualty(R_used, n_anc.sum(axis=0), "N_j = sum of strata N (sensitivity)")
 
     # Table C4 was added after the first run. It is post hoc and descriptive,

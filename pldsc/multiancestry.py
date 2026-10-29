@@ -306,6 +306,11 @@ def _pair_factors(A: int, rho: ArrayLike | None, h2_ratio: ArrayLike | None) -> 
         raise ValueError("rho must be a finite (A, A) matrix")
     if not np.allclose(R, R.T) or not np.allclose(np.diag(R), 1.0) or np.any(np.abs(R) > 1.0):
         raise ValueError("rho must be symmetric with unit diagonal and |rho| <= 1")
+    # A correlation matrix must be positive semidefinite. Allow roundoff on
+    # singular matrices such as the all-ones shared-effect model.
+    eigenvalues = np.linalg.eigvalsh((R + R.T) * 0.5)
+    if eigenvalues[0] < -1e-10 * max(1.0, float(eigenvalues[-1])):
+        raise ValueError("rho must be positive semidefinite")
     eta = np.ones(A) if h2_ratio is None else np.asarray(h2_ratio, dtype=np.float64)
     if eta.shape != (A,) or not np.all(np.isfinite(eta)) or np.any(eta <= 0):
         raise ValueError("h2_ratio must be A positive finite values")
@@ -350,13 +355,18 @@ def single_reference_bias(
     variant's sample size), the (weighted) population slope is ``kappa * s``
     and the intercept is ``1 + s * offset``. ``sample_sizes`` is the per-variant
     ``N_j`` a meta-analysis reports (``Nbar`` is its mean); omit it for a
-    constant ``N``.
+    constant ``N``. The slope interpretation assumes ``true_scores`` really
+    represents the GWAS expectation. If it is estimated from finite reference
+    panels, the returned value is a plug-in sensitivity, not a calibrated
+    estimate of the absolute heritability bias.
     """
 
     L = np.asarray(true_scores, dtype=np.float64)
     R = np.asarray(reference_scores, dtype=np.float64)
     if L.ndim != 1 or L.shape != R.shape or L.size < 2:
         raise ValueError("scores must be 1-D arrays of equal length >= 2")
+    if not np.all(np.isfinite(L)) or not np.all(np.isfinite(R)):
+        raise ValueError("scores must contain only finite values")
     if sample_sizes is not None:
         n = np.asarray(sample_sizes, dtype=np.float64)
         if n.shape != L.shape or not np.all(np.isfinite(n)) or np.any(n < 0) or n.mean() <= 0:
@@ -399,7 +409,9 @@ def pooled_ld_scores(
 
     No finite-sample correction is applied. Use it in-sample, or with a large
     composition-matched pooled panel. With group indicators among the
-    covariates it reproduces the inverse-variance meta score exactly (MA12).
+    covariates spanning exactly the group indicators it reproduces the
+    inverse-variance meta score exactly (MA12). Additional covariates generally
+    change the residualized genotypes and require matched meta adjustments.
     """
 
     G = _as_genotype_matrix(genotypes)

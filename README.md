@@ -1,5 +1,55 @@
 # PLDSC
 
+PLDSC provides **fast univariate and bivariate LD Score regression (LDSC)**
+for SNP heritability and genetic correlation. Its Numba-accelerated kernels,
+adapted from LDpred3 and bipred, are designed for very fast repeated fits;
+allelign handles GWAS summary-statistics processing, QC and allele alignment.
+PLDSC also studies LDSC in multi-ancestry and structured populations.
+
+## Get started
+
+With Python 3.11+ and a sibling `allelign` checkout:
+
+```bash
+python -m pip install -e ../allelign
+python -m pip install -e ".[fast]"
+python examples/ordinary_ldsc.py
+```
+
+The example generates temporary synthetic GWAS and reference files, then runs
+both analyses and displays QC and alignment logs. Numba is optional; the first
+accelerated call incurs compilation overhead.
+
+For real data, load a sorted reference table and its aligned LD scores, then
+pass the GWAS files directly:
+
+```python
+import allelign
+import numpy as np
+from pldsc import ldsc_h2_sumstats, ldsc_rg_sumstats
+
+reference = allelign.read_variants("reference.bim")
+scores = np.load("reference.ldscores.npy", allow_pickle=False)
+M = len(reference)  # only if the scores sum over exactly this variant set
+
+h2 = ldsc_h2_sumstats("trait1.tsv.gz", reference, scores, m_snps=M)
+rg = ldsc_rg_sumstats("trait1.tsv.gz", "trait2.tsv.gz", reference, scores,
+                      m_snps=M, ncores=4)
+print("h²:", h2.estimate.h2, "+/-", h2.estimate.h2_se)
+print("r_g:", rg.estimate.rg, "+/-", rg.estimate.rg_se)
+print("QC and alignment:", rg.qc, rg.alignment)
+```
+
+Scores must match the reference variant rows and the GWAS/reference genome
+builds must match. `m_snps` counts variants summed into each score, before
+filtering the regression rows; it is not generally the number of retained GWAS
+variants. See the **[LDSC guide](docs/LDSC.md)** for file formats, sample
+sizes, QC, score construction, direct-array APIs and interpretation. The
+[methods report](report/methods.pdf) explains both regressions and their
+implementation in more detail.
+
+## Multi-ancestry research
+
 PLDSC studies LD Score regression when GWAS samples contain population
 structure. The live project (since 2026-09-25) asks one question: **what
 goes wrong when LDSC-based tools run on multi-ancestry data, how big is
@@ -11,10 +61,12 @@ the error, and what is the fix?** — plan and gates in
 ## The headline so far (1000G chr22)
 
 Take a fixed-effect meta-analysis that is 75% EUR and 25% one other 1000G
-superpopulation, with trans-ancestry genetic correlation ρ = 0.8. If LDSC
-regresses it on the standard 1000G **EUR** LD score, it understates h² by:
+superpopulation, with trans-ancestry genetic correlation ρ = 0.8. The
+reference-panel plug-in calculation for the standard 1000G **EUR** score is:
 
-| other 25% | h² understated by | κ = ĥ²/h² |
+**Table 1. Panel plug-in slope differences on chromosome 22.**
+
+| other 25% | plug-in slope difference | panel plug-in κ |
 |---|---|---|
 | AFR | 25% | 0.750 |
 | EAS | 16% | 0.841 |
@@ -30,16 +82,15 @@ test was GBMI asthma (Table 7). There, h² moves 0.133 → 0.156 when the
 EUR score is replaced by the meta score. That is 1.9 SE, just short of the
 pre-stated 2 SE.
 
-Most of the loss is **LD mismatch, not effect heterogeneity**: even at
-ρ = 1, κ = 0.79 for EUR + AFR. The intercept moves little (+0.00 to +0.03
-of the LD-driven excess χ² at 75% EUR). Two honest negatives from the same
-run: a meta cannot separate LD mismatch from effect heterogeneity
-(MULTI_ANCESTRY Table 5), and the first κ computation overstated the loss
-— the pre-stated verdict and the corrected numbers are both recorded
-(Table 4). κ needs no GWAS: it is a property of the panels, the ancestry
-mix and ρ (MA6).
+The plug-in difference persists at ρ = 1 (κ = 0.79 for EUR + AFR). These
+values describe the estimated panel scores, ancestry mix and assumed ρ; they
+are not calibrated estimates of absolute h² bias. Finite-panel score errors
+can bias both regressions and affect their ratio (MULTI_ANCESTRY §3–4). The
+within- and cross-ancestry scores are highly correlated, so estimating ρ from
+the meta alone may be imprecise; the table does not establish nonidentifiability.
+The original κ calculation and its correction remain recorded in Table 4.
 
-## Run it in 60 seconds
+## Reproduce the multi-ancestry results
 
 No download, no genotypes — reproduce the headline tables from the
 committed 2 MB LD-score bundle ([examples/mini](examples/mini)):
@@ -69,9 +120,12 @@ python experiments/multiancestry_1000g_meta.py    # Tables 2-5, ~4 s
 
 ## Install and environment
 
-- Python ≥ 3.11, numpy ≥ 2.0. Editable install with the test extras:
-  `python -m pip install -e ".[test]"` (also `.[plot]` for
-  `pldsc.plotting`).
+- Python ≥ 3.11, NumPy ≥ 2.0 and `allelign` ≥ 0.1.0.dev8.
+  Install allelign first, then PLDSC with Numba and test extras:
+  `python -m pip install -e ../allelign` and
+  `python -m pip install -e ".[test,fast]"`. Numba is optional; without it
+  NumPy provides the same regression with slower jackknives. `.[plot]` adds
+  plotting support. CI installs allelign from a pinned Git revision.
 - **There is no `pldsc` conda environment.** Older experiment docstrings
   say `conda run -n pldsc ...` — that env never existed on this machine;
   use any 3.11+ interpreter. On the maintainer's machine the package is
@@ -79,8 +133,7 @@ python experiments/multiancestry_1000g_meta.py    # Tables 2-5, ~4 s
   (Python 3.14). The ambient base anaconda (3.10) is below the floor.
 - Checks (see [CONTRIBUTING.md](CONTRIBUTING.md)):
   `ruff check .` and, with BLAS threads pinned,
-  `pytest -q` or `python -m unittest discover -s tests -v` (81 tests,
-  <1 s).
+  `pytest -q`.
 - Real-data experiments read `.scratch_1000g/` (gitignored, 100%
   data-free fresh clone). Build it with
   `scripts/fetch_1000g.py --maps 22 --chrom 22 --panel --build-cache 22`:

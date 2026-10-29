@@ -106,13 +106,21 @@ def effective_pair_df(
     A = np.asarray(relationship, dtype=np.float64)
     if A.ndim != 2 or A.shape[0] != A.shape[1]:
         raise ValueError("relationship must be a square matrix")
+    if A.shape[0] < 3:
+        raise ValueError("relationship must contain at least 3 samples")
     if not np.all(np.isfinite(A)):
         raise ValueError("relationship must contain only finite values")
     if not np.allclose(A, A.T):
         raise ValueError("relationship must be symmetric")
 
     design = _design_matrix(A.shape[0], covariates)
-    q, _ = np.linalg.qr(design)
+    # Match the rank convention of np.linalg.lstsq(..., rcond=None): QR
+    # alone retains arbitrary extra directions for redundant covariates.
+    u, s, _ = np.linalg.svd(design, full_matrices=False)
+    rank = int(np.sum(s > np.finfo(s.dtype).eps * max(design.shape) * s[0]))
+    if A.shape[0] - rank <= 1:
+        raise ValueError("covariates leave fewer than 2 residual degrees of freedom")
+    q = u[:, :rank]
     # Atilde = P A P with P = I - q q^T, formed without an explicit N x N P.
     qa = q.T @ A
     At = A - q @ qa - (A @ q) @ q.T + q @ (qa @ q) @ q.T

@@ -3,11 +3,18 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
 single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev0`) and the API may still change.
+(`0.1.0.dev1`) and the API may still change.
 
 ## [Unreleased]
 
 ### Added
+
+- Standalone univariate and bivariate LDSC with optional Numba acceleration,
+  dense and low-rank block scores, and allelign-backed GWAS QC/harmonization.
+  The regression kernels are adapted from LDpred3 and bipred.
+- A known-truth finite-reference score-noise sensitivity experiment.
+- A methods report explaining univariate and bivariate LDSC, the file
+  workflow, computation and the relationship to the multi-ancestry research.
 
 - `experiments/multiancestry_genome_kappa.py`: STRATEGY step 1, κ on all 22
   autosomes (bigsnpr's 1000G phase-3 set). It runs the unchanged
@@ -58,10 +65,14 @@ single-sourced from `pldsc.__version__`; the package is pre-release
 
 ### Changed
 
-- README restructured: the question, the headline κ table, a
-  run-it-in-60-seconds section, install/environment, then the API slice;
-  the ~180-line archived-record section is collapsed into a history
-  paragraph with links (every word survives in the linked docs).
+- Put fast univariate and bivariate LDSC in the README quick start; added a
+  practical LDSC guide and a runnable synthetic GWAS example.
+- Updated citation metadata and included documentation, examples, scripts,
+  research notes and report files in the source distribution.
+- README reorganized the multi-ancestry question, headline κ table,
+  reproduction commands, environment and API slice; the ~180-line
+  archived-record section is collapsed into a history paragraph with links
+  (every word survives in the linked docs).
 - `docs/STRATEGY.md`: step 1 now prices the VCF→cache parser sub-task (the
   1–2 days covered only the download); step 3 upgraded from "GBMI or
   similar" to a point estimate — ρ estimated from GBMI's openly
@@ -86,6 +97,16 @@ single-sourced from `pldsc.__version__`; the package is pre-release
   test-count mentions now point at the canonical count.
 
 ### Fixed
+
+- Allow CI to check out the public allelign reference with the default GitHub
+  token when no repository-specific read token is configured.
+- Stable centered WLS, rank-aware effective degrees of freedom, finite-score
+  validation, and positive-semidefinite genetic-correlation matrices.
+- Score caches bind map, data, and implementation hashes; old caches require
+  an explicit legacy opt-in for the GBMI experiment. Refit estimated rho in
+  its paired jackknife and replace the indefinite upper correlation bracket.
+- Correct claims about finite-panel κ, correlated regressors and the scope of
+  the pooled/meta identity.
 
 - `experiments/m_spike_kill_or_continue.py`: the two simulated populations
   now share one ancestral spectrum per chromosome. Each had been drawn from
