@@ -7,7 +7,7 @@ jackknifing. [Allelign](https://github.com/bvilhjal/allelign) loads, filters
 and aligns GWAS summary statistics to the reference alleles.
 
 The package also includes tools and research on LD scores in structured and
-multi-ancestry populations. It is a pre-release, and its API may change.
+multi-ancestry populations. Its API may still change before version 1.0.
 
 ## Install and run
 

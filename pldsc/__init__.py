@@ -17,7 +17,7 @@ from .bivariate import LDSCRgResult, ldsc_rg, ldsc_rg_z
 from .sumstats import SumstatsLDSCResult, ldsc_h2_sumstats, ldsc_rg_sumstats
 from .ld_reference import LDReference, available_ld_references, load_ld_reference
 
-__version__ = "0.1.0.dev5"
+__version__ = "0.1.1"
 
 __all__ = [
     "LDSCResult", "ldsc_h2", "ldsc_chi2_keep", "LowRankLD", "ld_scores",

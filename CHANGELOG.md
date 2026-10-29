@@ -2,10 +2,17 @@
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
-single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev5`) and the API may still change.
+single-sourced from `pldsc.__version__`; the API may still change before
+version 1.0.
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-10-29
+
+### Changed
+
+- First release with a non-development version number; the code is that of
+  0.1.0.dev5.
 
 ## [0.1.0.dev5] - 2026-10-29
 
