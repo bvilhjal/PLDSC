@@ -22,7 +22,7 @@ demonstration; pointed at all 22 autosomes (see `--- SCALING ---` and
 primitive it calls is unit-tested in `tests/test_genome.py` and reconciled with
 the brute-force benchmark in the B2/B6 suite.
 
-Run:  conda run -n pldsc python experiments/realdata_genome_loco.py
+Run:  python experiments/realdata_genome_loco.py
 
   --- SCALING to all 22 autosomes ---
 Memory is the only constraint, and this demo driver does NOT yet stream: `run()`

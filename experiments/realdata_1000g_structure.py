@@ -19,7 +19,7 @@ Inputs (not committed): .scratch_1000g/ALL.chr22.vcf.gz + samples.panel.
 Parsing is dependency-free: biallelic SNPs only, MAF >= 0.05 in the full
 panel, deterministic thinning to ~THIN_EVERY-th variant.
 
-Run:  conda run -n pldsc python experiments/realdata_1000g_structure.py
+Run:  python experiments/realdata_1000g_structure.py
 """
 from __future__ import annotations
 

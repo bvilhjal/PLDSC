@@ -4,6 +4,8 @@
 > estimator line, not the current project — see
 > [READING_ORDER.md](READING_ORDER.md). §5.1 (circularity) and §6.1
 > (process) remain reusable as method.
+> File paths and line numbers describe the sources reviewed at the time. The
+> former experiment summaries remain in the [pre-cleanup revision](https://github.com/bvilhjal/PLDSC/blob/bb3543d9a3ae7a64c968e6b409f589e36660857b/experiments/README.md).
 
 Date: 2026-07-18
 Reviewer: independent code/theory review (requested by the project owner).

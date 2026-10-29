@@ -269,7 +269,7 @@ Steps 1 and 2 are each a day and each can close a direction. Both were run on
   [DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md) §1, [NOTE_OUTLINE](NOTE_OUTLINE.md) §2,
   [METHOD](METHOD.md) §10, [REAL_DATA_SURVEY](REAL_DATA_SURVEY.md), and the
   `realdata_1000g_structure.py` correction block and B1–B6 verdict in
-  [experiments/README](../experiments/README.md).
+  [experiment results](../experiments/RESULTS.md).
   **Not changed:** the B1–B6 result tables themselves and
   [EXTERNAL_REVIEW](EXTERNAL_REVIEW.md), which are dated records of specific
   ±250 kb runs and of a review round — correct as written, and rewriting them

@@ -30,7 +30,6 @@ jobs:
         with:
           repository: bvilhjal/allelign
           ref: 875e62cce1c1aa8f1c9f5fe6c55843e35c8e3989
-          token: ${{ secrets.ALLELIGN_READ_TOKEN || secrets.LDPRED3_READ_TOKEN || github.token }}
           path: .ci/allelign
       - name: Install
         run: |

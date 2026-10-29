@@ -24,7 +24,7 @@ mean_j null_inflation(P_assumed, X, V_true); 6 realizations):
       covariance); P_c built from the pruned GRM, which captures the family
       axes only weakly. Within-arm oracle (P_c from V_true) must return 1.000.
 
-Run:  conda run -n pldsc python experiments/misspecified_orthogonal.py
+Run:  python experiments/misspecified_orthogonal.py
 """
 from __future__ import annotations
 

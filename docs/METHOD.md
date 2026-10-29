@@ -598,7 +598,7 @@ chromosome the mixed-model intercept is \(1.00\) both in a structured cohort
 (realized \(F_{st}=0.080\), with relatives) and in a single-population one.
 Ordinary OLS inflates to \(2.25\) under structure and stays at \(1.00\) without
 it. \(P_c\) shrinks cross-chromosome \(r^2\) from \(0.0086\) to \(0.0014\). See
-`experiments/README.md`.
+[experiment results](../experiments/RESULTS.md).
 
 The miscalibration map (`experiments/map_ldsc_miscalibration.py`) regresses the
 exact analytic moment on conventional LD scores across regimes (fixed \(N\),

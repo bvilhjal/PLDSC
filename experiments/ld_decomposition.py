@@ -10,7 +10,7 @@ If ell^struct correlates tightly with the PC score, the decomposition unifies
 the LD score, the P_c operator, cov-LDSC, and the 2017 "PC score" under one
 identity. Test on a multi-population cohort, windowed and genome-wide.
 
-Run:  conda run -n pldsc python experiments/ld_decomposition.py
+Run:  python experiments/ld_decomposition.py
 """
 from __future__ import annotations
 

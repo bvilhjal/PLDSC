@@ -18,14 +18,14 @@ observed mean squared correlation IS the noise floor. The predicted value is
 computed by the shipped `pldsc.effective_pair_df`, so this validates the
 released code path rather than a reimplementation.
 
-Verdict (see `experiments/README.md`): the tr-ratio prediction is accurate to
+Verdict (see `experiments/RESULTS.md`): the tr-ratio prediction is accurate to
 <=1% across designs spanning a 4.7x inflation, while `nu - 1` is off by that
 same 4.7x. But the resulting LD-score bias is near-uniform across variants, so
 it lands on the LDSC intercept and not the slope -- which is why this is a
 correctness fix and not a heritability-estimation result. See `docs/METHOD.md`
 Section 10.1.
 
-Run:  conda run -n pldsc python experiments/relatedness_effective_df.py
+Run:  python experiments/relatedness_effective_df.py
 """
 from __future__ import annotations
 

@@ -93,7 +93,7 @@ led with 17%, understating the effect by ~1.7×.
 
 ## Why this and not the estimator
 
-The relatedness-pivot idea — take `P_c`, whose [m3](../experiments/README.md)
+The relatedness-pivot idea — take `P_c`, whose [m3](../experiments/RESULTS.md)
 advantage over cov-LDSC is real and specific to relatedness, to populations where
 relatedness dominates (cattle, maize, *A. thaliana*, founder isolates) — fails
 for three reasons, in increasing order of severity:

@@ -11,5 +11,7 @@ From the PLDSC root, build with Tectonic:
 tectonic --outdir report report/methods.tex
 ```
 
-The report describes the current implementation; tests and parity checks do
-not establish real-data calibration or a measured speedup.
+The report was reviewed against version 0.1.0.dev3. Version 0.1.0.dev4 leaves
+the regression implementation unchanged.
+Tests and parity checks do not establish real-data calibration or a measured
+speedup.

@@ -35,7 +35,7 @@ PRE-REGISTERED VERDICT RULE (fixed before running):
   KILL     -- power < 50% at the STRONGEST setting (target_chi2=4.0, kappa=2);
   MARGINAL -- otherwise (the channel is real but too weak to base a method on).
 
-Run:  conda run -n pldsc python experiments/local_adaptation_channel.py
+Run:  python experiments/local_adaptation_channel.py
 """
 from __future__ import annotations
 

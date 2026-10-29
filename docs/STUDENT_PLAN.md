@@ -45,8 +45,8 @@ h² by > 2 SE with an estimated ρ, adopted by a sibling package.
    IDEA_REVIEW, METHOD §1–§9/§11–§13/§15). It is a record.
 4. **Do not start from `DEVELOPMENT_PLAN.md`** — it is the archived plan
    and its §1.3 scope excludes the current project.
-5. **Do not read `experiments/README.md` top-down** — its opening
-   "Verdict: CONTINUE" belongs to the dead line; use its dated index.
+5. **Distinguish the historical estimator verdicts from current research**
+   when reading [the experiment results](../experiments/RESULTS.md).
 
 The archive is the training, not the backlog: read PRIOR_ART and
 MULTI_ANCESTRY §6 to learn how this repo runs a kill rule, then run yours

@@ -14,7 +14,7 @@ Three scenarios test both power and the identifiability limit:
 Detection statistic per PC: joint regression coefficient / block-jackknife SE
 (a per-PC z). |z| large => that PC is implicated.
 
-Run:  conda run -n pldsc python experiments/detect_pc_inflation.py
+Run:  python experiments/detect_pc_inflation.py
 """
 from __future__ import annotations
 

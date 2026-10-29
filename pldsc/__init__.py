@@ -16,7 +16,7 @@ from .ld_scores import LowRankLD, ld_scores
 from .bivariate import LDSCRgResult, ldsc_rg, ldsc_rg_z
 from .sumstats import SumstatsLDSCResult, ldsc_h2_sumstats, ldsc_rg_sumstats
 
-__version__ = "0.1.0.dev3"
+__version__ = "0.1.0.dev4"
 
 __all__ = [
     "LDSCResult", "ldsc_h2", "ldsc_chi2_keep", "LowRankLD", "ld_scores",

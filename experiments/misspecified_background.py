@@ -14,7 +14,7 @@ where P_c is built from the ASSUMED V_c (all-SNP LOCO GRM) but V_true is the
 covariance implied by a misspecified background. Infinitesimal (f=1.0, alpha=0) is
 the control and must return 1.000.
 
-Run:  conda run -n pldsc python experiments/misspecified_background.py
+Run:  python experiments/misspecified_background.py
 """
 from __future__ import annotations
 

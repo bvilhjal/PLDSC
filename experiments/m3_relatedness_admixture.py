@@ -17,7 +17,7 @@ EXACTLY 1 for the oracle P_c (property P2: P_c V_c P_c = P_c) and inflated for
 ordinary / cov-LDSC OLS operators. Computed analytically (no Monte Carlo); one
 MC pass cross-checks the Eq (3) moment for PLDSC.
 
-Run:  conda run -n pldsc python experiments/m3_relatedness_admixture.py
+Run:  python experiments/m3_relatedness_admixture.py
 """
 from __future__ import annotations
 

@@ -21,7 +21,7 @@ Design choices that keep the map honest:
   drift = slope(regime)/slope(anchor) within each sweep (target 1; <1 means h^2
   underestimated).
 
-Run:  conda run -n pldsc python experiments/map_ldsc_miscalibration.py
+Run:  python experiments/map_ldsc_miscalibration.py
 """
 from __future__ import annotations
 

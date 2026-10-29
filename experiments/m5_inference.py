@@ -14,7 +14,7 @@ This illustrates the requirement M4 surfaced: a fitted-V_c intercept SE must
 propagate variance-component uncertainty. It is not a validation of genomic
 blocks, recomputed weights, or a deployable fitted-V_c correction.
 
-Run:  conda run -n pldsc python experiments/m5_inference.py
+Run:  python experiments/m5_inference.py
 """
 from __future__ import annotations
 

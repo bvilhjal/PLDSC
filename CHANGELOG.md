@@ -3,9 +3,19 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
 single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev3`) and the API may still change.
+(`0.1.0.dev4`) and the API may still change.
 
 ## [Unreleased]
+
+## [0.1.0.dev4] - 2026-10-29
+
+### Changed
+
+- Simplify installation and the LDSC and research documentation for the public
+  repository; preserve the detailed experiment results in a separate record.
+- Remove obsolete environment-specific commands and the private-dependency
+  token fallback from CI. Scientific computations and results are unchanged.
+- Use current SPDX license metadata for package builds.
 
 ## [0.1.0.dev3] - 2026-10-29
 

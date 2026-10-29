@@ -14,7 +14,7 @@ corr^2 x ell^local interaction that the environmental shift lacks -- i.e. that
 part of genuine ancestry-aligned heritability IS identifiable, via the local
 channel. This is the scope boundary of the limit.
 
-Run:  conda run -n pldsc python experiments/identifiability_aliasing.py
+Run:  python experiments/identifiability_aliasing.py
 """
 from __future__ import annotations
 

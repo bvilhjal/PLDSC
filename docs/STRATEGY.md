@@ -2,7 +2,7 @@
 
 Date: 2026-09-25. This replaces the three-track version of 2026-09-24, which
 remains in git history. The GC-versus-stratification probe that version ran
-is recorded in [experiments/README](../experiments/README.md).
+is recorded in [the experiment results](../experiments/RESULTS.md).
 
 ## 1. The direction
 
@@ -13,7 +13,7 @@ Four reasons for choosing this question:
 
 1. **It is the only regime where this project's own measurements are
    material.** The windowed structure share is about 0% in EUR and 29% in the
-   1000G multi-ancestry panel (README). The new result in §2 is larger still.
+   1000G multi-ancestry panel (METHOD §10). The new result in §2 is larger still.
 2. **The field is there.** Multi-ancestry meta-analyses routinely run LDSC
    with European LD scores. GBMI did so, with a heuristic justification
    (landscape check, 2026-09-24).

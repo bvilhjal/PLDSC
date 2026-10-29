@@ -17,7 +17,7 @@ LOCO GRM (other chromosomes) to avoid proximal contamination. Compare S-LDSC
 by how well each recovers the TRUE functional coefficient, with structure off
 and on, averaged over replicates.
 
-Run:  conda run -n pldsc python experiments/sldsc_pc_annotation.py
+Run:  python experiments/sldsc_pc_annotation.py
 """
 from __future__ import annotations
 

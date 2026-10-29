@@ -28,7 +28,7 @@ non-0/1 genotype is treated as homozygous reference; SNP sets are thinned
 (1-in-10 for chr22, 1-in-25 for chr21/10 -- GRM fodder only); P_c uses an
 intercept-only design (no covariates) throughout.
 
-Run:  conda run -n pldsc python experiments/realdata_1000g_benchmarks.py
+Run:  python experiments/realdata_1000g_benchmarks.py
 """
 from __future__ import annotations
 

@@ -16,7 +16,7 @@ the experiment -- it stands in for the fitted null variance components that M4
 would otherwise import from GEMMA. P_c depends on V_c only through its overall
 scale AND the h^2 ratio, and REML fits both, so this is a faithful probe.
 
-Run:  conda run -n pldsc python experiments/m4_fitted_vc.py
+Run:  python experiments/m4_fitted_vc.py
 """
 from __future__ import annotations
 

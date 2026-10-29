@@ -10,12 +10,13 @@ weights, jackknife and interpretation.
 
 ## Install and try it
 
-From the PLDSC checkout, with Python 3.11 or newer and the sibling `allelign`
-checkout beside it:
+With Python 3.11 or newer, clone the repository and install PLDSC. Pip installs
+the public allelign dependency automatically:
 
 ```bash
-python -m pip install -e ../allelign
-python -m pip install -e ".[fast]"
+git clone https://github.com/bvilhjal/PLDSC.git
+cd PLDSC
+python -m pip install ".[fast]"
 python examples/ordinary_ldsc.py
 ```
 

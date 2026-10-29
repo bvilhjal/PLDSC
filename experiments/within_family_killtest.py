@@ -36,7 +36,7 @@ LD-score regression -- equivalent, so P_c adds nothing. Part 3 shows the tiny
 structured remainder of the surviving covariance is orthogonal to the windowed
 LD score (Wall-1), so it cannot bias the slope either.
 
-Run:  conda run -n pldsc python experiments/within_family_killtest.py
+Run:  python experiments/within_family_killtest.py
 """
 from __future__ import annotations
 
