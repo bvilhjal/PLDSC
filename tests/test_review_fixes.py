@@ -1,4 +1,5 @@
 """Regressions for the numerical and inference defects in the review."""
+import gzip
 import sys
 from pathlib import Path
 
@@ -11,6 +12,37 @@ from pldsc import (cross_ancestry_ld_scores, effective_pair_df, ld_score_regress
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments"))
 import gbmi_asthma_casualty as G  # noqa: E402
 import multiancestry_genome_kappa as GK  # noqa: E402
+
+
+def test_gbmi_uses_allelign_with_original_selection_and_orientation(tmp_path, monkeypatch):
+    header = ("#CHR\tPOS\tREF\tALT\trsid\tall_meta_AF\tinv_var_meta_beta\t"
+              "inv_var_meta_sebeta\tN_case\tN_ctrl\tis_strand_flip\tis_diff_AF_gnomAD\n")
+    def row(rs, ref="A", alt="C", beta=.2, se=.1, af=.2, flag="no", pos=100):
+        return f"1\t{pos}\t{ref}\t{alt}\t{rs}\t{af}\t{beta}\t{se}\t99999\t99999\t{flag}\tno\n"
+    all_rows = [row("rs1"), row("rs2", alt="T", se=.2, af=.4),
+                row("rs3"), row("rs3", flag="yes"), row("rs4"),
+                row("rs5", flag="yes"), row("rs6", af=0),
+                row("rs7", se=1), row("rs8", ref="AA")]
+    eur_rows = [row("rs1", ref="C", alt="A", beta=-.3, pos=999),
+                row("rs2", ref="T", alt="A", beta=-.4),
+                row("rs4", ref="T", alt="G"),  # complement only: excluded
+                row("rs7", beta=.4, se=1), row("rs9"), row("other")]
+    for name, rows in (("all", all_rows), ("eur", eur_rows)):
+        with gzip.open(tmp_path / f"{name}.tsv.gz", "wt") as out:
+            out.write(header + "".join(rows))
+    monkeypatch.setattr(G, "GBMI_DIR", str(tmp_path))
+    monkeypatch.setattr(G, "PATTERN", "{}.tsv.gz")
+    monkeypatch.setattr(G, "STRATA", {"ALL": "all", "EUR": "eur"})
+    ids = np.array([f"rs{i}" for i in range(1, 10)])
+    z, n = G.load_gbmi({"rsid": ids})
+    np.testing.assert_array_equal(np.flatnonzero(np.isfinite(z[0])), [0, 1, 3, 6])
+    np.testing.assert_array_equal(np.flatnonzero(np.isfinite(z[1])), [0, 1, 6])
+    np.testing.assert_allclose(z[0, [0, 1, 3, 6]], [2, 1, 2, .2])
+    np.testing.assert_allclose(z[1, [0, 1, 6]], [3, 4, .4])
+    expected_n = 4 / (np.array([.1, .2, .1, 1.0]) ** 2 * 2 *
+                      np.array([.2, .4, .2, .2]) * (1 - np.array([.2, .4, .2, .2])))
+    np.testing.assert_allclose(n[0, [0, 1, 3, 6]], expected_n)
+    assert n[0, 6] < 0.7 * np.median(expected_n)  # historical rule has no relative-N filter
 
 
 def test_rank_deficient_covariates_do_not_change_pair_df():

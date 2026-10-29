@@ -104,9 +104,11 @@ import argparse
 import hashlib
 import os
 import sys
+import tempfile
 import time
 from statistics import NormalDist
 
+import allelign
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -182,36 +184,46 @@ def load_scores(*, allow_legacy=False):
 
 
 def read_gbmi(path, index):
-    """Rows of one GBMI file at the cached variants: index, alleles, z, SE-implied N."""
-    rows, rsids, ref, alt, z, n = [], [], [], [], [], []
-    count = {}
-    with gzip.open(path, "rt") as fh:
-        h = fh.readline().rstrip("\n").split("\t")
-        c = {k: h.index(k) for k in ("REF", "ALT", "rsid", "all_meta_AF", "inv_var_meta_beta",
-                                     "inv_var_meta_sebeta", "is_strand_flip", "is_diff_AF_gnomAD")}
-        for line in fh:
-            rs = line.split("\t", c["rsid"] + 1)[c["rsid"]]
-            j = index.get(rs)
-            if j is None:
-                continue
-            count[rs] = count.get(rs, 0) + 1
-            f = line.rstrip("\n").split("\t")
-            if (len(f[c["REF"]]) != 1 or len(f[c["ALT"]]) != 1 or f[c["is_strand_flip"]] == "yes"
-                    or f[c["is_diff_AF_gnomAD"]] == "yes"):
-                continue
-            se, p = float(f[c["inv_var_meta_sebeta"]]), float(f[c["all_meta_AF"]])
-            if not (se > 0 and 0 < p < 1):
-                continue
-            rows.append(j)
-            rsids.append(rs)
-            ref.append(f[c["REF"]])
-            alt.append(f[c["ALT"]])
-            z.append(float(f[c["inv_var_meta_beta"]]) / se)
-            n.append(4.0 / (se * se * 2.0 * p * (1.0 - p)))
-    dup = {rs for rs, k in count.items() if k > 1}
-    keep = np.array([rs not in dup for rs in rsids], dtype=bool)
-    return (np.array(rows, dtype=np.int64)[keep], np.array(ref)[keep], np.array(alt)[keep],
-            np.array(z)[keep], np.array(n)[keep], len(dup))
+    """Read cached variants with allelign, retaining the pre-stated GBMI rules."""
+    # GBMI files are large. Select reference IDs while streaming, and retain
+    # all their rows so allelign can remove duplicates even when one copy has
+    # a failing GBMI-specific flag. The flags are not allelign fields.
+    flags, seen, duplicates = [], set(), set()
+    with tempfile.TemporaryDirectory(prefix="pldsc-gbmi-") as tmp:
+        selected = os.path.join(tmp, "selected.tsv")
+        with gzip.open(path, "rt") as source, open(selected, "w") as out:
+            header = source.readline()
+            fields = header.rstrip("\r\n").split("\t")
+            c = {k: fields.index(k) for k in ("rsid", "REF", "ALT", "is_strand_flip", "is_diff_AF_gnomAD")}
+            out.write(header)
+            for line in source:
+                rs = line.split("\t", c["rsid"] + 1)[c["rsid"]]
+                j = index.get(rs)
+                if j is None:
+                    continue
+                if j in seen:
+                    duplicates.add(j)
+                seen.add(j)
+                f = line.rstrip("\r\n").split("\t")
+                flags.append(len(f[c["REF"]]) == 1 and len(f[c["ALT"]]) == 1
+                             and f[c["is_strand_flip"]] != "yes" and f[c["is_diff_AF_gnomAD"]] != "yes")
+                out.write(line)
+        # The experiment's N is derived below, not from GBMI's pooled case and
+        # control counts. The temporary constant N permits ordinary file QC.
+        ss = allelign.read_sumstats(selected, ea="ALT", oa="REF", beta="inv_var_meta_beta",
+                                    se="inv_var_meta_sebeta", eaf="all_meta_AF", n_eff=1.0)
+    if len(ss) != len(flags):
+        raise ValueError("GBMI row selection and allelign parsing disagree")
+    keep, _ = allelign.qc_sumstats(ss, min_n_ratio=1.0, min_maf=0.0, min_info=0.0)
+    p = ss.eaf
+    keep &= np.asarray(flags, dtype=bool) & np.isfinite(p) & (p > 0) & (p < 1)
+    ss = ss.subset(keep)
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        ss.n_eff = 4.0 / (ss.se * ss.se * 2.0 * ss.eaf * (1.0 - ss.eaf))
+    ss = ss.subset(np.isfinite(ss.n_eff) & (ss.n_eff > 0))
+    ss.parse_log["n_eff_source"] = "GBMI SE and allele-frequency formula"
+    rows = np.fromiter((index[rs] for rs in ss.id), dtype=np.int64, count=len(ss))
+    return rows, ss, len(duplicates)
 
 
 def load_gbmi(D):
@@ -219,24 +231,32 @@ def load_gbmi(D):
     J = D["rsid"].size
     Z = np.full((len(STRATA), J), np.nan)
     N = np.zeros((len(STRATA), J))
-    ref0 = alt0 = None
+    ref0 = alt0 = reference = all_rows = None
     for s, (name, tok) in enumerate(STRATA.items()):
         path = os.path.join(GBMI_DIR, PATTERN.format(tok))
         t0 = time.time()
-        rows, ref, alt, z, n, ndup = read_gbmi(path, index)
+        rows, ss, ndup = read_gbmi(path, index)
         if name == "ALL":
             ref0, alt0 = np.full(J, ""), np.full(J, "")
-            ref0[rows], alt0[rows] = ref, alt
-            sign = np.ones(rows.size)
+            ref0[rows], alt0[rows] = ss.oa, ss.ea
+            # The score cache is GRCh37, while the GWAS is GRCh38. The
+            # historical protocol deliberately joins on unique rsID only.
+            reference = ss.as_variants()
+            reference.pos = np.zeros(len(ss), dtype=np.int64)
+            reference.freeze()
+            all_rows = rows.copy()
+            Z[s, rows], N[s, rows] = ss.z, ss.n_eff
         else:
-            same = (ref0[rows] == ref) & (alt0[rows] == alt)
-            swap = (ref0[rows] == alt) & (alt0[rows] == ref)
+            same = (ref0[rows] == ss.oa) & (alt0[rows] == ss.ea)
+            swap = (ref0[rows] == ss.ea) & (alt0[rows] == ss.oa)
+            # The pre-stated protocol permits direct or swapped alleles,
+            # including palindromic pairs, but not strand complementation.
             ok = same | swap
-            rows, z, n = rows[ok], z[ok], n[ok]
-            sign = np.where(swap[ok], -1.0, 1.0)
-        Z[s, rows], N[s, rows] = sign * z, n
+            h = allelign.harmonize(ss.subset(ok), reference, drop_ambiguous=False)
+            rows = all_rows[h.var_index]
+            Z[s, rows], N[s, rows] = h.beta / h.se, h.n_eff
         print(f"  [gbmi] {name}: {rows.size} variants at the 1000G regression set "
-              f"({ndup} duplicated rsIDs dropped), median N {np.median(n):.0f} ({time.time() - t0:.0f}s)")
+              f"({ndup} duplicated rsIDs dropped), median N {np.median(N[s, rows]):.0f} ({time.time() - t0:.0f}s)")
     return Z, N
 
 

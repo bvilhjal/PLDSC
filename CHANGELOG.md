@@ -3,9 +3,19 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
 single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev1`) and the API may still change.
+(`0.1.0.dev2`) and the API may still change.
 
 ## [Unreleased]
+
+## [0.1.0.dev2] - 2026-10-29
+
+### Changed
+
+- Route the historical GBMI asthma GWAS reader and allele alignment through
+  allelign, preserving its pre-specified selection and sample-size rules.
+- Expand file-workflow tests and explain allelign column overrides and QC logs.
+
+## [0.1.0.dev1] - 2026-10-29
 
 ### Added
 

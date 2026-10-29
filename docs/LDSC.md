@@ -71,7 +71,11 @@ and an appropriate sample size. See `allelign.read_sumstats` for column
 aliases and overrides. Allelign can use a per-variant N column or derive
 effective N from case/control columns; inspect the `sumstats_parse` entry in
 the QC log for the selected source. Check that it is appropriate for the
-study. For a file with no N column and a justified constant sample size:
+study. If a file uses nonstandard names, pass them explicitly, for example
+`read_options={"beta": "EFFECT", "se": "STDERR", "n_eff": "NEFF"}`.
+When a `TEST` column is present, allelign retains `ADD` and `ADD-CONDTL`
+rows and reports the others in the parse log. For a file with no N column
+and a justified constant sample size:
 
 ```python
 h2 = ldsc_h2_sumstats("trait1.tsv.gz", reference, scores, m_snps=M,
@@ -97,6 +101,11 @@ standard errors or sample sizes, and duplicated identifiers; filter N below
 ambiguous A/T and C/G sites by default. Overrides are passed as `qc_options`
 for one trait or `qc_options1` and `qc_options2` for two; see
 `allelign.qc_sumstats`. The `qc` and `alignment` tuples contain a log per trait.
+Inspect the alignment logs for unmatched variants and allele mismatches before
+interpreting the estimates. When both files have coordinates, allelign checks
+them even for matching rsIDs; this catches some build mismatches but does not
+establish that the builds agree. Use `drop_ambiguous=False` only when the
+strand and orientation of palindromic alleles are known independently.
 
 After alignment, the wrappers retain variants with chi-square at most
 `max(80, 0.001 * N)` for each trait. Set `chi2_cap=False` only when a

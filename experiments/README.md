@@ -1011,8 +1011,12 @@ The script estimates ρ from GBMI release 052021's asthma ancestry metas,
 using LDSC cross-ancestry moments on Table 6's scores. It then regresses
 the all-biobank meta on the EUR score and on the meta score. Data:
 `.scratch_gbmi/asthma/`, six files totalling 4.1 GB, with their sha256
-recorded in the script. It reuses the `multiancestry_genome_kappa.py` cache
-and runs in about 2 minutes (`python -I`).
+recorded in the script. It reuses the `multiancestry_genome_kappa.py` cache.
+The original run took about 2 minutes (`python -I`); the current reader has
+not been timed on the full files. It streams the reference rsIDs to a
+temporary file and uses allelign to parse, QC and orient the selected GWAS
+rows. The original protocol's GBMI flag filters, SE-implied N, rsID-only join
+across builds, and direct-or-swapped allele rule remain in force.
 
 - **ρ:** only EUR–EAS can be estimated, at 0.755 (SE 0.046). AFR, SAS and
   AMR are too small (h² z < 4), so those pairs are bracketed.

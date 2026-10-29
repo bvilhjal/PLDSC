@@ -162,6 +162,57 @@ def test_allelign_file_qc_and_bivariate_allele_flips(tmp_path):
     _assert_results_close(single.estimate, direct)
 
 
+def test_allelign_realistic_formats_and_sample_size_sources(tmp_path):
+    ref, ell, s1, s2 = _tables()
+    ref.a2[6] = s1.oa[6] = s2.oa[6] = "T"  # palindromic: dropped by default
+    s2.ea[6] = "A"
+    n_cases = np.linspace(3000, 3500, len(ref))
+    n_controls = np.linspace(5000, 5500, len(ref))
+    n2 = 4 / (1 / n_cases + 1 / n_controls)
+    n1 = s1.n_eff.copy()
+    n1[9] = 100  # below the default relative-N filter
+    bim = tmp_path / "reference.bim"
+    bim.write_text("".join(f"chr1 {ref.id[i]} 0 {ref.pos[i]} {ref.a1[i]} {ref.a2[i]}\n"
+                           for i in range(len(ref))))
+    f1, f2 = tmp_path / "custom.tsv", tmp_path / "case_control.csv"
+    lines1 = ["SNP\tCHR\tBP\tALT\tREF\tBETA\tEFFECT_USED\tSE_USED\tACTUAL_N\tEFFECTIVE_N\tEAF\tINFO\tTEST\n"]
+    lines2 = ["SNP,CHR,BP,EA,OA,OR,SE,N,COUNT_CASE,COUNT_CONTROL,EAF,INFO,TEST\n"]
+    for i in range(len(ref)):
+        test = "DOM" if i == 4 else ("ADD-CONDTL" if i == 8 else "ADD")
+        info = 0.1 if i == 7 else 0.9
+        lines1.append(f"{s1.id[i]}\t1\t{s1.pos[i]}\t{s1.ea[i]}\t{s1.oa[i]}\t5\t{s1.beta[i]}\t{s1.se[i]}\t{n1[i]}\t9999\t0.2\t{info}\t{test}\n")
+        ea, oa = ("T", "G") if i == 11 else (s2.ea[i], s2.oa[i])
+        pos = s2.pos[i] + (10000 if i == 10 else 0)
+        lines2.append(f"{s2.id[i]},1,{pos},{ea},{oa},{np.exp(s2.beta[i])},{s2.se[i]},123456,{n_cases[i]},{n_controls[i]},0.2,0.9,ADD\n")
+    lines1.append(lines1[6])  # duplicate rs5: both copies are excluded
+    f1.write_text("".join(lines1))
+    f2.write_text("".join(lines2))
+    opts = {"beta": "EFFECT_USED", "se": "SE_USED", "n_eff": "ACTUAL_N"}
+    with pytest.warns(RuntimeWarning):
+        single = pldsc.ldsc_h2_sumstats(f1, bim, ell, m_snps=500, read_options=opts,
+                                        n_blocks=10, chi2_cap=False)
+    ix1 = np.delete(np.arange(len(ref)), [4, 5, 6, 7, 9])
+    np.testing.assert_array_equal(single.reference_index, ix1)
+    _assert_results_close(single.estimate, ldsc_h2((s1.beta[ix1] / s1.se[ix1]) ** 2,
+                          ell[ix1], n1[ix1], m_snps=500, n_blocks=10))
+    assert single.qc[0]["sumstats_parse"]["n_eff_source"].startswith("column")
+    assert single.qc[0]["sumstats_parse"]["n_dropped_test"] == 1
+    assert single.qc[0]["n_drop_duplicate"] == 2
+    with pytest.warns(RuntimeWarning):
+        out = pldsc.ldsc_rg_sumstats(f1, f2, bim, ell, m_snps=500, read_options1=opts,
+                                     read_options2={"n_cases": "COUNT_CASE", "n_controls": "COUNT_CONTROL"},
+                                     n_blocks=10, chi2_cap=False)
+    ix = np.delete(ix1, np.flatnonzero(ix1 == 10))  # coordinate disagreement
+    np.testing.assert_array_equal(out.reference_index, ix)
+    assert out.alignment[1]["n_strand_flipped"] == 1
+    assert out.qc[1]["sumstats_parse"]["n_eff_source"] == "case_control"
+    z2 = s2.beta[ix] / s2.se[ix]
+    z2[ix % 2 == 0] *= -1
+    expected = ldsc_rg_z(s1.beta[ix] / s1.se[ix], z2, ell[ix], n1[ix], n2[ix],
+                         m_snps=500, n_blocks=10)
+    _assert_results_close(out.estimate, expected)
+
+
 def test_sumstats_cap_order_and_explicit_variant_count():
     ref, ell, s1, _ = _tables()
     s1.beta[4] = 0.2
