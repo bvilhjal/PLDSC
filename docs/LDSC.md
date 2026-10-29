@@ -26,6 +26,49 @@ independent across variants: it illustrates the API, not the calibration of
 an analysis. `.[fast]` installs Numba; without it the NumPy implementation
 remains available. Compilation takes extra time on the first call.
 
+## Bundled HapMap3 reference (EUR, GRCh37)
+
+For European-ancestry GWAS on GRCh37 coordinates, PLDSC bundles the
+HapMap3 LD scores published for LDSC, so no score files are needed:
+
+```python
+from pldsc import load_ld_reference, ldsc_rg_sumstats
+
+ref = load_ld_reference("hm3-eur")
+rg = ldsc_rg_sumstats("trait1.tsv.gz", "trait2.tsv.gz",
+                      ref.variants, ref.scores, m_snps=ref.m_snps, ncores=4)
+```
+
+```bash
+pldsc rg --sumstats1 trait1.tsv.gz --sumstats2 trait2.tsv.gz \
+  --ld-reference hm3-eur --ncores 4 --out rg.json
+pldsc h2 --sumstats trait1.tsv.gz --ld-reference hm3-eur --m-snps 5961159
+pldsc ld-reference   # provenance of the bundle, as JSON
+```
+
+The bundle holds 1,190,268 HapMap3 regression SNPs with LD scores from
+the 1000 Genomes Phase 3 EUR QC panel (489 people, 1 cM windows), as
+published for LD Score regression (Zenodo record 7768714; the build is
+reproducible with `scripts/build_ld_reference.py`). Its `m_snps` is
+9,997,231, the number of panel variants summed into each score. The
+original LDSC software defaults instead to the MAF 5–50% count
+(5,961,159 here, available as `ref.m_snps_5_50`); the choice rescales
+h² and genetic covariance but leaves rg unchanged when the same count
+is used in all three regressions, so state which count a reported h²
+used. On the command line, `--m-snps` replaces the bundled count, as in
+the second example. Fifty-three printed SNPs whose published score is
+not positive are excluded from the regression set and listed in the
+provenance. By default `load_ld_reference` and the commands also leave
+out the 30,437 variants in allelign's GRCh37 long-range LD regions,
+including the MHC, and record the count in `ref.long_range_ld` (the
+`--m-snps` count is unchanged). LDSC runs on this deposit leave out the MHC
+through their `weights_hm3_no_MHC` regression weights. To keep these
+regions, pass `include_long_range_ld=True` or
+`--include-long-range-ld-grch37`; `include_apoe=True` or `--include-apoe`
+also leaves out the APOE region.
+Do not use this reference for non-European or GRCh38 summary statistics;
+supply matched scores instead, as below.
+
 ## Command-line walkthrough
 
 Create a small set of synthetic files and keep them in a **new** directory:
@@ -122,13 +165,15 @@ The commands reject conflicting explicit N sources. Case/control-derived N
 needs special care in meta-analyses, as explained below.
 
 By default the commands use allelign's file QC, drop strand-ambiguous
-variants, and apply the LDSC chi-square cap. They do not remove long-range LD
-regions unless requested. For GWAS and reference coordinates known to be
-GRCh37, add `--exclude-long-range-ld-grch37`; add `--include-apoe` if that
-locus should also be excluded. Each GWAS row must have a valid chromosome and
-position for this option. The JSON records the number removed per trait. This
-flag declares the build; it does not verify it. For a different build, filter
-with a build-appropriate region list using allelign in Python.
+variants, and apply the LDSC chi-square cap. They also leave out reference
+variants in allelign's GRCh37 long-range LD regions, including the MHC; add
+`--include-apoe` to leave out the APOE locus as well. The regions are found
+from the reference coordinates, so GWAS files matched by ID need no
+positions, and the JSON records the number of reference variants left out.
+The default assumes a GRCh37 reference and does not verify it. Add
+`--include-long-range-ld-grch37` to keep the regions, for example for another
+build; then filter with a build-appropriate region list using allelign in
+Python if needed.
 
 `--min-n-ratio`, `--min-maf`, and `--min-info` adjust both traits' file QC.
 `--allow-ambiguous` and `--no-chi2-cap` change variant selection and should
@@ -236,8 +281,9 @@ strand and orientation of palindromic alleles are known independently.
 After alignment, the wrappers retain variants with chi-square at most
 `max(80, 0.001 * N)` for each trait. Set `chi2_cap=False` only when a
 separately justified selection has already been made. The wrappers do **not**
-automatically exclude long-range LD regions. For example, if the input and
-reference are GRCh37 and those exclusions are appropriate:
+exclude long-range LD regions themselves; a bundled reference from
+`load_ld_reference` already leaves them out. For your own reference, if the
+input and reference are GRCh37 and those exclusions are appropriate:
 
 ```python
 ss = allelign.read_sumstats("trait1.tsv.gz")

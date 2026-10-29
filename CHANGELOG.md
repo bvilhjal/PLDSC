@@ -3,9 +3,35 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
 single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev4`) and the API may still change.
+(`0.1.0.dev5`) and the API may still change.
 
 ## [Unreleased]
+
+## [0.1.0.dev5] - 2026-10-29
+
+### Added
+
+- Bundled `hm3-eur` LD reference: 1,190,268 HapMap3 regression SNPs with
+  1000 Genomes Phase 3 EUR LD scores (GRCh37), loadable with
+  `load_ld_reference`, describable with `pldsc ld-reference`, and usable
+  in `pldsc h2`/`pldsc rg` via `--ld-reference` instead of explicit
+  reference, score and `m_snps` inputs. The bundle is built from the
+  public LDSC reference deposit by `scripts/build_ld_reference.py` and
+  carries its provenance, including both published variant counts; the
+  loader checks the bundle's recorded checksum. With `--ld-reference`,
+  `--m-snps` replaces the bundled variant count (for example with the
+  MAF 5–50% count).
+
+### Changed
+
+- `pldsc h2` and `pldsc rg` leave out reference variants in allelign's
+  GRCh37 long-range LD regions, including the MHC, by default;
+  `--include-long-range-ld-grch37` keeps them, replacing the opt-in
+  `--exclude-long-range-ld-grch37`. The regions are found from reference
+  coordinates, so GWAS files matched by ID no longer need positions, and
+  the JSON `long_range_ld` entry is a single record for the reference.
+  `load_ld_reference` leaves the same regions out unless
+  `include_long_range_ld=True`.
 
 ## [0.1.0.dev4] - 2026-10-29
 

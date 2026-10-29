@@ -49,7 +49,7 @@ def _command(*args):
 def test_cli_fits_match_python_and_record_processing(gwas_files, tmp_path):
     reference, scores, one, two, ell = gwas_files
     common = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120",
-              "--n-blocks", "8", "--no-chi2-cap"]
+              "--n-blocks", "8", "--no-chi2-cap", "--include-long-range-ld-grch37"]
     run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", *common)
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
@@ -81,20 +81,28 @@ def test_cli_fits_match_python_and_record_processing(gwas_files, tmp_path):
     assert target.read_bytes() == previous
 
 
-def test_cli_optional_allelign_region_filter(gwas_files):
+def test_cli_leaves_out_long_range_ld_by_default(gwas_files):
     reference, scores, one, two, ell = gwas_files
     args = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120", "--n-blocks", "8",
-            "--exclude-long-range-ld-grch37", "--include-apoe", "--no-chi2-cap"]
-    run = _command("rg", "--sumstats1", one, "--sumstats2", two, *args)
+            "--no-chi2-cap"]
+    run = _command("rg", "--sumstats1", one, "--sumstats2", two, *args, "--include-apoe")
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
-    assert [entry["n_dropped"] for entry in out["long_range_ld"]] == [20, 20]
-    ss1, ss2 = allelign.read_sumstats(one), allelign.read_sumstats(two)
-    mask = ~allelign.in_long_range_ld(ss1.chrom, ss1.pos, genome_build="GRCh37", include_apoe=True)
-    expected = ldsc_rg_sumstats(ss1.subset(mask), ss2.subset(mask), reference, ell,
+    # The fixture puts 20 of its 120 reference variants in the MHC.
+    assert out["long_range_ld"] == {"genome_build": "GRCh37", "include_apoe": True, "n_dropped": 20}
+    variants = allelign.read_variants(reference)
+    keep = ~allelign.in_long_range_ld(variants.chrom, variants.pos, genome_build="GRCh37",
+                                      include_apoe=True)
+    expected = ldsc_rg_sumstats(one, two, variants.subset(keep), ell[keep],
                                  m_snps=120, n_blocks=8, chi2_cap=False)
     assert out["estimate"]["rg"] == pytest.approx(expected.estimate.rg)
-    assert out["n_retained"] == len(expected.reference_index)
+    # 100 variants outside the region, less one removed by QC (EAF 0.001).
+    assert out["n_retained"] == len(expected.reference_index) == 99
+    kept = _command("rg", "--sumstats1", one, "--sumstats2", two, *args,
+                    "--include-long-range-ld-grch37")
+    assert kept.returncode == 0, kept.stderr
+    out = json.loads(kept.stdout)
+    assert out["long_range_ld"] is None and out["n_retained"] == 119
 
 
 def test_cli_rejects_conflicting_inputs_and_writes_strict_json(gwas_files, tmp_path):
@@ -104,8 +112,8 @@ def test_cli_rejects_conflicting_inputs_and_writes_strict_json(gwas_files, tmp_p
     assert run.returncode == 2 and "one sample-size source" in run.stderr
     run = _command(*common, "--column", "beta=BETA", "--column", "or=BETA")
     assert run.returncode == 2 and "single effect source" in run.stderr
-    run = _command(*common, "--include-apoe")
-    assert run.returncode == 2 and "requires" in run.stderr
+    run = _command(*common, "--include-apoe", "--include-long-range-ld-grch37")
+    assert run.returncode == 2 and "no effect" in run.stderr
     run = _command(*common, "--n-blocks", "1")
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout, parse_constant=lambda value: pytest.fail(f"nonstandard JSON: {value}"))
@@ -116,15 +124,26 @@ def test_cli_rejects_conflicting_inputs_and_writes_strict_json(gwas_files, tmp_p
     assert run.returncode == 2 and ".npy" in run.stderr
 
 
-def test_cli_region_filter_rejects_missing_coordinates(gwas_files, tmp_path):
-    reference, scores, one, _, _ = gwas_files
-    ss = allelign.read_sumstats(one)
-    ss.pos[0] = 0
-    missing = tmp_path / "missing.tsv"
-    allelign.write_sumstats(missing, ss)
-    run = _command("h2", "--sumstats", missing, "--reference", reference, "--ld-scores", scores,
-                   "--m-snps", "120", "--exclude-long-range-ld-grch37")
-    assert run.returncode == 2 and "requires valid chromosome and position" in run.stderr
+def test_cli_region_filter_uses_reference_coordinates(gwas_files, tmp_path):
+    # GWAS rows matched by ID need no positions: regions are found in the reference.
+    reference, scores, one, _, ell = gwas_files
+    lines = gzip.open(one, "rt").read().splitlines()
+    header = lines[0].split("\t")
+    keep_columns = [i for i, name in enumerate(header) if name not in ("CHR", "POS")]
+    ids_only = tmp_path / "ids_only.tsv"
+    ids_only.write_text("".join("\t".join(line.split("\t")[i] for i in keep_columns) + "\n"
+                                for line in lines))
+    run = _command("h2", "--sumstats", ids_only, "--reference", reference, "--ld-scores", scores,
+                   "--m-snps", "120", "--n-blocks", "8", "--no-chi2-cap")
+    assert run.returncode == 0, run.stderr
+    out = json.loads(run.stdout)
+    assert out["long_range_ld"]["n_dropped"] == 20
+    variants = allelign.read_variants(reference)
+    keep = ~allelign.in_long_range_ld(variants.chrom, variants.pos, genome_build="GRCh37")
+    expected = ldsc_h2_sumstats(ids_only, variants.subset(keep), ell[keep], m_snps=120,
+                                n_blocks=8, chi2_cap=False)
+    assert out["estimate"]["h2"] == pytest.approx(expected.estimate.h2)
+    assert out["n_retained"] == len(expected.reference_index) == 99
 
 
 def test_prepare_standard_ldsc_scores_aligns_and_rejects_bad_joins(gwas_files, tmp_path):

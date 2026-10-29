@@ -13,6 +13,7 @@ from allelign.sumstats import COLUMN_ALIASES
 import numpy as np
 
 from . import __version__
+from .ld_reference import available_ld_references, load_ld_reference
 from .sumstats import ldsc_h2_sumstats, ldsc_rg_sumstats
 
 
@@ -58,6 +59,10 @@ def _parser():
     score_parser.add_argument("--chrom-column", default="CHR", help="chromosome column (default: CHR)")
     score_parser.add_argument("--pos-column", default="BP", help="position column (default: BP)")
     score_parser.add_argument("--score-column", default="L2", help="LD score column (default: L2)")
+    ref_parser = sub.add_parser("ld-reference", help="describe a bundled LD reference")
+    ref_parser.add_argument("--name", default="hm3-eur",
+                            help="bundled reference name (default: hm3-eur; one of "
+                                 + ", ".join(available_ld_references()) + ")")
     for analysis, blocks in (("h2", 100), ("rg", 200)):
         p = sub.add_parser(analysis, help="SNP heritability" if analysis == "h2" else "genetic correlation")
         if analysis == "h2":
@@ -70,9 +75,14 @@ def _parser():
                 p.add_argument(f"--column{i}", action="append", type=_column, default=[], metavar="FIELD=COLUMN")
                 p.add_argument(f"--n-eff{i}", type=float, help=f"constant effective N for trait {i}")
             p.add_argument("--ncores", type=int, default=1, help="parallel jackknife workers (default: 1)")
-        p.add_argument("--reference", required=True, help="sorted .bim or .pvar variant table")
-        p.add_argument("--ld-scores", required=True, help=".npy vector in reference row order")
-        p.add_argument("--m-snps", type=int, required=True, help="number of SNPs summed into each LD score")
+        p.add_argument("--reference", help="sorted .bim or .pvar variant table")
+        p.add_argument("--ld-scores", help=".npy vector in reference row order")
+        p.add_argument("--m-snps", type=int,
+                       help="number of SNPs summed into each LD score; with --ld-reference, "
+                            "overrides its count (e.g. its MAF 5-50%% count)")
+        p.add_argument("--ld-reference", metavar="NAME",
+                       help="bundled LD reference (one of " + ", ".join(available_ld_references())
+                            + ") instead of --reference/--ld-scores")
         p.add_argument("--n-blocks", type=int, default=blocks, help=f"jackknife blocks (default: {blocks})")
         p.add_argument("--n-iter", type=int, default=2, help="weight updates (default: 2)")
         p.add_argument("--constrain-intercept", type=float, help="fixed intercept (cross-trait for rg)")
@@ -81,8 +91,11 @@ def _parser():
         p.add_argument("--min-info", type=float, default=0.7, help="minimum available INFO (default: 0.7)")
         p.add_argument("--allow-ambiguous", action="store_true", help="retain palindromic alleles when orientation is known")
         p.add_argument("--no-chi2-cap", action="store_true", help="disable the LDSC high-chi-square filter")
-        p.add_argument("--exclude-long-range-ld-grch37", action="store_true", help="exclude allelign's GRCh37 regions")
-        p.add_argument("--include-apoe", action="store_true", help="include APOE in the GRCh37 exclusions")
+        p.add_argument("--include-long-range-ld-grch37", action="store_true",
+                       help="keep reference variants in allelign's GRCh37 long-range LD regions, "
+                            "including the MHC (left out by default)")
+        p.add_argument("--include-apoe", action="store_true",
+                       help="also leave out the APOE region (GRCh37)")
         p.add_argument("--out", help="write JSON to a new file (default: stdout; existing files are not overwritten)")
     return parser
 
@@ -151,21 +164,6 @@ def _prepare_scores(args):
             "output": args.out, "n_matched": len(scores), "n_ignored_score_rows": ignored}
 
 
-def _input(path, options, exclude_regions, include_apoe):
-    if not exclude_regions:
-        return path, options, None
-    ss = allelign.read_sumstats(path, **options)
-    valid_chroms = {str(c) for c in range(1, 23)} | {"X", "Y", "MT"}
-    unique_chrom = {str(c): allelign.normalize_chrom(str(c)) for c in np.unique(ss.chrom)}
-    valid = np.fromiter((unique_chrom[str(c)] in valid_chroms for c in ss.chrom), bool, len(ss))
-    if not np.all(valid & (ss.pos > 0)):
-        raise ValueError("long-range LD exclusion requires valid chromosome and position on every GWAS row")
-    in_region = allelign.in_long_range_ld(ss.chrom, ss.pos, genome_build="GRCh37", include_apoe=include_apoe)
-    log = {"genome_build": "GRCh37", "include_apoe": include_apoe,
-           "n_input": len(ss), "n_dropped": int(in_region.sum())}
-    return ss.subset(~in_region), None, log
-
-
 def _json_safe(value):
     if isinstance(value, np.generic):
         value = value.item()
@@ -179,52 +177,93 @@ def _json_safe(value):
 
 
 def _run(args):
-    if args.include_apoe and not args.exclude_long_range_ld_grch37:
-        raise ValueError("--include-apoe requires --exclude-long-range-ld-grch37")
+    if args.include_apoe and args.include_long_range_ld_grch37:
+        raise ValueError("--include-apoe has no effect with --include-long-range-ld-grch37")
     if args.analysis == "h2":
         paths = [args.sumstats]
         options = [_read_options(args.column, args.n_eff)]
     else:
         paths = [args.sumstats1, args.sumstats2]
         options = [_read_options(args.column1, args.n_eff1), _read_options(args.column2, args.n_eff2)]
-    prepared = [_input(path, opt, args.exclude_long_range_ld_grch37, args.include_apoe)
-                for path, opt in zip(paths, options)]
-    scores = np.load(args.ld_scores, allow_pickle=False, mmap_mode="r")
-    if not isinstance(scores, np.ndarray):
-        scores.close()
-        raise ValueError("--ld-scores must be a single .npy vector, not an archive")
+    explicit = (args.reference, args.ld_scores, args.m_snps)
+    if args.ld_reference is not None:
+        if args.reference is not None or args.ld_scores is not None:
+            raise ValueError("give either --ld-reference or the explicit "
+                             "--reference/--ld-scores inputs, not both")
+        bundled = load_ld_reference(args.ld_reference,
+                                    include_long_range_ld=args.include_long_range_ld_grch37,
+                                    include_apoe=args.include_apoe)
+        variants_input, scores, long_range_ld = bundled.variants, bundled.scores, bundled.long_range_ld
+        m_snps = bundled.m_snps if args.m_snps is None else args.m_snps
+        reference_record = {"name": bundled.name, "ancestry": bundled.ancestry,
+                            "genome_build": bundled.genome_build,
+                            "bundle_sha256": bundled.provenance["bundle_sha256"],
+                            "m_snps": "bundled" if args.m_snps is None else "--m-snps"}
+    else:
+        if any(value is None for value in explicit):
+            raise ValueError("give --reference, --ld-scores and --m-snps, "
+                             "or name a bundled --ld-reference")
+        variants_input, m_snps, reference_record = args.reference, args.m_snps, None
+        scores = np.load(args.ld_scores, allow_pickle=False, mmap_mode="r")
+        if not isinstance(scores, np.ndarray):
+            scores.close()
+            raise ValueError("--ld-scores must be a single .npy vector, not an archive")
+        long_range_ld = None
+        if not args.include_long_range_ld_grch37:
+            # Leave out reference rows, so GWAS files matched by ID need no positions.
+            variants_input = allelign.read_variants(args.reference)
+            if len(variants_input) != scores.size:
+                raise ValueError("ld_scores must have one value per reference variant")
+            in_region = allelign.in_long_range_ld(variants_input.chrom, variants_input.pos,
+                                                  genome_build="GRCh37", include_apoe=args.include_apoe)
+            variants_input = variants_input.subset(~in_region)
+            scores = np.asarray(scores)[~in_region]
+            long_range_ld = {"genome_build": "GRCh37", "include_apoe": args.include_apoe,
+                             "n_dropped": int(in_region.sum())}
     qc_options = {"min_n_ratio": args.min_n_ratio, "min_maf": args.min_maf, "min_info": args.min_info}
-    common = dict(m_snps=args.m_snps, n_blocks=args.n_blocks, n_iter=args.n_iter,
+    common = dict(m_snps=m_snps, n_blocks=args.n_blocks, n_iter=args.n_iter,
                   constrain_intercept=args.constrain_intercept, drop_ambiguous=not args.allow_ambiguous,
                   chi2_cap=not args.no_chi2_cap)
     if args.analysis == "h2":
-        data, read, _ = prepared[0]
-        result = ldsc_h2_sumstats(data, args.reference, scores, read_options=read,
+        result = ldsc_h2_sumstats(paths[0], variants_input, scores, read_options=options[0],
                                  qc_options=qc_options, **common)
     else:
-        (data1, read1, _), (data2, read2, _) = prepared
-        result = ldsc_rg_sumstats(data1, data2, args.reference, scores, read_options1=read1,
-                                  read_options2=read2, qc_options1=qc_options, qc_options2=qc_options,
+        result = ldsc_rg_sumstats(paths[0], paths[1], variants_input, scores, read_options1=options[0],
+                                  read_options2=options[1], qc_options1=qc_options, qc_options2=qc_options,
                                   ncores=args.ncores, **common)
     return _json_safe({
         "pldsc_version": __version__, "allelign_version": allelign.__version__, "analysis": args.analysis,
-        "inputs": {"sumstats": paths, "reference": args.reference, "ld_scores": args.ld_scores},
+        "inputs": {"sumstats": paths, "reference": args.reference, "ld_scores": args.ld_scores,
+                   "ld_reference": reference_record},
         "options": {**common, "read_options": options, "qc_options": qc_options,
                     "ncores": args.ncores if args.analysis == "rg" else None},
-        "long_range_ld": [item[2] for item in prepared],
+        "long_range_ld": long_range_ld,
         "estimate": asdict(result.estimate), "qc": result.qc, "alignment": result.alignment,
         "n_common": result.n_common, "n_chi2_dropped": result.n_chi2_dropped,
         "n_retained": len(result.reference_index),
     })
 
 
+def _ld_reference(args):
+    reference = load_ld_reference(args.name)
+    record = {key: value for key, value in reference.provenance.items()
+              if key != "dropped_nonpositive_score_ids"}
+    return {"available": available_ld_references(), "reference": record,
+            "long_range_ld": reference.long_range_ld}
+
+
 def main(argv=None):
     parser = _parser()
     args = parser.parse_args(argv)
     try:
-        result = _prepare_scores(args) if args.analysis == "prepare-scores" else _run(args)
+        if args.analysis == "prepare-scores":
+            result = _prepare_scores(args)
+        elif args.analysis == "ld-reference":
+            result = _ld_reference(args)
+        else:
+            result = _run(args)
         output = json.dumps(result, indent=2, allow_nan=False) + "\n"
-        if args.analysis != "prepare-scores" and args.out:
+        if args.analysis in ("h2", "rg") and args.out:
             with open(args.out, "x", encoding="utf-8") as stream:
                 stream.write(output)
         else:

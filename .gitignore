@@ -8,3 +8,4 @@ dist/
 out.pdf
 .DS_Store
 .scratch_gbmi/
+.scratch_ld_reference/

@@ -29,6 +29,9 @@ Issues = "https://github.com/bvilhjal/PLDSC/issues"
 [tool.setuptools]
 packages = ["pldsc"]
 
+[tool.setuptools.package-data]
+pldsc = ["data/*.npz", "data/*.json"]
+
 [tool.setuptools.dynamic]
 version = { attr = "pldsc.__version__" }
 
