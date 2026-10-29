@@ -25,7 +25,132 @@ independent across variants: it illustrates the API, not the calibration of
 an analysis. `.[fast]` installs Numba; without it the NumPy implementation
 remains available. Compilation takes extra time on the first call.
 
-## Fit GWAS files
+## Command-line walkthrough
+
+Create a small set of synthetic files and keep them in a **new** directory:
+
+```bash
+python examples/ordinary_ldsc.py --out-dir demo-data
+```
+
+The directory contains `trait1.tsv.gz`, `trait2.tsv.gz`, `reference.bim`, and
+`reference.ldscores.npy`. Here `M = 4000` because the synthetic scores were
+summed over 4000 reference variants. Fit h² and then r_g:
+
+```bash
+pldsc h2 --sumstats demo-data/trait1.tsv.gz \
+  --reference demo-data/reference.bim \
+  --ld-scores demo-data/reference.ldscores.npy --m-snps 4000 \
+  --n-blocks 40 --out demo-data/h2.json
+
+pldsc rg --sumstats1 demo-data/trait1.tsv.gz --sumstats2 demo-data/trait2.tsv.gz \
+  --reference demo-data/reference.bim \
+  --ld-scores demo-data/reference.ldscores.npy --m-snps 4000 \
+  --n-blocks 40 --ncores 2 --out demo-data/rg.json
+```
+
+Both commands call allelign to load and QC the GWAS, then harmonize alleles
+against the reference. The output JSON records estimates, package versions,
+input paths, settings, per-trait QC and alignment logs, the number of common
+variants before the chi-square cap, and the number retained. An undefined
+estimate or SE is `null`. Read the full logs, for example:
+
+```bash
+python -m json.tool demo-data/rg.json
+```
+
+`--out` creates a new file and refuses to overwrite an existing one. Omit it
+to write JSON to standard output; warnings go to standard error. To see all
+options, run `pldsc h2 --help` or `pldsc rg --help`. `ncores` parallelizes
+bivariate jackknife fits when Numba is installed; it does not accelerate every
+part of file loading.
+
+### Use your own files
+
+Provide a `.bim` or `.pvar` reference variant table, sorted by genomic
+position within contiguous chromosome blocks; a one-dimensional `.npy` LD
+score vector with **one score in exactly the same row order**; and one or two
+GWAS files. Scores must be suitable for the GWAS populations and variant set.
+For bivariate LDSC, the same reference scores must be suitable for both
+traits. Make sure GWAS and reference use the same genome build. PLDSC cannot
+infer reference suitability or perform liftover.
+
+Set `--m-snps` to the number of variants summed into each LD score, **not**
+the number of regression rows remaining after QC. For example, scores summed
+over one million variants use `--m-snps 1000000` even if only 800,000 GWAS
+rows survive. The command does not read the original LDSC text score files or
+their `.M` files directly during fitting. To convert standard LDSC score
+files containing `CHR`, `SNP`, `BP` and `L2`, use:
+
+```bash
+pldsc prepare-scores --reference reference.bim \
+  --score-files ldscores/*.l2.ldscore.gz --out reference.ldscores.npy
+```
+
+The converter reads the reference with allelign, joins by unique variant ID,
+checks chromosome and position, and writes scores in reference order. It
+rejects missing or duplicated reference matches and non-positive scores;
+score-file rows outside the reference are counted and ignored. For different
+column names, see `pldsc prepare-scores --help`. Select a reference table
+whose rows are the desired regression variants; filtering its rows does not
+change `M`. Obtain `M` from the score construction or the matching LDSC `.M`
+or `.M_5_50` files, making sure it counts the variants actually summed into
+the scores. The converter does not infer `M` or verify genome builds.
+
+Allelign recognizes many GWAS layouts. Inspect its detected columns before a
+fit with `allelign inspect trait1.tsv.gz`. For nonstandard column names,
+pass mappings to PLDSC; repeat the option for each field:
+
+```bash
+pldsc h2 --sumstats trait1.tsv.gz --reference reference.bim \
+  --ld-scores reference.ldscores.npy --m-snps 1000000 \
+  --column beta=EFFECT --column se=STDERR --column n_eff=NEFF --out h2.json
+
+pldsc rg --sumstats1 trait1.tsv.gz --sumstats2 trait2.tsv.gz \
+  --reference reference.bim --ld-scores reference.ldscores.npy --m-snps 1000000 \
+  --column1 n_eff=NEFF --column2 n_cases=CASES --column2 n_controls=CONTROLS \
+  --ncores 4 --out rg.json
+```
+
+Use `--column` for h² and `--column1`/`--column2` independently for r_g.
+Fields include `id`, `chrom`, `pos`, `ea`, `oa`, `beta`, `or`, `se`, `pval`,
+`n_eff`, `n_cases`, `n_controls`, `eaf` and `info`. To supply a justified
+constant effective sample size instead, use `--n-eff 100000` for h² or
+`--n-eff1`/`--n-eff2` for r_g. A constant replaces **every** per-variant N.
+The commands reject conflicting explicit N sources. Case/control-derived N
+needs special care in meta-analyses, as explained below.
+
+By default the commands use allelign's file QC, drop strand-ambiguous
+variants, and apply the LDSC chi-square cap. They do not remove long-range LD
+regions unless requested. For GWAS and reference coordinates known to be
+GRCh37, add `--exclude-long-range-ld-grch37`; add `--include-apoe` if that
+locus should also be excluded. Each GWAS row must have a valid chromosome and
+position for this option. The JSON records the number removed per trait. This
+flag declares the build; it does not verify it. For a different build, filter
+with a build-appropriate region list using allelign in Python.
+
+`--min-n-ratio`, `--min-maf`, and `--min-info` adjust both traits' file QC.
+`--allow-ambiguous` and `--no-chi2-cap` change variant selection and should
+only be used with an appropriate justification. `--constrain-intercept` fixes
+the univariate intercept for h² and the **cross-trait** intercept for r_g.
+
+## Notebook walkthrough
+
+Install Jupyter in the same Python environment, then launch the executable
+[notebook](../examples/ldsc_notebook.ipynb) from the repository root:
+
+```bash
+python -m pip install jupyterlab ipykernel
+python -m ipykernel install --user --name pldsc --display-name "Python (PLDSC)"
+python -m jupyterlab examples/ldsc_notebook.ipynb
+```
+
+Choose **Python (PLDSC)** as the kernel. Run all cells to create synthetic
+files, load them with allelign, fit both models, inspect QC and alignment,
+and demonstrate optional long-range LD exclusion. The notebook explains how
+to replace the paths and `M` with real inputs.
+
+## Fit GWAS files in Python
 
 Suppose `reference.bim` is a sorted reference variant table and
 `reference.ldscores.npy` is a NumPy vector with one LD score for each row of

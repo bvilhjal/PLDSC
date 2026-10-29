@@ -6,7 +6,11 @@ across variants. This is an API demonstration, not a realistic GWAS simulation
 or a calibration study. Run from the repository root::
 
     python examples/ordinary_ldsc.py
+
+Use ``--out-dir demo-data`` to keep the generated files for command-line use.
 """
+import argparse
+from contextlib import nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -17,6 +21,9 @@ from pldsc import ld_scores, ldsc_h2_sumstats, ldsc_rg_sumstats
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out-dir", help="create a new directory and keep the synthetic inputs")
+    args = parser.parse_args()
     rng = np.random.default_rng(723)
     m = 4000
     positions = 1000 + 1000 * np.arange(m)
@@ -51,7 +58,13 @@ def main():
     # them to the reference, including the sign changes, before fitting.
     trait1 = summary(z1, n1, np.zeros(m, dtype=bool))
     trait2 = summary(z2, n2, np.arange(m) % 2 == 0)
-    with TemporaryDirectory(prefix="pldsc-example-") as tmp:
+    if args.out_dir:
+        destination = Path(args.out_dir)
+        destination.mkdir(parents=True, exist_ok=False)
+        directory = nullcontext(destination)
+    else:
+        directory = TemporaryDirectory(prefix="pldsc-example-")
+    with directory as tmp:
         tmp = Path(tmp)
         bim = tmp / "reference.bim"
         with bim.open("w") as out:
@@ -60,6 +73,7 @@ def main():
         file1, file2 = tmp / "trait1.tsv.gz", tmp / "trait2.tsv.gz"
         allelign.write_sumstats(file1, trait1)
         allelign.write_sumstats(file2, trait2)
+        np.save(tmp / "reference.ldscores.npy", scores)
 
         h2 = ldsc_h2_sumstats(file1, bim, scores, m_snps=m, n_blocks=40)
         rg = ldsc_rg_sumstats(file1, file2, bim, scores, m_snps=m,
@@ -72,6 +86,8 @@ def main():
               "of", rg.n_common, "common variants;",
               rg.n_chi2_dropped, "dropped by chi-square cap")
         print("Trait 2 alignment:", rg.alignment[1])
+        if args.out_dir:
+            print("Synthetic inputs written to:", tmp)
 
 
 if __name__ == "__main__":

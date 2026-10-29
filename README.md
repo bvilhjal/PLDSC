@@ -20,6 +20,11 @@ The example generates temporary synthetic GWAS and reference files, then runs
 both analyses and displays QC and alignment logs. Numba is optional; the first
 accelerated call incurs compilation overhead.
 
+The same analyses can be run as `pldsc h2` and `pldsc rg` from the command
+line. The [LDSC guide](docs/LDSC.md) gives complete commands, and the
+[notebook](examples/ldsc_notebook.ipynb) walks through allelign processing,
+diagnostics and both fits with runnable synthetic data.
+
 For real data, load a sorted reference table and its aligned LD scores, then
 pass the GWAS files directly:
 

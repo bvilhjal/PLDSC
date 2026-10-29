@@ -1,6 +1,6 @@
 include CHANGELOG.md CITATION.cff CONTRIBUTING.md
 recursive-include docs *.md
-recursive-include examples *.py *.md *.npz
+recursive-include examples *.py *.md *.npz *.ipynb
 recursive-include experiments *.py *.md
 recursive-include scripts *.py
 recursive-include report *.md *.tex *.pdf

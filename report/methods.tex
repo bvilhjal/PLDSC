@@ -18,7 +18,7 @@
 {\LARGE\bfseries PLDSC: univariate and bivariate LD Score regression\par}
 \medskip
 {\small Methods and implementation notes, 29 October 2026.\\
-Reviewed against the PLDSC 0.1.0.dev2 source tree on that date.\par}
+Reviewed against the PLDSC 0.1.0.dev3 source tree on that date.\par}
 
 \medskip
 PLDSC estimates SNP heritability from one GWAS and genetic correlation from
@@ -180,7 +180,8 @@ print(h2.estimate.h2, rg.estimate.rg, rg.estimate.rg_se)
 \end{verbatim}
 }
 Both functions are imported from \code{pldsc}. Their results also contain QC
-and alignment logs; the complete, runnable example is in the guide.
+and alignment logs. The commands \code{pldsc h2} and \code{pldsc rg} use the
+same workflow and write JSON; the guide and notebook provide runnable examples.
 
 \begin{table}[htbp]
 \centering\small
@@ -218,7 +219,6 @@ the first call, while elapsed time and memory depend on the workload and
 hardware. The repository includes a paired warm timing driver; no quantitative
 speedup is asserted here without a corresponding measured run.
 
-\pagebreak
 The tests include an exact univariate regression line, dense and low-rank
 score checks, near-singular fits, allele flips and file-workflow checks, and
 comparisons with LDpred3 and bipred when those siblings are installed. These

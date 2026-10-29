@@ -3,9 +3,18 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are
 single-sourced from `pldsc.__version__`; the package is pre-release
-(`0.1.0.dev2`) and the API may still change.
+(`0.1.0.dev3`) and the API may still change.
 
 ## [Unreleased]
+
+## [0.1.0.dev3] - 2026-10-29
+
+### Added
+
+- Command-line h² and bivariate LDSC with allelign processing, optional
+  GRCh37 region exclusions, JSON diagnostics, and checked conversion of
+  standard LDSC text scores to reference order.
+- An executable notebook and a command-line walkthrough with synthetic data.
 
 ## [0.1.0.dev2] - 2026-10-29
 

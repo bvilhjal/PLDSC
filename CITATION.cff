@@ -15,7 +15,7 @@ authors:
     given-names: "Bjarni Jóhann"
 repository-code: "https://github.com/bvilhjal/PLDSC"
 license: MIT
-version: 0.1.0.dev2
+version: 0.1.0.dev3
 keywords:
   - LD score regression
   - population structure
