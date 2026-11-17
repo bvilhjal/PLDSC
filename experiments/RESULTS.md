@@ -971,6 +971,37 @@ per chromosome, and the run takes 5 minutes.
 - Descriptive results: the per-chromosome profile, sensitivity rows (MHC,
   HapMap3-only, IVW, η) and corr(D, X). See MULTI_ANCESTRY Table 6.
 
+## `multiancestry_alpha_kappa.py` — does κ depend on effect model A1? (chr22)
+
+The alternative to A1 shares per-allele effects across ancestries, with
+variance ∝ [p̄(1 − p̄)]^α, where p̄ is the pooled 1000G frequency and
+α ∈ {−1, −0.38}. The analyst still regresses on the ordinary EUR score. The
+gated quantity is π = κ_meta/κ_EUR, which removes the single-ancestry α bias.
+Rules R0 and R1 were committed in a65fff3 before the first run. Data and
+filters are those of the genome-wide script, chr22 only; the run takes 10 s.
+
+- **R0 (implementation): PASS.** The A1 scores equal the cached `kappa_gw`
+  chr22 scores exactly.
+- **R1: A1-CONDITIONAL.** Rule-cell AFR π, OLS / weighted:
+  - A1: 0.732 / 0.732
+  - α = −1: 0.693 / 0.700
+  - α = −0.38: 0.699 / 0.709
+  
+  The largest difference is 0.039, against a tolerance of 0.03. All
+  differences are negative: under these models the multi-ancestry penalty
+  is larger.
+- Descriptive results:
+  - EAS moves most among the others: 0.817 → 0.765 / 0.784 (OLS) at
+    α = −1 / −0.38.
+  - Under either fit, SAS moves by ≤ 0.027 and AMR by ≤ 0.017.
+  - The implied η (h²_X/h²_EUR) at α = −1 is AFR 1.06 and EAS 0.74; at
+    α = −0.38 it is 1.01 and 0.86.
+  - κ_EUR is 1.11 at α = −1 and 1.35 at α = −0.38. This mostly reflects the
+    M convention (all reference variants with pooled MAF ≥ 0.01) and does
+    not enter π.
+- Next, as the rule requires: a genome-wide α = −0.38 run before any
+  headline number changes.
+
 ## `gbmi_asthma_casualty.py` — the GBMI asthma casualty (STRATEGY step 3)
 
 The script estimates ρ from GBMI release 052021's asthma ancestry metas,

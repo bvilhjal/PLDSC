@@ -365,9 +365,21 @@ AFR, SAS and AMR 0.03 or less.
 - **Single map.** One population-averaged genetic map (SHAPEIT4 GRCh37) is
   used for every ancestry. The phase-3 chr22 file is the S3 mirror's `v5a`
   release.
-- **The effect model A1 is one choice.** A MAF-dependent architecture
-  (α ≠ −1) or per-ancestry heritabilities (η ≠ 1) change κ. Both enter MA2
-  explicitly (`h2_ratio`, and τ_ab,j), but they are not explored here.
+- **The headline is conditional on effect model A1.** The alternative
+  tested on chr22 (2026-11-17) has shared per-allele effects with variance
+  ∝ [p̄(1 − p̄)]^α, where p̄ is the pooled 1000G frequency. Fits are OLS /
+  LDSC-weighted, and the multi-ancestry penalty is π = κ_meta/κ_EUR:
+
+  | rule cell (EUR 0.75 + AFR, ρ = 0.8) | π | change from A1 |
+  |---|---|---|
+  | A1 | 0.732 / 0.732 | — |
+  | α = −1 | 0.693 / 0.700 | −0.039 / −0.032 |
+  | α = −0.38 (Schoech et al. 2019) | 0.699 / 0.709 | −0.033 / −0.023 |
+
+  This misses the pre-stated 0.03 tolerance (`experiments/multiancestry_alpha_kappa.py`,
+  rule R1). Under these models the penalty is larger than under A1, not
+  smaller. A genome-wide α = −0.38 run is required before any headline
+  number changes.
 - **A random 1-in-10 thinning is not HapMap3.** The density check (1-in-3)
   moves κ by ≤ 0.015.
 - **The LDSC-style weights are a simplified version** (overcounting ×

@@ -54,6 +54,26 @@ Everything else printed is descriptive: the implied eta per ancestry, the
 other ancestries, the rho grid, kappa_EUR and kappa_meta separately.
 
 Run:  python experiments/multiancestry_alpha_kappa.py [--chroms 22 ...]
+
+Outcome (2026-11-17, chr22, 10 s; rules committed in a65fff3 before the run).
+
+  R0 PASS: A1 scores equal the cached kappa_gw chr22 scores exactly.
+  R1 A1-CONDITIONAL. Rule-cell AFR pi, OLS / weighted: A1 0.732 / 0.732;
+     S(-1) 0.693 / 0.700; S(-0.38) 0.699 / 0.709. Largest |difference|
+     0.039 > 0.03. Every difference is negative: the penalty grows.
+     The genome-wide S(-0.38) run is now required before any headline
+     number changes.
+
+  R2 (genome-wide; written after the chr22 outcome, before the first
+     genome-wide run). Run with `--chroms 1 ... 22`. Precondition: the A1
+     rule-cell pi reproduces MULTI_ANCESTRY Table 6 (0.737 / 0.726, OLS /
+     weighted) to three decimals; otherwise nothing is interpreted. The
+     decision uses S(-0.38) only, under both fits. If
+     |pi(S(-0.38)) - pi(A1)| <= 0.03, the chr22 miss is treated as
+     chromosome-specific and the effect-model caveat is closed genome-wide.
+     Otherwise Table 6 gets an S(-0.38) companion row next to the A1
+     headline. S(-1) and everything else are descriptive. The tolerance is
+     not revised after the run.
 """
 from __future__ import annotations
 
@@ -77,6 +97,7 @@ ALPHAS = (-1.0, -0.38)
 RHOS = (1.0, 0.8, 0.6)
 TOL = 0.03
 R0_TOL = 1e-10
+TABLE6_A1 = ("0.737", "0.726")      # MULTI_ANCESTRY Table 6 rule-cell AFR, OLS / weighted
 
 
 def effect_scales(panels, p_full, alpha):
@@ -206,6 +227,7 @@ def main():
             print(f"\nR0: no cache at {cache}; the control cannot be checked.")
 
     arms = pooled(per)
+    del per
     sel = GK.regression_set(arms["A1"])
     print(f"\n{sel.sum()} rule regression SNPs on chr {', '.join(map(str, args.chroms))}")
 
@@ -226,8 +248,17 @@ def main():
         worst = max(worst, abs(d[0]), abs(d[1]))
         print(f"  S({alpha:+.2f}): {pi[0]:.3f} / {pi[1]:.3f}   (difference from A1 "
               f"{d[0]:+.3f} / {d[1]:+.3f})")
-    verdict = "A1-ROBUST" if worst <= TOL else "A1-CONDITIONAL"
-    print(f"  R1: largest |difference| {worst:.3f} vs tolerance {TOL} -> {verdict}")
+    if args.chroms == [22]:
+        verdict = "A1-ROBUST" if worst <= TOL else "A1-CONDITIONAL"
+        print(f"  R1: largest |difference| {worst:.3f} vs tolerance {TOL} -> {verdict}")
+    if sorted(args.chroms) == list(range(1, 23)):
+        got = (f"{base[0]:.3f}", f"{base[1]:.3f}")
+        print(f"  R2 precondition: A1 pi {got[0]} / {got[1]} vs Table 6 "
+              f"{TABLE6_A1[0]} / {TABLE6_A1[1]} -> {'PASS' if got == TABLE6_A1 else 'FAIL'}")
+        pi = penalty(arms, -0.38, sel, X)[0]
+        d = max(abs(pi[0] - base[0]), abs(pi[1] - base[1]))
+        print(f"  R2: S(-0.38) largest |difference| {d:.3f} vs tolerance {TOL} -> "
+              + ("caveat closed genome-wide" if d <= TOL else "companion row in Table 6"))
 
     print("\nTable AK3. pi for every ancestry and rho, EUR 0.75 + X, OLS / weighted (descriptive)")
     print(f"  {'arm':>8s} {'X':>4s} " + " ".join(f"{'rho=' + str(r):>15s}" for r in RHOS))
