@@ -78,6 +78,35 @@ class CrossAncestryScoreTests(unittest.TestCase):
         ref = cross_ancestry_ld_scores([self.X2[:, keep]], self.pos[keep], window_cm=1.0)
         np.testing.assert_allclose(s.scores[1, 1, 6], ref.scores[0, 0, 6], atol=1e-12)
 
+    def test_effect_scales_match_brute_force(self):
+        rng = np.random.default_rng(5)
+        v1, v2 = rng.uniform(0.2, 2.0, self.m), rng.uniform(0.2, 2.0, self.m)
+        got = cross_ancestry_ld_scores([self.X1, self.X2], self.pos, window_cm=0.7,
+                                       effect_scales=[v1, v2], block_size=7)
+        S1, S2 = _std(self.X1), _std(self.X2)
+        r1, r2 = S1.T @ S1 / S1.shape[0], S2.T @ S2 / S2.shape[0]
+        win = np.abs(self.pos[:, None] - self.pos[None, :]) <= 0.7
+
+        def within(r, v, n):  # rows k, columns j; MA7 floor with df = n - 2
+            return (win * (r ** 2 - (1 - r ** 2) / (n - 2)) * (v ** 2)[:, None]).sum(0)
+
+        np.testing.assert_allclose(got.scores[0, 0], within(r1, v1, 80), atol=1e-10)
+        np.testing.assert_allclose(got.scores[1, 1], within(r2, v2, 90), atol=1e-10)
+        cross = (win * r1 * r2 * (v1 * v2)[:, None]).sum(0)
+        np.testing.assert_allclose(got.scores[0, 1], cross, atol=1e-10)
+        np.testing.assert_allclose(got.scores[1, 0], cross, atol=1e-10)
+
+    def test_unit_effect_scales_are_assumption_a1(self):
+        base = cross_ancestry_ld_scores([self.X1, self.X2], self.pos, window_cm=1.0)
+        ones = cross_ancestry_ld_scores([self.X1, self.X2], self.pos, window_cm=1.0,
+                                        effect_scales=[np.ones(self.m)] * 2)
+        np.testing.assert_allclose(ones.scores, base.scores, rtol=1e-13, atol=1e-13)
+        with self.assertRaises(ValueError):
+            cross_ancestry_ld_scores([self.X1, self.X2], self.pos, effect_scales=[np.ones(self.m)])
+        with self.assertRaises(ValueError):
+            cross_ancestry_ld_scores([self.X1, self.X2], self.pos,
+                                     effect_scales=[np.ones(self.m), -np.ones(self.m)])
+
     def test_input_validation(self):
         with self.assertRaises(ValueError):
             cross_ancestry_ld_scores([self.X1, self.X2[:, :-1]], self.pos)

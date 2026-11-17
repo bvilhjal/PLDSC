@@ -18,6 +18,9 @@ its limitations. Run commands from the repository root with PLDSC installed.
   selected tables without a download: `python examples/reproduce_chr22_tables.py`.
 - [Genome-wide analysis](multiancestry_genome_kappa.py): requires the
   bigsnpr 1000 Genomes genotype files and maps described in the script.
+- [Effect-model sensitivity](multiancestry_alpha_kappa.py): kappa under
+  shared per-allele effects with variance proportional to `[p(1-p)]^alpha`;
+  same data as the genome-wide analysis, chr22 by default.
 - [GBMI asthma](gbmi_asthma_casualty.py): requires six GBMI summary-statistics
   files and the genome-wide score cache. The script records their sources,
   checksums and analysis rules.

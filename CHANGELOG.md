@@ -7,6 +7,15 @@ version 1.0.
 
 ## [Unreleased]
 
+### Added
+
+- `cross_ancestry_ld_scores(..., effect_scales=...)`: per-panel scales of
+  the standardized causal effects, giving weighted scores
+  `sum_k v_ak v_bk r^a_jk r^b_jk` for effect models other than A1.
+  The default (`None`) leaves the scores unchanged.
+- `experiments/multiancestry_alpha_kappa.py`: kappa under shared per-allele
+  effects with frequency-dependent variance, with pre-stated rules.
+
 ## [0.1.1] - 2026-10-29
 
 ### Changed

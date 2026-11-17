@@ -136,6 +136,7 @@ def cross_ancestry_ld_scores(
     covariates: Sequence[ArrayLike | None] | None = None,
     finite_sample_correction: bool = True,
     pair_df: Sequence[float] | None = None,
+    effect_scales: Sequence[ArrayLike] | None = None,
     block_size: int = 256,
 ) -> CrossAncestryScores:
     """Within- and cross-ancestry LD scores from per-ancestry reference panels.
@@ -165,6 +166,13 @@ def cross_ancestry_ld_scores(
         Per-panel noise-floor denominators. Defaults to ``residual_df - 1``
         (independent samples); pass :func:`pldsc.effective_pair_df` values for
         panels containing relatives.
+    effect_scales
+        Optional per-panel ``(variants,)`` nonnegative scales ``v_ak`` of the
+        standardized causal effects. The scores become
+        ``sum_k v_ak v_bk r^a_jk r^b_jk``, with the noise-floor correction
+        applied to each within-ancestry term before weighting. ``None`` (all
+        ones) is assumption A1. Other effect models, such as shared per-allele
+        effects with variance proportional to ``[p(1 - p)]^alpha``, enter here.
     block_size
         Regression variants processed per matrix product.
 
@@ -193,6 +201,13 @@ def cross_ancestry_ld_scores(
             raise ValueError("pair_df entries must be finite and positive")
     if block_size < 1:
         raise ValueError("block_size must be positive")
+    scales = None
+    if effect_scales is not None:
+        if len(effect_scales) != A:
+            raise ValueError("effect_scales must have one entry per panel")
+        scales = [np.asarray(v, dtype=np.float64) for v in effect_scales]
+        if any(v.shape != (m,) or not np.all(np.isfinite(v)) or np.any(v < 0) for v in scales):
+            raise ValueError("effect_scales entries must be finite, nonnegative, one per variant")
 
     unit, avail, dfs, var = [], [], [], []
     for a, (X, C) in enumerate(zip(mats, covariates)):
@@ -225,9 +240,15 @@ def cross_ancestry_ld_scores(
             if finite_sample_correction:
                 live = inwin & avail[a][lo:hi, None] & avail[a][None, cols]
                 sq = sq - live * (1.0 - sq) / dfs[a]
+            if scales is not None:
+                sq = sq * scales[a][lo:hi, None] ** 2
             scores[a, a, start:stop] = sq.sum(axis=0)
             for b in range(a + 1, A):
-                cross = np.einsum("kj,kj->j", R[a], R[b])
+                if scales is None:
+                    cross = np.einsum("kj,kj->j", R[a], R[b])
+                else:
+                    cross = np.einsum("kj,kj,k->j", R[a], R[b],
+                                      scales[a][lo:hi] * scales[b][lo:hi])
                 scores[a, b, start:stop] = cross
                 scores[b, a, start:stop] = cross
 
