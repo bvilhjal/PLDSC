@@ -74,6 +74,15 @@ Outcome (2026-11-17, chr22, 10 s; rules committed in a65fff3 before the run).
      Otherwise Table 6 gets an S(-0.38) companion row next to the A1
      headline. S(-1) and everything else are descriptive. The tolerance is
      not revised after the run.
+
+Outcome (2026-11-17, all 22 autosomes, 581 s; R2 committed in 7d2b178
+before the run). 1,190,723 rule regression SNPs.
+
+  R0 PASS (chr22 scores exact). R2 precondition PASS: A1 pi 0.737 / 0.726.
+  R2 CAVEAT CLOSED: S(-0.38) pi 0.716 / 0.711, differences -0.020 / -0.015.
+     Descriptive: S(-1) 0.707 / 0.703 (-0.030 / -0.023). Every shift in
+     every ancestry is negative (EAS 0.846 -> 0.828 at S(-0.38)): the
+     multi-ancestry penalty is slightly larger than under A1.
 """
 from __future__ import annotations
 

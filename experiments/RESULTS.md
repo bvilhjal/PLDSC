@@ -999,8 +999,13 @@ filters are those of the genome-wide script, chr22 only; the run takes 10 s.
   - κ_EUR is 1.11 at α = −1 and 1.35 at α = −0.38. This mostly reflects the
     M convention (all reference variants with pooled MAF ≥ 0.01) and does
     not enter π.
-- Next, as the rule requires: a genome-wide α = −0.38 run before any
-  headline number changes.
+- **Genome-wide (rule R2, committed in 7d2b178 before the run; 581 s).**
+  - Precondition PASS: A1 reproduces Table 6, 0.737 / 0.726.
+  - **R2: caveat closed.** α = −0.38 gives 0.716 / 0.711, differences
+    −0.020 / −0.015.
+  - α = −1 (descriptive) gives 0.707 / 0.703, differences −0.030 / −0.023.
+  - Every ancestry shifts downward. EAS goes from 0.846 to 0.828 (OLS) at
+    α = −0.38. The chr22 miss was chromosome-specific; A1 is conservative.
 
 ## `gbmi_asthma_casualty.py` — the GBMI asthma casualty (STRATEGY step 3)
 

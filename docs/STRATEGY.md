@@ -133,4 +133,4 @@ Two negatives from the same run:
 | MA2 or κ is already in print (MAMA, S-LDXR supplements) | novelty shrinks to the measurement | step 2 before writing; the casualty is the differentiator |
 | No published meta moves by > 2 SE | no casualty | publish as a practice note with the κ table and a `pldsc` function |
 | ρ is unknown for most traits, and its precision from a meta alone is untested (MULTI_ANCESTRY Table 5) | panel plug-in κ is a sensitivity analysis, not a calibrated bias estimate | step 3 estimates ρ from ancestry-stratified sumstats and uses positive-semidefinite brackets for unavailable pairs |
-| The model assumptions (A1 effect scale, η = 1, one genetic map) | κ shifts | MA2 carries η and τ_ab,j explicitly; add sensitivity runs in step 1 |
+| The model assumptions (A1 effect scale, η = 1, one genetic map) | κ shifts | Effect model done (2026-11-17): shared per-allele effects with α = −0.38 move genome-wide AFR κ by −0.020 / −0.015, within the pre-stated 0.03 (MULTI_ANCESTRY §7); the map remains |
