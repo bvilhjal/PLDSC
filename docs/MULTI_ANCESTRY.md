@@ -30,7 +30,8 @@ across ancestries.
   τ_ab = ρ_ab h_a h_b/M. Here ρ_ab is the standardized-scale trans-ancestry
   genetic correlation, the quantity S-LDXR estimates. A per-allele-scale model
   would make τ_ab depend on the SNP. The formulas below carry through with
-  τ_ab,j inside the sums.
+  τ_ab,j inside the sums. `cross_ancestry_ld_scores(effect_scales=...)`
+  computes such scores, and §7 reports how κ responds; A1 is conservative.
 - **(A2) Independent samples.** Each ancestry has its own GWAS on N_a
   unrelated individuals, with no sample overlap between ancestries.
 - **(A3) Structure is controlled within each GWAS.** Phenotypes have unit

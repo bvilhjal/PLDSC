@@ -37,6 +37,7 @@ The estimator line (`P_c`, the theory note) stays concluded.
 | First real-data step, 1000G chr22 | [multiancestry_1000g_meta.py](../experiments/multiancestry_1000g_meta.py) | pre-stated kill rule: **KEEP** |
 | Step 3, GBMI asthma (2026-10-08) | [gbmi_asthma_casualty.py](../experiments/gbmi_asthma_casualty.py) | gate **not met robustly**: h² 0.133 → 0.156 is 1.9 SE (1.6–2.2 across the ρ bracket); ρ̂ EUR–EAS 0.755 (0.046); per-stratum h² on matched scores average 0.154 (MULTI_ANCESTRY Table 7) |
 | Step 1, genome-wide κ (2026-10-08) | [multiancestry_genome_kappa.py](../experiments/multiancestry_genome_kappa.py) | gate **PASS**: AFR κ 0.737 / 0.726. The bridge to the thinned-VCF protocol missed its tolerance (0.039 > 0.03), so the headline stays chr22's (MULTI_ANCESTRY Table 6) |
+| Effect-model sensitivity (2026-11-17) | [multiancestry_alpha_kappa.py](../experiments/multiancestry_alpha_kappa.py) | genome-wide rule **PASS**: shared per-allele effects with α = −0.38 move rule-cell AFR κ by −0.020 / −0.015 (tolerance 0.03); every shift is negative, so A1 is conservative (MULTI_ANCESTRY §7) |
 
 **The headline so far.** Take a meta-analysis that is 75% EUR and 25% from one
 other 1000G superpopulation, with trans-ancestry genetic correlation ρ = 0.8.

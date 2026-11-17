@@ -65,7 +65,10 @@ liftover.
 [Multi-ancestry methods and results](docs/MULTI_ANCESTRY.md) describes the
 model, the 1000 Genomes panel analyses and the GBMI asthma example, including
 their limitations. The panel plug-in slope comparison is a sensitivity
-analysis, not a calibrated estimate of absolute heritability bias. A
+analysis, not a calibrated estimate of absolute heritability bias. The
+bias persists under a stabilizing-selection effect model (shared
+per-allele effects with frequency-dependent variance), which makes it
+slightly larger. A
 genome-wide bridge between two reference protocols missed its pre-stated
 tolerance, and the asthma comparison did not robustly meet its 2-SE gate.
 
