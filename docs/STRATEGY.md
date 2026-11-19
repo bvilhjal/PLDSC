@@ -4,6 +4,11 @@ Date: 2026-09-25. This replaces the three-track version of 2026-09-24, which
 remains in git history. The GC-versus-stratification probe that version ran
 is recorded in [the experiment results](../experiments/RESULTS.md).
 
+This file preserves the original order of work and decision thresholds.
+The [unified report](../report/methods.md) records the subsequent asthma
+chromosome prediction study in Section 6.1, the power experiment in
+Section 10 and a design for replication in a separate cohort.
+
 ## 1. The direction
 
 **PLDSC asks one question: what goes wrong when LDSC-based tools run on
@@ -35,7 +40,7 @@ The estimator line (`P_c`, the theory note) stays concluded.
 | Code: `cross_ancestry_ld_scores`, `meta_weights`, `meta_ld_scores`, `single_reference_bias`, `pooled_ld_scores` | `pldsc/multiancestry.py` | 15 unit tests (81 in the suite), including two exact in-sample identities |
 | Simulation with out-of-sample panels | [multiancestry_meta_sim.py](../experiments/multiancestry_meta_sim.py) | default run FAILED its pre-stated calibration rule (small-panel errors-in-variables). The post-failure rerun passed; predicted κ matched within 0.004 |
 | First real-data step, 1000G chr22 | [multiancestry_1000g_meta.py](../experiments/multiancestry_1000g_meta.py) | pre-stated kill rule: **KEEP** |
-| Step 3, GBMI asthma (2026-10-08) | [gbmi_asthma_casualty.py](../experiments/gbmi_asthma_casualty.py) | gate **not met robustly**: h² 0.133 → 0.156 is 1.9 SE (1.6–2.2 across the ρ bracket); ρ̂ EUR–EAS 0.755 (0.046); per-stratum h² on matched scores average 0.154 (MULTI_ANCESTRY Table 7) |
+| Step 3, GBMI asthma (2026-10-08) | [gbmi_asthma_casualty.py](../experiments/gbmi_asthma_casualty.py) | gate **not met robustly**. The change from 0.133 to 0.156 is 1.9 EUR-fit SEs (1.8–2.2 across the valid ρ bracket). EUR–EAS ρ is 0.755 (SE 0.046). The matched per-stratum estimates average 0.154 (MULTI_ANCESTRY Table 7). |
 | Step 1, genome-wide κ (2026-10-08) | [multiancestry_genome_kappa.py](../experiments/multiancestry_genome_kappa.py) | gate **PASS**: AFR κ 0.737 / 0.726. The bridge to the thinned-VCF protocol missed its tolerance (0.039 > 0.03), so the headline stays chr22's (MULTI_ANCESTRY Table 6) |
 | Effect-model sensitivity (2026-11-17) | [multiancestry_alpha_kappa.py](../experiments/multiancestry_alpha_kappa.py) | genome-wide rule **PASS**: shared per-allele effects with α = −0.38 move rule-cell AFR κ by −0.020 / −0.015 (tolerance 0.03); every shift is negative, so A1 is conservative (MULTI_ANCESTRY §7) |
 
@@ -95,17 +100,12 @@ Two negatives from the same run:
   (doi 10.64898/2026.07.05.736573, PMID 42465239) — it reports the phenomenon
   and one magnitude (AD 0.265 → 0.160 with imputed variants) but, on the
   available record, neither the composition-matched score MA2 nor the
-  panel-only κ; someone has planted a flag on the phenomenon, not on our
-  slice. Popcorn and S-LDXR use cross-population LD scores for
-  ancestry-specific summary statistics, not for a pooled meta; **Momin et
-  al. 2023** (*Nat Commun* 14:1152, unbiased cross-ancestry genetic
-  correlation) is explicitly about LDSC-based cross-ancestry bias and
-  belongs in the step-2 sweep; **cov-LDSC** (Yao et al. 2019, *Genetics*)
-  already quantifies 10–60 % h² underestimation for *admixed* samples on
-  EUR panels — different object (admixture within a sample, not a meta
-  across ancestries), but the distinction must be stated early or a
-  referee will state it for us. No composition-matched meta score and no
-  panel-only bias predictor were found.
+  panel-only κ. Popcorn and S-LDXR use cross-population LD for ancestry-specific
+  summary statistics and distinguish effect scales. [Momin et al.](https://www.nature.com/articles/s41467-023-36281-x)
+  estimate cross-ancestry genetic correlation from individual-level data.
+  [Luo et al.](https://pubmed.ncbi.nlm.nih.gov/33987664/) developed cov-LDSC
+  for GWAS in admixed samples. Both are relevant comparators when defining
+  the target of a multi-ancestry meta-analysis.
 - **Relatives in LD panels: open.** Pan-UKB's LD code uses raw n in its r²
   correction (code read). The NYGC 3,202-sample 1000G set includes 602 trios.
 - **False S-LDSC enrichment on ancestry-correlated annotations: mostly open.**

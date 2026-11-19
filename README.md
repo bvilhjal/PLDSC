@@ -9,6 +9,12 @@ and aligns GWAS summary statistics to the reference alleles.
 The package also includes tools and research on LD scores in structured and
 multi-ancestry populations. Its API may still change before version 1.0.
 
+**[Which LD score matches a GWAS?](report/methods.pdf)**
+([read online](report/methods.md)). The unified report connects ordinary
+LDSC to multi-ancestry meta-analysis, the simulation results, the GBMI
+asthma application, and the earlier investigations into mixed models,
+relatedness, enrichment, assortative mating and parental effects.
+
 ## Install and run
 
 With Python 3.11 or newer, clone the repository and install it:
@@ -56,21 +62,26 @@ liftover.
   allelign QC, Python APIs, interpretation and performance.
 - [Runnable notebook](examples/ldsc_notebook.ipynb): create example GWAS,
   preprocess them with allelign and fit both models.
-- [Methods report](report/methods.pdf): regression equations, weights,
-  uncertainty and assumptions.
 - [Contributing](CONTRIBUTING.md): development setup and checks.
 
 ## Multi-ancestry research
 
-[Multi-ancestry methods and results](docs/MULTI_ANCESTRY.md) describes the
-model, the 1000 Genomes panel analyses and the GBMI asthma example, including
-their limitations. The panel plug-in slope comparison is a sensitivity
-analysis, not a calibrated estimate of absolute heritability bias. The
-bias persists under a stabilizing-selection effect model (shared
-per-allele effects with frequency-dependent variance), which makes it
-slightly larger. A
-genome-wide bridge between two reference protocols missed its pre-stated
-tolerance, and the asthma comparison did not robustly meet its 2-SE gate.
+On 1000 Genomes chromosome 22, a 75% EUR and 25% AFR composition with
+effect correlation 0.8 gives a panel plug-in slope ratio of 0.750. Only
+1.98% of the matched predictor's variation remains after rescaling the EUR
+predictor. On 953,596 GBMI asthma SNPs, the fixed-correlation matched score
+raised the heritability estimate from 0.133 to 0.155. Its prediction error
+on held-out chromosomes fell by 0.0007% (95% interval −0.020% to +0.022%).
+In simulations with known LD, the power to detect the matched pattern rose
+from 12% at a 90:10 mix to 99% at 50:50, holding total sample size fixed.
+[Asthma prediction](report/methods.md#61-can-the-scores-predict-an-unseen-chromosome),
+[power study](report/methods.md#10-when-can-the-two-scores-be-distinguished)
+and [full multi-ancestry derivation](docs/MULTI_ANCESTRY.md).
+
+![Estimated asthma heritability rises from 0.133 to 0.155. Prediction-error changes vary in sign across held-out chromosomes.](report/asthma_prediction.png)
+
+**Figure 2 from the report.** Each point on the right holds out a whole
+chromosome. The diamond pools the errors on all 953,596 SNPs.
 
 Reproduce the chromosome 22 tables from the committed aggregate LD-score
 bundle, without downloading genotypes:

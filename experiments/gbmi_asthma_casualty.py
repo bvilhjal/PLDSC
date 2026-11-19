@@ -24,7 +24,8 @@ Method, fixed before the GBMI files were read (2026-10-08):
   the ALL file's or be its swap, in which case z is negated; anything else is
   dropped. Regression variants: EUR MAF >= 0.05 in 1000G, outside the MHC
   (chr6:25-34 Mb), polymorphic in every panel the regression uses, and
-  chi2 <= max(80, 0.001 N) in every file it uses (ldsc's rule).
+  chi2 <= max(80, 0.001 times the file's median effective N among the
+  currently eligible SNPs) in every file it uses.
 
   Sample size. Per variant and file, N is the effective N implied by the
   standard error, N = 4 / (se^2 * 2 p (1 - p)), with p the file's own meta
@@ -74,6 +75,7 @@ denser, and its N convention is not stated.
 
 Run:  python -I experiments/gbmi_asthma_casualty.py
 Historical caches without map/source provenance require --allow-legacy-scores.
+Use --shape-out FILE for the subsequent fixed-rho, held-out chromosome pilot.
 
 Outcome (2026-10-08, 110 s; docs/MULTI_ANCESTRY.md Table 7). 953,596
 regression SNPs. Strata N sum to the ALL N (median ratio 1.011).
@@ -102,6 +104,7 @@ from __future__ import annotations
 import gzip
 import argparse
 import hashlib
+import json
 import os
 import sys
 import tempfile
@@ -358,12 +361,22 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--allow-legacy-scores", action="store_true",
                     help="allow historical caches whose map and score source are unverified")
+    ap.add_argument("--score-dir", help="directory with genome-wide chromosome score caches")
+    ap.add_argument("--shape-out", help="write the fixed-rho chromosome prediction results to JSON")
     args = ap.parse_args()
+    if args.score_dir:
+        GK.OUT = args.score_dir
+    if args.shape_out and args.allow_legacy_scores:
+        ap.error("the prediction analysis requires source- and map-bound scores")
     t0 = time.time()
+    file_hashes = {}
     for name, tok in STRATA.items():
         path = os.path.join(GBMI_DIR, PATTERN.format(tok))
         got = sha256(path)
+        file_hashes[name] = got
         if SHA256 and got != SHA256.get(name):
+            if args.shape_out:
+                raise ValueError(f"{name} differs from the recorded asthma input")
             print(f"  [warn] {name} sha256 {got[:12]}... differs from the recorded download")
     D = load_scores(allow_legacy=args.allow_legacy_scores)
     M = D["M"]
@@ -532,6 +545,15 @@ def main():
         R = np.full((A, A), r)
         np.fill_diagonal(R, 1.0)
         casualty(R, n_all, f"all pairs rho = {r} (bracket)", propagate_rho=False)
+        if r == 0.8 and args.shape_out:
+            from score_shape import asthma_result
+            fixed_score = meta_ld_scores(sub["scores"], om, rho=R)
+            result = asthma_result(D["chrom"][idx], n_all * lE / M, n_all * fixed_score / M, y, w)
+            result.update(reference_variant_count=M, gbmi_sha256=file_hashes)
+            with open(args.shape_out, "w") as out:
+                json.dump(result, out, indent=2, allow_nan=False)
+                out.write("\n")
+            print("  Held-out chromosome pilot (fixed rho = 0.8):", result["summary"])
     R_used = rho_hat if usable.all() else np.where(usable, rho_hat, 0.8)
     if np.linalg.eigvalsh(R_used)[0] < -1e-10:
         raise ValueError("central rho matrix is not positive semidefinite")

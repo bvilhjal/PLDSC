@@ -4,5 +4,5 @@ recursive-include docs *.md
 recursive-include examples *.py *.md *.npz *.ipynb
 recursive-include experiments *.py *.md
 recursive-include scripts *.py
-recursive-include report *.md *.tex *.pdf
+recursive-include report *.md *.tex *.pdf *.png *.py *.txt *.json
 recursive-include workflows *.js

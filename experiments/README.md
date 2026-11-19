@@ -1,7 +1,9 @@
 # Experiments
 
 The scripts here support the multi-ancestry research and the earlier,
-concluded estimator investigation. Detailed protocols, results, corrections
+concluded estimator investigation. The [unified report](../report/methods.md)
+([PDF](../report/methods.pdf)) explains what the experiments establish.
+Detailed protocols, results, corrections
 and negative findings are retained in [RESULTS.md](RESULTS.md). See
 [MULTI_ANCESTRY.md](../docs/MULTI_ANCESTRY.md) for the current model and
 its limitations. Run commands from the repository root with PLDSC installed.
@@ -23,7 +25,12 @@ its limitations. Run commands from the repository root with PLDSC installed.
   same data as the genome-wide analysis, chr22 by default.
 - [GBMI asthma](gbmi_asthma_casualty.py): requires six GBMI summary-statistics
   files and the genome-wide score cache. The script records their sources,
-  checksums and analysis rules.
+  checksums and analysis rules. With `--shape-out report/asthma_score_shape.json`
+  it also compares models on held-out chromosomes with all correlations fixed at 0.8.
+- [Power to distinguish the two scores](score_shape_sim.py) uses independent
+  Gaussian LD blocks, independent reference samples and known null and matched
+  GWAS means. Run `python experiments/score_shape_sim.py --out report/score_shape_simulation.json`.
+  The [report](../report/methods.md#10-when-can-the-two-scores-be-distinguished) gives coverage, power and design implications.
 - [Reference-score noise](reference_score_noise.py): a known-truth simulation
   illustrating the limitations of panel plug-in slope comparisons.
 

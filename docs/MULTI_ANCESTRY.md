@@ -9,9 +9,10 @@ three ways:
 - a first measurement on real 1000 Genomes panels
   ([multiancestry_1000g_meta.py](../experiments/multiancestry_1000g_meta.py)).
 
-Equation labels MA1–MA12 are the ones the code cites. PLDSC also implements
-ordinary univariate and bivariate LDSC, described in the
-[methods report](../report/methods.pdf) and [LDSC guide](LDSC.md). The
+The [unified report](../report/methods.md) ([PDF](../report/methods.pdf))
+connects these results to ordinary LDSC, the historical experiments, a
+held-out chromosome test in asthma and its known-truth power study. This technical record preserves equation labels
+MA1–MA12, which the code cites, and the original decision rules. The
 cross-trait genetic correlation in that report is distinct from the
 cross-ancestry effect correlations considered here.
 
@@ -28,10 +29,12 @@ across ancestries.
   effects β^a_k = σ_ak b^a_k have mean 0, where b^a_k is the per-allele effect.
   Their covariance is Cov(β^a_k, β^b_l) = δ_kl τ_ab, with τ_aa = h_a²/M and
   τ_ab = ρ_ab h_a h_b/M. Here ρ_ab is the standardized-scale trans-ancestry
-  genetic correlation, the quantity S-LDXR estimates. A per-allele-scale model
+  genetic-impact correlation in [Popcorn's terminology](https://doi.org/10.1016/j.ajhg.2016.05.001).
+  [S-LDXR](https://pmc.ncbi.nlm.nih.gov/articles/PMC7889654/) models per-allele
+  effects with genotype-SD factors in its scores. A per-allele-scale model
   would make τ_ab depend on the SNP. The formulas below carry through with
   τ_ab,j inside the sums. `cross_ancestry_ld_scores(effect_scales=...)`
-  computes such scores, and §7 reports how κ responds; A1 is conservative.
+  computes such scores, and §7 reports the sensitivity under two such models.
 - **(A2) Independent samples.** Each ancestry has its own GWAS on N_a
   unrelated individuals, with no sample overlap between ancestries.
 - **(A3) Structure is controlled within each GWAS.** Phenotypes have unit
@@ -84,12 +87,17 @@ Two bounds follow.
 - **(MA4)** Σ_ab ω_ab,j equals 1 under sample-size weights and is at most 1
   under inverse-variance weights. For the latter this is Cauchy–Schwarz:
   (Σ f σ)² ≤ Σ f σ².
-- **(MA5)** Since |ℓ^ab| ≤ √(ℓ^aa ℓ^bb) (Cauchy–Schwarz over k) and
-  |ρ| ≤ 1, with η = 1,
-  L_j ≤ (Σ_a f_a √ℓ^aa_j)² ≤ Σ_a f_a ℓ^aa_j under either scheme. **The
-  correct score never exceeds the composition-weighted mean of the
-  within-ancestry scores.** Equality requires identical LD rows in every
-  ancestry and ρ = 1.
+- **(MA5)** For population LD, η = 1 and nonnegative z weights, both
+  schemes give L_j ≤ Σ_a f_a ℓ^aa_j. To see this, bound each cross score by
+  √(ℓ^aa_j ℓ^bb_j). The intermediate upper bound is (Σ_a f_a √ℓ^aa_j)²
+  for sample-size weights. For IVW it is
+  (Σ_a f_a σ_aj √ℓ^aa_j)² / Σ_a f_a σ²_aj. Weighted Cauchy–Schwarz
+  bounds either expression by Σ_a f_a ℓ^aa_j.
+  For example, take two equal-sized groups with ρ = 1, within scores 9 and
+  1, cross score 1, and genotype SDs in ratio 3:1. These LD rows arise
+  when all nine variants are perfectly correlated in the first group and
+  independent in the second. The IVW score is 4.4, above the sample-size
+  intermediate bound 4 but below the common upper bound 5.
 
 ## 3. What a single-ancestry score costs
 
@@ -124,11 +132,12 @@ The estimators are
 with ν_a = n_a − 2 for unrelated panels, or `effective_pair_df` for related
 ones (METHOD §10.1).
 
-**(MA8) The noise floor is asymmetric.** A squared within-panel correlation
-has E[r̂²] = r² + (1 − r²)/n + O(n⁻²), which is why the diagonal needs a
-correction. The cross terms multiply correlations estimated in *independent*
-panels, so E[r̂^a r̂^b] = E[r̂^a] E[r̂^b] = r^a r^b (1 + O(1/n)). There is
-nothing to subtract. Both obvious mistakes are material at 1000G sizes:
+**(MA8) The noise floor is asymmetric.** For two independent Gaussian
+columns with an intercept, E[r̂²] = 1/(n − 1) at zero population correlation.
+MA7 removes this null floor. The finite-sample bias at nonzero correlation
+depends on the joint genotype distribution. The cross terms multiply signed
+correlations from *independent* panels, so E[r̂^a r̂^b] = E[r̂^a] E[r̂^b].
+There is no corresponding positive additive null floor. Both mistakes are material at 1000G sizes:
 subtracting a floor from the cross terms, and forgetting it on the diagonal.
 Each misstates L by about ω·|W|/n, i.e. roughly 2 LD-score units per term for
 ~1000 window SNPs and n ≈ 500.
@@ -243,9 +252,9 @@ excess χ² at EUR 0.75, and at most +0.08 at EUR 0.50 + AFR.
 
 **Reading Table 3.**
 
-- κ < 1 even at ρ = 1. The dominant cost is LD mismatch, not effect
-  heterogeneity: a EUR panel overstates the tagging a mixed sample actually
-  experiences, which is MA5 in numbers.
+- κ < 1 even at ρ = 1 in these cells. A slope change therefore occurs with
+  shared standardized effects. Its direction is measured by MA6; MA5 alone
+  does not determine the slope across variants.
 - Lower ρ adds a further, roughly linear, loss.
 - AFR matters most, because its LD is shortest. AMR matters least, because
   its LD is EUR-like plus admixture LD.
@@ -346,17 +355,20 @@ AFR, SAS and AMR 0.03 or less.
   deletion. The former fixed-ρ SE was 0.0021. These SEs condition on the LD
   panels and pair-selection rule. The gate's SE is
   mostly sampling noise that both estimates share.
-- **Does the data agree with MA2?** The observed ratio of the two estimates
+- **Do the data agree with MA2?** The observed ratio of the two estimates
   is 0.852 against a predicted κ of 0.850. That agreement is nearly
-  automatic, because the two regressors correlate 0.9965. The real check is
-  the post-hoc row: per-stratum estimates on matched scores average 0.154,
-  which agrees with the meta score and not with the EUR score.
+  automatic, because the two regressors correlate 0.9965. The post hoc row
+  provides a consistency check: per-stratum estimates on matched scores
+  average 0.154. These strata contribute to the all-biobank GWAS and use
+  the same panel resources.
 - **0.133 is not GBMI's 0.085.** The LD scores differ (UKB, denser) and
   GBMI's N convention is not stated. Neither comparison establishes absolute
   calibration. The historical 1.0 upper bracket combined with ρ̂ EUR–EAS is
   indefinite and has been replaced by the largest valid value for the full
-  and delete-block fits. The rerun uses legacy score caches: their maps and
-  score-building source were not bound in the original cache keys.
+  and delete-block fits. The original corrected analysis used legacy score
+  caches whose keys omitted the maps and scoring source. The November review
+  reproduced the table with freshly rebuilt scores bound to the genotype
+  files, genetic maps and source, using the six checksum-matched GBMI files.
 
 ## 7. Scope and caveats
 
@@ -394,22 +406,25 @@ AFR, SAS and AMR 0.03 or less.
   the fitted scores and their covariance; see the known-truth sensitivity in
   `experiments/reference_score_noise.py`.
 
-## 8. Prior art (not yet swept)
+## 8. Relationship to earlier work
 
-- **Occupied.** Lemma 1 is Popcorn's (Brown et al. 2016) and S-LDXR's (Shi et
-  al. 2021) cross-population moment. Proposition 2 is the LD-score analogue of
+- **Established components.** Popcorn and S-LDXR use cross-population moments
+  on the effect scales described in §1. Proposition 2 is the LD-score analogue of
   Lin & Zeng 2010. MAMA (Turley et al. 2021) uses cross-ancestry LD scores to
   combine ancestries.
-- **Plausibly new, pending a sweep** (STRATEGY §4):
-  - the explicit meta-analysis LD score MA2, with its two weight schemes;
-  - the panel-only bias factor κ (MA6) and its bound MA5;
-  - the noise-floor asymmetry MA8, stated as a warning;
-  - the measured κ on 1000G.
+- **PLDSC's application.** MA2 expands the square of a weighted sum, MA5
+  follows from Cauchy–Schwarz, and MA6 is a regression projection. The
+  measured sensitivities and their ability to predict new GWAS data are
+  the empirical questions. The [report](../report/methods.md) gives the asthma
+  chromosome prediction result in Section 6.1 and the simulation-based power
+  calculation and independent-cohort design in Section 10.
 
   The one recorded empirical warning that LDSC underestimates h² on
   meta-analysed summary statistics — a 2026 bioRxiv preprint, now citable
   (doi 10.64898/2026.07.05.736573, PMID 42465239; reports the phenomenon
   and one magnitude, AD 0.265 → 0.160 with imputed variants, but not MA2
-  or a panel-only κ) — points the same way as Table 3. Momin et al. 2023
-  (*Nat Commun* 14:1152) and cov-LDSC (Yao et al. 2019) are the other two
-  the step-2 sweep must position against (STRATEGY §5).
+  or a panel-only κ on the available record) — illustrates additional ways a
+  slope can change. [Momin et al.](https://www.nature.com/articles/s41467-023-36281-x)
+  use individual-level data to estimate cross-ancestry genetic correlation.
+  [Luo et al.](https://pubmed.ncbi.nlm.nih.gov/33987664/) adjust LD scores
+  for covariates within admixed samples.

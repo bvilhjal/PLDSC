@@ -5,8 +5,9 @@ and genetic correlation with bivariate LDSC. The implementations adapt the
 fast regression kernels from LDpred3 and bipred. Optional Numba compilation
 accelerates the delete-block jackknife; bivariate fits can also run its blocks
 in parallel. Allelign reads, filters and harmonizes GWAS summary statistics.
-The [methods report](../report/methods.pdf) explains the regression equations,
-weights, jackknife and interpretation.
+The [unified report](../report/methods.md) ([PDF](../report/methods.pdf))
+explains the regressions and their uncertainty, then tests how their
+interpretation changes with study design and reference population.
 
 ## Install and try it
 
@@ -279,7 +280,8 @@ establish that the builds agree. Use `drop_ambiguous=False` only when the
 strand and orientation of palindromic alleles are known independently.
 
 After alignment, the wrappers retain variants with chi-square at most
-`max(80, 0.001 * N)` for each trait. Set `chi2_cap=False` only when a
+`max(80, 0.001 * N)` for each trait, using the individual variant's effective
+`N` when it varies. Set `chi2_cap=False` only when a
 separately justified selection has already been made. The wrappers do **not**
 exclude long-range LD regions themselves; a bundled reference from
 `load_ld_reference` already leaves them out. For your own reference, if the

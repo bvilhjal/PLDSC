@@ -26,9 +26,10 @@ h2_hat / h2 = 0.80. The toy's LDSC is attenuated about 20% before any
 multi-ancestry effect enters: errors-in-variables from a 400-person panel on
 LD scores with a very narrow spread (sd 0.32 about a mean of 1.9). The
 diagnostic in docs/MULTI_ANCESTRY.md §6 shows 0.85 / 0.97 / 1.02 at
-N_REF = 400 / 1500 / 6000 on one realization. kappa is defined relative to
-the slope on the correct score (MA6), so the ratio column
-(E-only / meta) is the quantity MA6 predicts, and it matches in every arm.
+N_REF = 400 / 1500 / 6000 on one realization. The observed E-only / meta
+slope ratio also came close to the panel plug-in kappa in every arm.
+With two noisy scores MA6 does not guarantee this agreement or recovery
+of the absolute heritability. See reference_score_noise.py.
 
 Re-stated rules for the post-failure rerun `--n-ref 6000`, written before
 that run: (i') with the correct meta score, mean h2_hat within 5% of h2 in

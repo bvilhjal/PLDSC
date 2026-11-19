@@ -2,6 +2,8 @@
 
 These detailed protocols, recorded outcomes and corrections are the research
 record. Use the [experiment index](README.md) to find scripts and data.
+The [unified report](../report/methods.md) synthesizes the evidence and
+qualifies the early interpretations in light of the later experiments.
 Timings are historical; commands naming a `pldsc` conda environment
 can be run with an installed Python 3.11+ environment instead.
 
@@ -346,19 +348,15 @@ population cohort, windowed and genome-wide, 10 replicates.
 | windowed | 0.70 | 0.05 | 1.41 = 1.34 + 0.07 |
 | genome-wide | **0.988** | 0.50 | 4.20 = 2.12 + 2.08 |
 
-### Verdict: the decomposition and unification hold
+### Historical interpretation and subsequent qualification
 
-Genome-wide, the non-local component of the LD score correlates **0.99** with the
-PC score and the split is cleanly additive. So **the non-local part of the LD
-score IS the PC score** — one identity that unifies the P_c operator, cov-LDSC,
-the legacy WhiLD score, and the 2017 PC score, with standard LDSC's structure
-bias = conflating `ell^local` (h²) with `ell^struct` (confounding). The structure
-fraction is 50% genome-wide but only 5% within a local window, which explains why
-LDSC's windowed slope is mostly protected while structure surfaces in the
-intercept and long-range LD. This is the validated backbone for reframing the
-project around the decomposition + its structure diagnostics, with the
-identifiability limit (genuine ancestry-aligned signal loads on the same PCs) as
-a stated limit rather than a hidden flaw.
+Across all loci in this simulation, the operator-dependent remainder
+correlates **0.99** with the PC score. The top-ten-PC truncation captures
+about 37% of the remainder's magnitude. The split is additive by definition
+and does not assign a biological origin to the remainder. In this simulation
+the remainder was 50% of the unrestricted score and 5% of the windowed
+score. The LOCO real-panel studies below give different values. See
+[METHOD §14](../docs/METHOD.md) for the spectral identity.
 
 ## `misspecified_background.py` — the one non-circular robustness test
 
@@ -1023,8 +1021,10 @@ across builds, and direct-or-swapped allele rule remain in force.
 - **ρ:** only EUR–EAS can be estimated, at 0.755 (SE 0.046). AFR, SAS and
   AMR are too small (h² z < 4), so those pairs are bracketed.
 - **C1 (step-3 gate): not met robustly.** h² goes from 0.133 to 0.156,
-  which is 1.9 SE at the central bracket and 1.6–2.2 SE across it. Asthma
-  alone is therefore a practice note. The shift's paired SE is 0.002.
+  which is 1.9 EUR-fit SEs at the central bracket and 1.8–2.2 across the
+  valid range (0.6–0.901). The earlier 1.6 endpoint used an indefinite
+  matrix. The shift's paired SE is 0.0023 with EUR–EAS ρ refitted on each
+  deletion. The November review reproduced these results with rebuilt scores.
 - **C2:** the observed ratio 0.852 matches the predicted κ 0.850, but the
   check is nearly mechanical because the regressors correlate 0.9965.
 - **Post hoc:** per-stratum h² values, each on a matched score, average

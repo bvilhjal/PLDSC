@@ -1,0 +1,40 @@
+% Generated reports use this layout. Edit report/methods.md and rebuild as
+% described in report/README.md.
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,graphicx,booktabs,longtable,array,calc}
+\usepackage[top=23mm,bottom=22mm,left=24mm,right=24mm,headheight=14pt]{geometry}
+\usepackage{microtype,xcolor,fancyhdr,etoolbox}
+\usepackage{hyperref}
+\definecolor{ink}{HTML}{17475C}
+\hypersetup{colorlinks=true,allcolors=ink,pdftitle={Which LD score matches a GWAS?},
+  pdfsubject={PLDSC methods, simulations and applications},bookmarksnumbered=false}
+\setcounter{secnumdepth}{-1}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.44em plus 0.08em minus 0.04em}
+\setlength{\emergencystretch}{1.5em}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\LTpre}{0.2em}
+\setlength{\LTpost}{0.3em}
+\AtBeginEnvironment{longtable}{\small}
+\newcommand{\tightlist}{\setlength{\itemsep}{0.35em}\setlength{\parskip}{0pt}}
+\newcommand{\pandocbounded}[1]{#1}
+\setkeys{Gin}{width=\linewidth,keepaspectratio}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily PLDSC}
+\fancyhead[R]{\small\sffamily Methods, simulations and applications}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{\z@}{0pt}{0.4em}
+  {\normalfont\huge\bfseries\color{ink}}}
+\makeatother
+\let\reportsection\subsection
+\renewcommand{\subsection}{\clearpage\reportsection}
+\pretocmd{\subsubsection}{\clearpage}{}{}
+\raggedbottom
+\begin{document}
+$body$
+\end{document}

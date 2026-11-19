@@ -42,12 +42,11 @@ def kappa_heatmap(
     cmap: str = "YlOrRd",
     path: str | None = None,
 ):
-    """Heatmap of κ = ĥ²/h² values (the headline table as a picture).
+    """Heatmap of panel plug-in slope ratios (the chromosome 22 grid).
 
     ``kappa`` is ``(R, C)``; rows are drawn bottom-up so the first row
-    label appears at the bottom. Cells are annotated at three decimals;
-    1.0 (unbiased) is marked on the colour bar, since the whole point of
-    the figure is how far below it the panel sits.
+    label appears at the bottom. Cells are annotated at three decimals.
+    A ratio of one denotes equal slopes in the panel projection.
     """
     K = np.asarray(kappa, dtype=np.float64)
     if K.ndim != 2 or K.shape != (len(row_labels), len(col_labels)):
@@ -61,7 +60,7 @@ def kappa_heatmap(
             ax.text(j, i, f"{K[i, j]:.3f}", ha="center", va="center",
                     color="black" if K[i, j] > (K.min() + 0.5 * (K.max() - K.min())) else "white")
     cb = ax.figure.colorbar(im, ax=ax, shrink=0.85)
-    cb.set_label(r"$\kappa = \hat h^2 / h^2$")
+    cb.set_label(r"Panel plug-in $\kappa$")
     if title:
         ax.set_title(title)
     _save(ax, path)
@@ -119,13 +118,10 @@ def forest_plot(
 ):
     """Published h² vs the recomputed (meta-score) h², per trait (step 3).
 
-    Each trait gets a row: the published estimate as a hollow marker at
-    x=1 and the recomputed estimate with its ±1.96 SE whisker; the line
-    between them shows the correction's size and sign. Traits are ordered
-    by relative change, largest first, so the figure leads with its
-    headline. ``se`` is the SE of the *difference* if you want the
-    whiskers to show the move's significance rather than the estimate's
-    precision — pass ``se=None`` to omit whiskers.
+    Each row joins a hollow marker at the published estimate to the
+    recomputed estimate. Whiskers centered on the latter show ±1.96 times
+    its standard error. Pass ``se=None`` to omit whiskers. A paired
+    difference and its standard error belong on a difference scale.
     """
     pub = np.asarray(published, dtype=np.float64)
     cor = np.asarray(corrected, dtype=np.float64)

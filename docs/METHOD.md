@@ -3,6 +3,10 @@
 Date: 2026-07-17; M0 contract completed and re-audited 2026-07-22;
 theory addendum added 2026-07-22
 
+This is the technical record for the concluded mixed-model estimator study.
+Sections 7–9 of the [unified report](../report/methods.md) place its results
+alongside the project's current applications.
+
 This is the M0 "freeze the theorem" document (see
 [the development plan](DEVELOPMENT_PLAN.md)). It states the model, derives the
 oracle conditional moment on which PLDSC rests, records the exact assumptions,
@@ -532,10 +536,9 @@ corrected.
 
 ### 10.1 Relatedness in the LD panel: the residual-df correction
 
-Section 13 concludes that relatedness "does not propagate into the local,
-windowed LD-score regression." That is correct about the *slope*, but it is not
-the whole story about the LD score itself, and the remaining channel is
-mis-specified in the current implementation.
+Section 13 found little effect of relatedness on the local slope in its
+simulation. Relatives in the LD reference also affect the noise floor.
+The package accepts a panel-specific denominator for this case.
 
 The finite-sample adjustment used by `pldsc.ld.local_ld_scores`,
 \(\widetilde r^2=r^2-(1-r^2)/(\nu-1)\) with \(\nu=N-\operatorname{rank}(C)\)

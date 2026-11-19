@@ -1,0 +1,432 @@
+PLDSC report reproduction, 2026-11-19
+
+Analysis baseline f47cf8031d527834d7c6243bed6a50c861cd51c2.
+Python 3.14.6, NumPy 2.4.6, allelign 0.3.1, PLDSC 0.1.1, Matplotlib 3.11.1.
+The source programs and settings are linked in report/methods.md, Table 8.
+The two default simulation gates are evaluated in the output, independently of the process exit code.
+The genome-wide and asthma drivers ran consecutively with GK.OUT set to a new,
+empty cache directory. The asthma run used the default provenance checks.
+All-autosome effect-model arguments were --chroms 1 2 ... 22.
+
+SHA-256 of the inputs used for the genome-wide and asthma runs
+4a33207e17ad1e7861db2dc7d849acba7b267e6f649afbcf0dd6603553331647  1000G_phase3_common_norel.bed
+3184ad9c8afe03487f6c1ab0abd5ccf2c6665dce3a8cf67977331b1018a8ea2f  1000G_phase3_common_norel.bim
+d16a66fee04a6dcfe8844c3100d6aa01df658b56e8849de3aa48451871af4750  1000G_phase3_common_norel.fam
+833478cbc4a10db395a433ba035064fcff8563cbe15b71956e26518b880c4f7c  1000G_phase3_common_norel.fam2
+eba2007927274725e05d8f77049fab14e9f29b6d308df52049e8c7b873499591  Asthma_Bothsex_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+83fec73908cebc20ec896597b36c9aee47527bd90aceaabf82154d18df682a88  Asthma_Bothsex_eur_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+80d59a041dc78eefba9576e145e86394abddbc8b23eb0177ebf7a73e8c9fec7b  Asthma_Bothsex_afr_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+3c24d2df1fb0149502c472b047f937e8a4f88d3b2f3116551989c5436f516f86  Asthma_Bothsex_eas_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+f29d8d8c51cdf0c3b714363fb980aaeca082001733f0ed346ef2d9d04179028e  Asthma_Bothsex_sas_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+aa3ea725321f3d22a354b2e42a5caeaec1f6ea7b803f181e81a4e1e1918dbe98  Asthma_Bothsex_amr_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz
+25e73e9969ae011912a1c79048551e9186feb3ea4de8da18f8fbd97b2ea68a2c  chr1.b37.gmap.gz
+170562d9480992907619a4bf1695007d416ffffc8851a5acd91d4d5ea7a5663d  chr2.b37.gmap.gz
+39b1dfd000afa4eff1340dcfefc41026b1cbd845547a5bb12f51c2b966edcaf8  chr3.b37.gmap.gz
+e8aae3011c1408c3b6dfa270f44aaf23c62235e30b8cc7bc19544334ec700864  chr4.b37.gmap.gz
+1f0ca5776ded99dbdf2a32c7f706fd315035bb7c59e50ed1b198243346d17710  chr5.b37.gmap.gz
+8d9efc13d0c71a12a6ba481cc01c808e48faf1e06717be968d231717f8728860  chr6.b37.gmap.gz
+a46de83e370c466cfae6ca2a616bb1d8c2c9421f0c35d6b0c0b956fa124aa488  chr7.b37.gmap.gz
+f7da64ee285c502902ea5e3462980baec23873696b9f9959ecbf973217bcc5dd  chr8.b37.gmap.gz
+207c69e39d16e3f499c6c582ccd9a71689810ed50204c8f5d10cad8022c7cc85  chr9.b37.gmap.gz
+f0210d4dd4720937209f7446faba3021378328d2ec48550375b562aee6f7d114  chr10.b37.gmap.gz
+75bb8c104e0661b1545d676d28745bd6075d170a49e971d0b8310a33a279864e  chr11.b37.gmap.gz
+3c82623bad3b1f4363e32b42e847ff616d0f3f387a02c05e6edb714ed2d4b0f8  chr12.b37.gmap.gz
+a78c1d719f62606c48431e065f6d3c2a556913f88dacf7b448b82fa90f5d721c  chr13.b37.gmap.gz
+3532456c77f5b01d4d544275b612c33819ace53d1696ecefe3d2de79ad992f19  chr14.b37.gmap.gz
+50a2a95d33911ef86f94bd5f203b02197c8aead66b99827e35adc26981403a6a  chr15.b37.gmap.gz
+95cf0c81a19296c7aaf3a4fa0da3c21ebe10d8189e37538ea2cd7baac5f3050e  chr16.b37.gmap.gz
+b55be6ccacf9303bc715ddc13636a91d6fdafdfc5058bc572d3abf103fe128e6  chr17.b37.gmap.gz
+8fe502884a051bf39c62e43cfbd162fd68f4dad13e8e8aaa9a77e3568240084b  chr18.b37.gmap.gz
+0b65ee0a458192a3040ef834613171cc8ab108f56ad4e79b0f938c915975b790  chr19.b37.gmap.gz
+b2b682dfc71f41bf0434267588839b896913ac398de776c0dc0edc581f7e1589  chr20.b37.gmap.gz
+dd01b70d5b58404ae5e7cec1f14229bd9d2c33503f32262c6a9b7dc88d287998  chr21.b37.gmap.gz
+75b0026033139f7c2515eda80c330d93d1eb728374a31e0a713589c0d413b24f  chr22.b37.gmap.gz
+f3bd6fbe41b496ab0da0535b0058a712cb485e7adc928a3b93a5624ba8a3cc15  chr22_ldscores.npz
+
+Additional variant sets used for the bridge and subset comparisons
+0e3f3d6df3fb58a2197181889d8dee39055f5f64666d05bddc192a468d8b7841  chr22_t10_geno.npy
+4ffca3f37e3bb421fe0cd79fbf858a819b9a77d4ea9bb8173e4d4df1749e9ff8  chr22_t10_pos.npy
+9d33427b781b51aaa22c1c30eeccb1fcc357787a0219cd002e2703f7466530da  chr22_t10_samples.txt
+b4023dc6ee2d62ee89c8d4d347db4d348e65518d66d346574cdae7a4bbd76858  samples.panel
+c825e18ce9f774feba0ea7b5de2dc721df40158c8b23d4a3bc72348680f463fd  chr21_t25_geno.npy
+8ade3f4323ad5c59d3799b446f9e118456af57a57977f16f1a945aca152796c6  chr21_t25_pos.npy
+9d33427b781b51aaa22c1c30eeccb1fcc357787a0219cd002e2703f7466530da  chr21_t25_samples.txt
+9328f828d51190eec9715f771b4a2133ca53a6b060272a37d1a55563aae46d1f  chr10_t25_geno.npy
+96561ddfb936374f288eea04582e113be8af0d5dca973d22818943e3f3354f25  chr10_t25_pos.npy
+9d33427b781b51aaa22c1c30eeccb1fcc357787a0219cd002e2703f7466530da  chr10_t25_samples.txt
+4ed18e1e3bbd9ea53845b5632b2be87b98930cc4d3e32101ff02d469017f1bcc  kgp_phase3_20130502_superpops_hm3_grch37.npz
+
+Simulated GWAS with 400 reference individuals per group
+-------------------------------------------------------
+M=2000, N_GWAS=(3000, 1500), N_REF=400, h2=0.5, 3 realizations x 100 reps; entries are mean h2_hat/h2 (MC se)
+N_E share  rho     weights |   meta score |       E-only  ratio pred kappa |  rho=1 score  ratio   pred
+-------------------------------------------------------------------------------------------------------
+     1.00  1.0 sample_size |  0.797 (0.024) |  0.797 (0.024)  1.000      1.000 |  0.797 (0.024)  1.000  1.000
+     0.67  1.0 sample_size |  0.822 (0.025) |  0.479 (0.016)  0.583      0.587 |  0.822 (0.025)  1.000  1.000
+     0.67  0.6 sample_size |  0.821 (0.026) |  0.441 (0.014)  0.537      0.532 |  0.737 (0.024)  0.897  0.893
+     0.67  1.0         ivw |  0.852 (0.023) |  0.584 (0.017)  0.686      0.694 |  0.852 (0.023)  1.000  1.000
+     0.67  0.6         ivw |  0.866 (0.022) |  0.546 (0.015)  0.630      0.644 |  0.793 (0.020)  0.915  0.914
+
+(i) correct meta score recovers h2 within 5%: FAIL
+(ii) E-only bias matches panel-predicted kappa within 0.05: FAIL
+(iii) slope ratios match predicted kappas within 0.03: PASS
+
+Simulated GWAS with 6,000 reference individuals per group
+---------------------------------------------------------
+M=2000, N_GWAS=(3000, 1500), N_REF=6000, h2=0.5, 3 realizations x 100 reps; entries are mean h2_hat/h2 (MC se)
+N_E share  rho     weights |   meta score |       E-only  ratio pred kappa |  rho=1 score  ratio   pred
+-------------------------------------------------------------------------------------------------------
+     1.00  1.0 sample_size |  1.041 (0.025) |  1.041 (0.025)  1.000      1.000 |  1.041 (0.025)  1.000  1.000
+     0.67  1.0 sample_size |  0.966 (0.031) |  0.587 (0.019)  0.608      0.610 |  0.966 (0.031)  1.000  1.000
+     0.67  0.6 sample_size |  1.047 (0.030) |  0.573 (0.016)  0.547      0.548 |  0.931 (0.026)  0.890  0.889
+     0.67  1.0         ivw |  0.994 (0.022) |  0.733 (0.017)  0.738      0.742 |  0.994 (0.022)  1.000  1.000
+     0.67  0.6         ivw |  0.962 (0.022) |  0.653 (0.016)  0.679      0.681 |  0.871 (0.020)  0.905  0.906
+
+(i) correct meta score recovers h2 within 5%: PASS
+(ii) E-only bias matches panel-predicted kappa within 0.05: PASS
+(iii) slope ratios match predicted kappas within 0.03: PASS
+
+Identical-LD control
+--------------------
+identical population LD, rho=1; n_ref=500, replicates=30, seed=73
+  panel plug-in kappa: 0.96949
+  true expected EUR h2/h2: 0.91709
+  true expected meta h2/h2: 0.95870
+  true expected EUR/meta: 0.95656
+
+Distributed chr22 bundle
+------------------------
+Table 3 (MULTI_ANCESTRY.md). Panel plug-in kappa for a meta regressed on the
+1000G EUR score; OLS / LDSC-style weights, EUR MAF >= 0.05 (7837 SNPs)
+             mix             rho=1.0             rho=0.8             rho=0.6
+    EUR 0.90+AFR    0.908 / 0.906       0.890 / 0.889       0.872 / 0.873
+    EUR 0.75+AFR    0.788 / 0.786       0.750 / 0.750       0.713 / 0.714
+    EUR 0.50+AFR    0.643 / 0.644       0.592 / 0.595       0.541 / 0.546
+    EUR 0.90+EAS    0.955 / 0.955       0.930 / 0.930       0.904 / 0.906
+    EUR 0.75+EAS    0.896 / 0.898       0.841 / 0.845       0.787 / 0.792
+    EUR 0.50+EAS    0.828 / 0.840       0.753 / 0.766       0.677 / 0.693
+    EUR 0.90+SAS    0.971 / 0.970       0.940 / 0.940       0.910 / 0.910
+    EUR 0.75+SAS    0.932 / 0.933       0.868 / 0.870       0.804 / 0.807
+    EUR 0.50+SAS    0.879 / 0.889       0.794 / 0.805       0.709 / 0.720
+    EUR 0.90+AMR    0.987 / 0.981       0.954 / 0.949       0.920 / 0.917
+    EUR 0.75+AMR    0.977 / 0.963       0.907 / 0.896       0.838 / 0.829
+    EUR 0.50+AMR    0.985 / 0.957       0.892 / 0.867       0.800 / 0.778
+
+Table 4, rule cell (EUR 0.75 + X, rho = 0.8), corrected:
+  AFR 0.750 / 0.750, EAS 0.841 / 0.845, SAS 0.868 / 0.870, AMR 0.907 / 0.896  -> KEEP: True
+  recorded: AFR 0.750 / 0.750, EAS 0.841 / 0.845, SAS 0.868 / 0.870, AMR 0.907 / 0.896
+
+Table 5. corr(within, cross) across SNPs -- can the meta alone identify rho?
+  EUR 0.75 + AFR: corr = 0.847
+  EUR 0.75 + EAS: corr = 0.813
+  EUR 0.75 + SAS: corr = 0.980
+  EUR 0.75 + AMR: corr = 0.988
+
+Report Figure 1
+---------------
+Other group   Share   OLS kappa   Residual score variance (%)
+        AFR   0.10       0.890       0.30
+        AFR   0.25       0.750       1.98
+        AFR   0.50       0.592       8.54
+        EAS   0.10       0.930       0.31
+        EAS   0.25       0.841       1.86
+        EAS   0.50       0.753       6.80
+        SAS   0.10       0.940       0.09
+        SAS   0.25       0.868       0.66
+        SAS   0.50       0.794       3.02
+        AMR   0.10       0.954       0.08
+        AMR   0.25       0.907       0.69
+        AMR   0.50       0.892       4.24
+
+Autosomal LD scores, bridge and GBMI asthma
+-------------------------------------------
+data: 2490 samples (EUR 503, AFR 652, EAS 504, SAS 484, AMR 347), 1664852 variants
+  [scores] chr1: 137104 reference, 110959 regression variants (42s)
+  [scores] chr2: 138829 reference, 112729 regression variants (40s)
+  [scores] chr3: 115954 reference, 95065 regression variants (23s)
+  [scores] chr4: 105288 reference, 85639 regression variants (17s)
+  [scores] chr5: 102899 reference, 84266 regression variants (18s)
+  [scores] chr6: 109338 reference, 89525 regression variants (20s)
+  [scores] chr7: 91286 reference, 75226 regression variants (15s)
+  [scores] chr8: 89998 reference, 73471 regression variants (15s)
+  [scores] chr9: 76362 reference, 63104 regression variants (12s)
+  [scores] chr10: 87961 reference, 71959 regression variants (14s)
+  [scores] chr11: 84521 reference, 69023 regression variants (15s)
+  [scores] chr12: 79757 reference, 65201 regression variants (13s)
+  [scores] chr13: 61856 reference, 50586 regression variants (10s)
+  [scores] chr14: 54857 reference, 44985 regression variants (9s)
+  [scores] chr15: 51216 reference, 42124 regression variants (8s)
+  [scores] chr16: 54572 reference, 44468 regression variants (8s)
+  [scores] chr17: 46982 reference, 38147 regression variants (7s)
+  [scores] chr18: 50077 reference, 41000 regression variants (8s)
+  [scores] chr19: 33862 reference, 27319 regression variants (5s)
+  [scores] chr20: 43341 reference, 35414 regression variants (6s)
+  [scores] chr21: 23853 reference, 19824 regression variants (3s)
+  [scores] chr22: 24621 reference, 20049 regression variants (3s)
+
+22 chromosomes: 1664534 reference, 1360083 regression variants; 1190723 in the rule regression set (EUR MAF >= 0.05, MHC excluded) (316s)
+
+Table GW1. Mean LD scores over the rule regression set (diagonal MA7-corrected)
+          EUR     AFR     EAS     SAS     AMR
+  EUR   23.86   11.06   16.74   19.75   21.18
+  AFR   11.06   13.13    9.90   10.63   11.77
+  EAS   16.74    9.90   21.15   17.28   17.32
+  SAS   19.75   10.63   17.28   21.24   19.09
+  AMR   21.18   11.77   17.32   19.09   27.98
+
+Table GW2. kappa, genome-wide: OLS / LDSC-style weights (OLS offset share)
+             mix                rho=1.0                rho=0.8                rho=0.6
+    EUR 0.90+AFR  0.903 / 0.897 (-0.00)  0.885 / 0.881 (-0.00)  0.868 / 0.864 (+0.00)
+    EUR 0.75+AFR  0.773 / 0.761 (+0.00)  0.737 / 0.726 (+0.01)  0.700 / 0.692 (+0.01)
+    EUR 0.50+AFR  0.606 / 0.588 (+0.03)  0.557 / 0.542 (+0.04)  0.508 / 0.496 (+0.05)
+    EUR 0.90+EAS  0.958 / 0.952 (-0.01)  0.931 / 0.926 (-0.00)  0.904 / 0.901 (-0.00)
+    EUR 0.75+EAS  0.903 / 0.892 (-0.01)  0.846 / 0.837 (-0.00)  0.789 / 0.782 (+0.00)
+    EUR 0.50+EAS  0.841 / 0.828 (+0.01)  0.764 / 0.753 (+0.02)  0.686 / 0.678 (+0.03)
+    EUR 0.90+SAS  0.975 / 0.969 (-0.01)  0.944 / 0.939 (-0.01)  0.912 / 0.909 (-0.00)
+    EUR 0.75+SAS  0.942 / 0.929 (-0.01)  0.877 / 0.866 (-0.01)  0.812 / 0.804 (-0.01)
+    EUR 0.50+SAS  0.901 / 0.880 (-0.02)  0.814 / 0.796 (-0.01)  0.728 / 0.712 (-0.01)
+    EUR 0.90+AMR  0.984 / 0.980 (-0.00)  0.951 / 0.948 (-0.00)  0.918 / 0.916 (-0.00)
+    EUR 0.75+AMR  0.964 / 0.958 (+0.00)  0.896 / 0.891 (+0.01)  0.828 / 0.824 (+0.01)
+    EUR 0.50+AMR  0.947 / 0.943 (+0.04)  0.856 / 0.854 (+0.05)  0.764 / 0.765 (+0.06)
+
+Table GW3. Rule cell (EUR 0.75 + X, rho = 0.8) with 200-block jackknife SE (variation along the genome)
+  AFR: OLS 0.737 (SE 0.005), weighted 0.726 (SE 0.001)
+  EAS: OLS 0.846 (SE 0.008), weighted 0.837 (SE 0.001)
+  SAS: OLS 0.877 (SE 0.005), weighted 0.866 (SE 0.001)
+  AMR: OLS 0.896 (SE 0.004), weighted 0.891 (SE 0.001)
+
+Table GW4. Sensitivity at the rule cell, OLS / weighted
+                            as ruled: AFR 0.737 / 0.726, EAS 0.846 / 0.837, SAS 0.877 / 0.866, AMR 0.896 / 0.891
+                            MHC kept: AFR 0.728 / 0.726, EAS 0.820 / 0.836, SAS 0.848 / 0.865, AMR 0.875 / 0.890
+                         IVW weights: AFR 0.746 / 0.735, EAS 0.849 / 0.841, SAS 0.876 / 0.866, AMR 0.893 / 0.890
+  HapMap3 regression SNPs only (934847): AFR 0.738 / 0.727, EAS 0.848 / 0.837, SAS 0.879 / 0.867, AMR 0.897 / 0.891
+                         eta_X = 0.8: AFR 0.716 / 0.706, EAS 0.812 / 0.803, SAS 0.839 / 0.829, AMR 0.855 / 0.850
+                        eta_X = 1.25: AFR 0.761 / 0.750, EAS 0.886 / 0.876, SAS 0.922 / 0.909, AMR 0.943 / 0.938
+
+Table GW5. corr(D, X) of the N_j-scaled within and cross parts (MA9), EUR 0.75
+  EUR 0.75 + AFR: corr = 0.866
+  EUR 0.75 + EAS: corr = 0.853
+  EUR 0.75 + SAS: corr = 0.978
+  EUR 0.75 + AMR: corr = 0.984
+
+Table GW6. Rule-cell kappa per chromosome, OLS
+  chr    AFR    EAS    SAS    AMR
+    1  0.739  0.859  0.889  0.900
+    2  0.723  0.836  0.870  0.880
+    3  0.740  0.829  0.871  0.892
+    4  0.739  0.854  0.883  0.889
+    5  0.724  0.845  0.872  0.888
+    6  0.730  0.852  0.882  0.887
+    7  0.760  0.855  0.889  0.893
+    8  0.718  0.833  0.856  0.915
+    9  0.739  0.848  0.872  0.897
+   10  0.726  0.841  0.882  0.892
+   11  0.736  0.862  0.883  0.909
+   12  0.709  0.753  0.839  0.849
+   13  0.734  0.840  0.870  0.887
+   14  0.819  0.936  0.938  0.939
+   15  0.732  0.841  0.880  0.897
+   16  0.741  0.845  0.867  0.902
+   17  0.750  0.876  0.881  0.896
+   18  0.715  0.827  0.861  0.886
+   19  0.767  0.820  0.875  0.878
+   20  0.724  0.838  0.869  0.904
+   21  0.725  0.853  0.882  0.901
+   22  0.732  0.817  0.863  0.909
+  range: AFR 0.709-0.819, EAS 0.753-0.936, SAS 0.839-0.938, AMR 0.849-0.939
+
+Table GW7. Bridge (G2): rule-cell kappa (OLS), this variant set vs the VCF cache
+  chr22 (VCF 1-in-10, 7837 vs 17601 regression SNPs): AFR 0.732 vs 0.750, EAS 0.817 vs 0.841, SAS 0.863 vs 0.868, AMR 0.909 vs 0.907
+  chr21 (VCF 1-in-25, 3336 vs 17703 regression SNPs): AFR 0.725 vs 0.744, EAS 0.853 vs 0.870, SAS 0.882 vs 0.884, AMR 0.901 vs 0.896
+  chr10 (VCF 1-in-25, 11504 vs 63238 regression SNPs): AFR 0.726 vs 0.765, EAS 0.841 vs 0.819, SAS 0.882 vs 0.848, AMR 0.892 vs 0.890
+
+G1: genome-wide rule-cell AFR kappa 0.737 (OLS) / 0.726 (weighted) -> PASS (gate <= 0.9)
+G2: largest bridge |delta kappa| = 0.039 -> VARIANT-SET-SPECIFIC; the thinned-VCF run is required (tolerance 0.03)
+total 388s
+1000G scores: 1360083 regression variants, M = 1664534, 1190723 with EUR MAF >= 0.05 outside the MHC
+  [gbmi] ALL: 1096006 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 425860 (41s)
+  [gbmi] EUR: 1095948 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 354571 (29s)
+  [gbmi] AFR: 1093841 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 11836 (20s)
+  [gbmi] EAS: 1044769 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 61161 (13s)
+  [gbmi] SAS: 1049428 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 11984 (10s)
+  [gbmi] AMR: 1093411 variants at the 1000G regression set (0 duplicated rsIDs dropped), median N 6333 (12s)
+
+Table C1. Per-stratum h2 (observed scale at P = 0.5; liability at GBMI's K for reference)
+   ALL:  953634 variants, median N   428954, mean chi2 1.871, h2 0.1330 (SE 0.0122, z 10.9), intercept 1.061, liability 0.133
+   EUR:  953605 variants, median N   354836, mean chi2 1.795, h2 0.1483 (SE 0.0138, z 10.7), intercept 1.049, liability 0.148
+   AFR:  952887 variants, median N    11867, mean chi2 1.016, h2 0.1528 (SE 0.0742, z 2.1), intercept 1.005, liability 0.153
+   EAS:  934641 variants, median N    61246, mean chi2 1.142, h2 0.1894 (SE 0.0201, z 9.4), intercept 0.998, liability 0.190
+   SAS:  936517 variants, median N    11953, mean chi2 1.022, h2 0.2009 (SE 0.0585, z 3.4), intercept 0.993, liability 0.201
+   AMR:  952210 variants, median N     6328, mean chi2 1.003, h2 0.0321 (SE 0.0809, z 0.4), intercept 1.000, liability 0.032
+
+Table C2. rho_ab (SE); used in MA2 when both strata have h2 z > 4
+  EUR-AFR: rho 0.733 (SE 0.206) on 952874 variants  [bracketed]
+  EUR-EAS: rho 0.755 (SE 0.046) on 934612 variants
+  EUR-SAS: rho 0.832 (SE 0.132) on 936507 variants  [bracketed]
+  EUR-AMR: rho 1.461 (SE 2.494) on 952207 variants  [bracketed]
+  AFR-EAS: rho 0.617 (SE 0.238) on 933935 variants  [bracketed]
+  AFR-SAS: rho 1.200 (SE 0.491) on 936199 variants  [bracketed]
+  AFR-AMR: rho 1.685 (SE 3.155) on 952131 variants  [bracketed]
+  EAS-SAS: rho 0.862 (SE 0.173) on 919584 variants  [bracketed]
+  EAS-AMR: rho 0.786 (SE 0.795) on 933342 variants  [bracketed]
+  SAS-AMR: rho 1.711 (SE nan) on 935874 variants  [bracketed]
+
+Table C3. The casualty on the ALL meta: 953596 variants; strata N / ALL N: median 1.011 (IQR 0.997-1.042)
+  rho estimated where usable, else 0.6000: h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1593 (SE 0.0145, int 1.063) | diff +0.0264 = +2.2 SE(h2_EUR) (paired SE 0.0026; fixed-rho 0.0024) | ratio 0.834 (SE 0.006) vs panel plug-in kappa 0.832
+  rho estimated where usable, else 0.8000: h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1559 (SE 0.0142, int 1.063) | diff +0.0230 = +1.9 SE(h2_EUR) (paired SE 0.0023; fixed-rho 0.0021) | ratio 0.852 (SE 0.006) vs panel plug-in kappa 0.850
+  rho estimated where usable, else 0.9013: h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1543 (SE 0.0141, int 1.064) | diff +0.0214 = +1.8 SE(h2_EUR) (paired SE 0.0021; fixed-rho 0.0019) | ratio 0.861 (SE 0.006) vs panel plug-in kappa 0.858
+  all pairs rho = 0.6 (bracket): h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1639 (SE 0.0149, int 1.062) | diff +0.0310 = +2.5 SE(h2_EUR) (paired SE 0.0028; fixed-rho 0.0028) | ratio 0.811 (SE 0.003) vs panel plug-in kappa 0.810
+  all pairs rho = 0.8 (bracket): h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1547 (SE 0.0141, int 1.064) | diff +0.0218 = +1.8 SE(h2_EUR) (paired SE 0.0020; fixed-rho 0.0020) | ratio 0.859 (SE 0.004) vs panel plug-in kappa 0.856
+  all pairs rho = 1.0 (bracket): h2_EUR 0.1329 (SE 0.0122, int 1.061) | h2_meta 0.1462 (SE 0.0133, int 1.066) | diff +0.0134 = +1.1 SE(h2_EUR) (paired SE 0.0013; fixed-rho 0.0013) | ratio 0.909 (SE 0.005) vs panel plug-in kappa 0.903
+  N_j = sum of strata N (sensitivity): h2_EUR 0.1298 (SE 0.0118, int 1.059) | h2_meta 0.1524 (SE 0.0138, int 1.061) | diff +0.0227 = +1.9 SE(h2_EUR) (paired SE 0.0023; fixed-rho 0.0020) | ratio 0.851 (SE 0.007) vs panel plug-in kappa 0.849
+
+Table C4 (post hoc). corr(N l_EUR, N L) on the casualty set = 0.9965, which makes C2 nearly mechanical. The composition-weighted mean of the per-stratum h2, each on its own ancestry's score (f = EUR 0.795, AFR 0.027, EAS 0.137, SAS 0.027, AMR 0.014), is 0.1538 (SE 0.0117, strata treated as independent)
+
+Verdicts
+  bracket 0.6: C1 CASUALTY (|diff| = 2.2 SE); C2 observed ratio 0.834 vs kappa 0.832 -> consistent
+     liability scale (K = 0.0854): h2_EUR 0.133, h2_meta 0.159; GBMI reported 0.085
+  bracket 0.8: C1 practice note (|diff| = 1.9 SE); C2 observed ratio 0.852 vs kappa 0.850 -> consistent
+     liability scale (K = 0.0854): h2_EUR 0.133, h2_meta 0.156; GBMI reported 0.085
+  bracket 0.9013468239356262: C1 practice note (|diff| = 1.8 SE); C2 observed ratio 0.861 vs kappa 0.858 -> consistent
+     liability scale (K = 0.0854): h2_EUR 0.133, h2_meta 0.154; GBMI reported 0.085
+total 133s
+
+Effect-model sensitivity on chromosome 22
+-----------------------------------------
+chr22: 24621 reference, 20049 regression variants, three arms scored (9s)
+
+R0: chr22 A1 scores vs cached kappa_gw scores, max |diff| = 0.00e+00 -> PASS
+
+17601 rule regression SNPs on chr 22
+
+Table AK1. Implied eta_a = h_a^2 / h_EUR^2 (mean v^2 relative to EUR); A1 is 1
+           EUR    AFR    EAS    SAS    AMR
+  S(-1.00)  1.000  1.059  0.739  0.896  0.949
+  S(-0.38)  1.000  1.009  0.857  0.977  0.995
+
+Table AK2 (R1). Rule cell EUR 0.75 + AFR, rho = 0.8: pi = kappa_meta / kappa_EUR, OLS / weighted
+        A1: 0.732 / 0.732
+  S(-1.00): 0.693 / 0.700   (difference from A1 -0.039 / -0.032)
+  S(-0.38): 0.699 / 0.709   (difference from A1 -0.033 / -0.023)
+  R1: largest |difference| 0.039 vs tolerance 0.03 -> A1-CONDITIONAL
+
+Table AK3. pi for every ancestry and rho, EUR 0.75 + X, OLS / weighted (descriptive)
+       arm    X         rho=1.0         rho=0.8         rho=0.6
+        A1  AFR   0.768 / 0.766   0.732 / 0.732   0.697 / 0.697
+        A1  EAS   0.868 / 0.894   0.817 / 0.840   0.766 / 0.785
+        A1  SAS   0.926 / 0.932   0.863 / 0.869   0.801 / 0.805
+        A1  AMR   0.979 / 0.963   0.909 / 0.896   0.840 / 0.829
+  S(-1.00)  AFR   0.720 / 0.727   0.693 / 0.700   0.666 / 0.673
+  S(-1.00)  EAS   0.805 / 0.840   0.765 / 0.795   0.724 / 0.749
+  S(-1.00)  SAS   0.907 / 0.900   0.848 / 0.842   0.789 / 0.785
+  S(-1.00)  AMR   0.975 / 0.943   0.907 / 0.879   0.839 / 0.816
+  S(-0.38)  AFR   0.728 / 0.739   0.699 / 0.709   0.670 / 0.679
+  S(-0.38)  EAS   0.828 / 0.871   0.784 / 0.821   0.740 / 0.770
+  S(-0.38)  SAS   0.921 / 0.919   0.859 / 0.858   0.797 / 0.797
+  S(-0.38)  AMR   0.981 / 0.955   0.912 / 0.889   0.842 / 0.823
+
+Table AK4. Rule cell decomposed: kappa_meta and kappa_EUR, OLS / weighted (descriptive)
+        A1: kappa_meta 0.732 / 0.732, kappa_EUR 1.000 / 1.000
+  S(-1.00): kappa_meta 0.769 / 0.778, kappa_EUR 1.109 / 1.112
+  S(-0.38): kappa_meta 0.945 / 0.942, kappa_EUR 1.352 / 1.328
+
+total 11s
+
+Autosomal effect-model sensitivity
+----------------------------------
+chr1: 137104 reference, 110959 regression variants, three arms scored (63s)
+  chr2: 138829 reference, 112729 regression variants, three arms scored (64s)
+  chr3: 115954 reference, 95065 regression variants, three arms scored (55s)
+  chr4: 105288 reference, 85639 regression variants, three arms scored (46s)
+  chr5: 102899 reference, 84266 regression variants, three arms scored (44s)
+  chr6: 109338 reference, 89525 regression variants, three arms scored (56s)
+  chr7: 91286 reference, 75226 regression variants, three arms scored (36s)
+  chr8: 89998 reference, 73471 regression variants, three arms scored (37s)
+  chr9: 76362 reference, 63104 regression variants, three arms scored (29s)
+  chr10: 87961 reference, 71959 regression variants, three arms scored (35s)
+  chr11: 84521 reference, 69023 regression variants, three arms scored (34s)
+  chr12: 79757 reference, 65201 regression variants, three arms scored (31s)
+  chr13: 61856 reference, 50586 regression variants, three arms scored (25s)
+  chr14: 54857 reference, 44985 regression variants, three arms scored (23s)
+  chr15: 51216 reference, 42124 regression variants, three arms scored (20s)
+  chr16: 54572 reference, 44468 regression variants, three arms scored (20s)
+  chr17: 46982 reference, 38147 regression variants, three arms scored (16s)
+  chr18: 50077 reference, 41000 regression variants, three arms scored (19s)
+  chr19: 33862 reference, 27319 regression variants, three arms scored (11s)
+  chr20: 43341 reference, 35414 regression variants, three arms scored (15s)
+  chr21: 23853 reference, 19824 regression variants, three arms scored (8s)
+  chr22: 24621 reference, 20049 regression variants, three arms scored (8s)
+
+R0: chr22 A1 scores vs cached kappa_gw scores, max |diff| = 0.00e+00 -> PASS
+
+1190723 rule regression SNPs on chr 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+
+Table AK1. Implied eta_a = h_a^2 / h_EUR^2 (mean v^2 relative to EUR); A1 is 1
+           EUR    AFR    EAS    SAS    AMR
+  S(-1.00)  1.000  1.093  0.750  0.896  0.964
+  S(-0.38)  1.000  1.042  0.875  0.980  1.008
+
+Table AK2 (R1). Rule cell EUR 0.75 + AFR, rho = 0.8: pi = kappa_meta / kappa_EUR, OLS / weighted
+        A1: 0.737 / 0.726
+  S(-1.00): 0.707 / 0.703   (difference from A1 -0.030 / -0.023)
+  S(-0.38): 0.716 / 0.711   (difference from A1 -0.020 / -0.015)
+  R2 precondition: A1 pi 0.737 / 0.726 vs Table 6 0.737 / 0.726 -> PASS
+  R2: S(-0.38) largest |difference| 0.020 vs tolerance 0.03 -> caveat closed genome-wide
+
+Table AK3. pi for every ancestry and rho, EUR 0.75 + X, OLS / weighted (descriptive)
+       arm    X         rho=1.0         rho=0.8         rho=0.6
+        A1  AFR   0.773 / 0.761   0.737 / 0.726   0.700 / 0.692
+        A1  EAS   0.903 / 0.892   0.846 / 0.837   0.789 / 0.782
+        A1  SAS   0.942 / 0.929   0.877 / 0.866   0.812 / 0.804
+        A1  AMR   0.964 / 0.958   0.896 / 0.891   0.828 / 0.824
+  S(-1.00)  AFR   0.736 / 0.732   0.707 / 0.703   0.677 / 0.675
+  S(-1.00)  EAS   0.849 / 0.843   0.801 / 0.796   0.753 / 0.749
+  S(-1.00)  SAS   0.910 / 0.903   0.851 / 0.845   0.791 / 0.786
+  S(-1.00)  AMR   0.950 / 0.941   0.884 / 0.877   0.818 / 0.814
+  S(-0.38)  AFR   0.748 / 0.742   0.716 / 0.711   0.684 / 0.680
+  S(-0.38)  EAS   0.881 / 0.871   0.828 / 0.820   0.775 / 0.769
+  S(-0.38)  SAS   0.929 / 0.920   0.866 / 0.859   0.803 / 0.798
+  S(-0.38)  AMR   0.962 / 0.952   0.894 / 0.886   0.826 / 0.821
+
+Table AK4. Rule cell decomposed: kappa_meta and kappa_EUR, OLS / weighted (descriptive)
+        A1: kappa_meta 0.737 / 0.726, kappa_EUR 1.000 / 1.000
+  S(-1.00): kappa_meta 0.767 / 0.765, kappa_EUR 1.085 / 1.088
+  S(-0.38): kappa_meta 0.949 / 0.940, kappa_EUR 1.325 / 1.322
+
+total 706s
+
+Score-pattern prediction and power, 2026-11-19
+----------------------------------------------
+The six GBMI digests and the BED, BIM, FAM, FAM2 and map digests are recorded above.
+Started from an empty cache, checked all four genotype-file digests, rebuilt all 22 chromosomes,
+and loaded them with the GBMI driver's default map- and source-identity checks.
+Both analysis drivers used Python 3.14.6, NumPy 2.4.6 and single-threaded BLAS.
+Asthma: gbmi_asthma_casualty.py --score-dir <rebuilt-cache> --shape-out report/asthma_score_shape.json
+Simulation: score_shape_sim.py --out report/score_shape_simulation.json (default seed 20261119)
+
+Asthma: fixed rho=0.8, eta=1, 22 chromosomes, 953596 SNPs, M=1664534.
+Estimates and delete-chromosome SEs (the CV deletions also refit the training folds):
+  eur_h2: 0.132877369  SE 0.011696046
+  matched_h2: 0.154664268  SE 0.013546434
+  residual_slope: 0.082098532  SE 0.100043243
+  residual_minus_matched: -0.072565736  SE 0.101055563
+  gain_percent: 0.000729301  SE 0.010043065
+
+Simulation: 16384 independent two-SNP blocks, 32 regions, 1000 GWAS/reference draws per cell.
+E:F    panel per group    H0 rejections    H1 rejections    H0 covered    H1 covered
+90:10     population               39              118           961           961
+90:10            400               42              121           958           960
+90:10           6000               42              119           958           958
+75:25     population               42              578           958           957
+75:25            400               45              583           955           953
+75:25           6000               43              577           957           956
+50:50     population               43              990           957           956
+50:50            400               48              988           952           956
+50:50           6000               42              989           958           956
+
+SHA-256 of the analysis code and distributed aggregate results
+55080358b6be87737e1ef983da56376cbd8451acc8ce00b297815f59e1949c0a  experiments/score_shape.py
+0bf15f1d3d9ad6c96539969a1b37c60eb749aa5f47319e1bbfc0a66404f03b3b  experiments/score_shape_sim.py
+35b7690621cbe40cc317ad4997265ee756f3ff8850ce40a47ce85d8b6f1a178e  experiments/gbmi_asthma_casualty.py
+13e900241084aaf902fb8e02777cef001e2141c8bf531a4b0cb1b4715b43d17d  report/asthma_score_shape.json
+b6f751af2864e9a6d072ee75b576ed48f46064d340ac0bccff4cfdd4053e1de3  report/score_shape_simulation.json

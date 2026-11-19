@@ -7,8 +7,15 @@ version 1.0.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-19
+
 ### Added
 
+- Unified [methods and evidence report](report/methods.md) with the
+  simulation results and three reproducible figures on chr22 tagging,
+  held-out chromosome prediction for GBMI asthma and simulation power.
+- Outcome test of the matched LD-score pattern, with aggregate chromosome
+  cross-products for reanalysis and a two-population known-truth experiment.
 - `cross_ancestry_ld_scores(..., effect_scales=...)`: per-panel scales of
   the standardized causal effects, giving weighted scores
   `sum_k v_ak v_bk r^a_jk r^b_jk` for effect models other than A1.
