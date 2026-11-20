@@ -83,6 +83,14 @@ and [full multi-ancestry derivation](docs/MULTI_ANCESTRY.md).
 **Figure 2 from the report.** Each point on the right holds out a whole
 chromosome. The diamond pools the errors on all 953,596 SNPs.
 
+A meta-analysis also reports Cochran's Q, which is the other half of a
+rotation of the two ancestry statistics. In simulations on 1000 Genomes LD
+the pooled statistic and Q together recovered the cross-ancestry genetic
+covariance, at 1.7 times the standard deviation of the two-strata estimate
+for an 85% EUR study. In asthma the fit matched the two-strata estimate
+under sample-size weights and fell 22% below it under inverse-variance
+weights. [What does Cochran's Q add?](report/methods.md#11-what-does-cochrans-q-add)
+
 Reproduce the chromosome 22 tables from the committed aggregate LD-score
 bundle, without downloading genotypes:
 

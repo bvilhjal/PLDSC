@@ -1029,3 +1029,75 @@ across builds, and direct-or-swapped allele rule remain in force.
   check is nearly mechanical because the regressors correlate 0.9965.
 - **Post hoc:** per-stratum h² values, each on a matched score, average
   0.154. That agrees with the meta-score estimate.
+
+## `q_heterogeneity_sim.py` — Cochran's Q as a second GWAS summary
+
+A two-ancestry meta-analysis reports Z = c_E z_E + c_F z_F. The contrast
+D = c_F z_E − c_E z_F is the other half of the same rotation, and Cochran's
+Q = D². Part 1 asks whether Z, Q and the weights recover the cross-ancestry
+covariance g. Part 2 treats the datasets of one ancestry as replicate
+measurements: their own Q estimates how much signal they share (τ/h²), and
+dividing g by √(τ_E τ_F) corrects a cross-ancestry correlation for
+differences between cohorts.
+
+Data: bigsnpr 1000 Genomes genotypes, chromosomes 14–22, 234,000 SNPs with
+MAF ≥ 0.05 in both groups, in 936 blocks of 250. LD is the panel correlation
+within a block and zero between blocks, so scores are exact. h² = 0.3,
+total N 46,475, inverse-variance weights, 200-group jackknife, seed
+20261120; about 15 minutes. The rules were written into the driver before
+the full run on 2026-11-20 but were not committed separately first. A second
+full run reproduced every number.
+
+- **R1 (bias): PASS.** The mean Z+Q estimate of g is within 2% of truth in
+  all ten exact-score cells: EUR–EAS at 85% and 50% EUR with ρ = 1, 0.9 and
+  0.74, sparse effects, and EUR–AFR.
+- **R2 (calibration): PASS.** At ρ = 1 the one-sided 5% test of ρ < 1
+  rejects in 4.5% (85% EUR) and 4.0% (50%) of 200 replicates. Mean jackknife
+  SE over empirical SD is 0.96 and 1.01.
+- **R3 (ceiling): PASS.** With exchangeable datasets the corrected medians
+  are within 0.042 of truth and the uncorrected medians within 0.021 of
+  their analytic expectation.
+- Descriptive results:
+  - SD of ĝ at ρ = 0.74, both strata / Z+Q / Z² only: 0.021 / 0.037 / 0.141
+    at 85% EUR and 0.017 / 0.017 / 0.073 at 50%.
+  - Power to detect ρ = 0.74 at 85% EUR: 93% from both strata, 90% from Z+Q.
+  - With identical effects mean Q is 1.05–1.09, and a test of mean Q above
+    one rejects in 98–100% of replicates.
+  - Reference scores from a disjoint half panel: ĝ 0.297 against 0.300 and
+    0.214 against 0.222.
+  - Shared per-allele effects of constant variance: ĝ is 0.267 from Z+Q and
+    0.315 from both strata, against 0.293.
+  - With a within-ancestry correlation of 0.8 and a true ancestry
+    correlation of one, the uncorrected median is 0.89 and is declared below
+    one in 72% of replicates at 50% EUR; the corrected median is 0.99 (6%).
+  - At 85% EUR the corrected test rejects a true correlation of one in
+    10–17% of replicates.
+  - Two EUR datasets sharing a definition: corrected 0.944 against one.
+    Proportional effects with heritabilities in ratio 1.4, 0.8, 0.6 and
+    1.0: corrected 1.017. These two scale cells were added after the first
+    full run.
+
+## `gbmi_asthma_heterogeneity.py` — the same two questions on asthma (exploratory)
+
+EUR and EAS releases of GBMI asthma on 937,544 SNPs, with the inputs,
+filters and effective N of `gbmi_asthma_casualty.py`. No rule was stated in
+advance. A first pass used sample-size weights and a score cache without its
+provenance check; the driver then fixed the analysis and ran on scores
+rebuilt the same day (92 s).
+
+- **Covariance from Z and Q.** Both strata give g = 0.1250 (SE 0.0106). A
+  rebuilt inverse-variance meta gives 0.0977 (0.0161) from Z and Q, which is
+  0.027 lower (paired SE 0.012). A sample-size-weighted meta gives 0.1236
+  (0.0230). Z² alone gives 0.049 (0.057).
+- **Reading.** Inverse-variance weights depend on allele frequency in each
+  group, and the baseline model has no frequency-dependent effects. The
+  simulation's per-allele arm moved the two fits apart in the same direction.
+- **Mean Q** is 1.084, against 1.049 expected with identical effects and
+  1.102 from the two-strata estimates. At 2,229 pooled genome-wide
+  significant SNPs it is 3.50 against a Gaussian expectation of 1.25–1.34.
+- **Ceilings.** Dataset sizes solve exactly from the per-variant counts and
+  direction strings. EUR, 14 datasets: τ/h² = 0.910 (0.042). EAS, 5 datasets
+  with one dominant: 0.84 (0.20).
+- **Correlation.** 0.738 (0.043) uncorrected, 0.744 (0.044) with the EUR
+  ceiling and 0.793 (0.070) with both. Differences among European datasets
+  do not explain the shortfall from one.

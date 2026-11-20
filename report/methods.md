@@ -1,7 +1,7 @@
 # Which LD score matches a GWAS?
 
 **PLDSC methods, simulations and applications**\
-19 November 2026 · PLDSC 0.1.2
+20 November 2026 · PLDSC 0.1.2
 
 A variant can show association because it tags causal variants nearby. An LD score measures this tagging. The complication is that the same variant tags different neighbours in different populations, and a GWAS can combine those populations in several ways. PLDSC asks how much the choice of reference changes what one learns about SNP heritability from the resulting summary statistics.
 
@@ -9,7 +9,9 @@ Consider a study with 75% European and 25% African ancestry and a cross-ancestry
 
 The GBMI asthma reanalysis illustrates the distinction on a real trait. Changing the reference moved the estimate from 0.133 to 0.156 under the original central sharing assumptions. In a subsequent test with sharing fixed across all groups, each score predicted association statistics on chromosomes excluded from fitting. The matched score reduced prediction error by 0.0007% (95% interval $-0.020\%$ to +0.022%). A known-truth experiment explains why even a genome-wide study can struggle to choose between the scores when one group dominates the sample.
 
-Table 1 traces the argument from the association statistic to prediction on held-out chromosomes and a test in an independent cohort.
+A fixed-effect meta-analysis usually reports a second statistic, Cochran's $Q$, and it carries the information the pooled statistic lacks. In simulations on 1000 Genomes LD, the pooled statistic and $Q$ together recovered the cross-ancestry genetic covariance without ancestry-specific files. For asthma the same fit matched the two-strata estimate under sample-size weights and fell 22% below it under the inverse-variance weights that consortia use. Heterogeneity among the 14 European asthma datasets put their shared genetic signal at 0.91 (SE 0.04) of a dataset's heritability. Averaged over 14 datasets, that is too little to explain a EUR–EAS correlation of 0.74.
+
+Table 1 traces the argument from the association statistic to prediction on held-out chromosomes, a test in an independent cohort and the heterogeneity statistic.
 
 **Table 1. Research questions and evidence.**
 
@@ -20,6 +22,7 @@ Table 1 traces the argument from the association statistic to prediction on held
 | Does the choice matter for a published result? | The same asthma statistics fitted with both scores, followed by a chromosome prediction test. [Section 6](#6-what-changed-in-the-gbmi-asthma-analysis) |
 | What else can create the same signal? | Mixed models, relatives, enrichment, assortative mating and parental effects. [Sections 7–9](#7-a-matched-mixed-model-score-and-the-reason-to-archive-it) |
 | How could the model be falsified? | Power and false positives against known truth, followed by a cohort-level test. [Section 10](#10-when-can-the-two-scores-be-distinguished) |
+| What does the heterogeneity statistic add? | A second moment equation, a known-truth experiment with stated rules and an asthma analysis. [Section 11](#11-what-does-cochrans-q-add) |
 
 ## 1. Ordinary LDSC and its estimands
 
@@ -49,7 +52,7 @@ $$
 
 The defaults are 100 blocks for one trait and 200 for two. Estimates can fall outside their population ranges. A nonpositive marginal heritability makes $r_g$ undefined. An invalid deletion makes its SE undefined. A fixed cross intercept in the bivariate fit leaves the two marginal intercepts free.
 
-**Choosing a scale.** Removing regression rows leaves $M$ fixed. For the bundled GRCh37 HapMap3 EUR scores, PLDSC defaults to $M=9{,}997{,}231$ reference variants. The original LDSC common-variant count is 5,961,159. At identical fitted slopes their ratio directly rescales both $h^2$ and $g_{12}$ and cancels in $r_g$. Binary-trait estimates require an explicit prevalence, sampling convention and conversion to report them on the liability scale. Section 11 gives the software entry points.
+**Choosing a scale.** Removing regression rows leaves $M$ fixed. For the bundled GRCh37 HapMap3 EUR scores, PLDSC defaults to $M=9{,}997{,}231$ reference variants. The original LDSC common-variant count is 5,961,159. At identical fitted slopes their ratio directly rescales both $h^2$ and $g_{12}$ and cancels in $r_g$. Binary-trait estimates require an explicit prevalence, sampling convention and conversion to report them on the liability scale. Section 12 gives the software entry points.
 
 ## 2. How a meta-analysis changes the score
 
@@ -284,13 +287,96 @@ With exact LD, power was 11.8%, 57.8% and 99.0% as the second group increased fr
 
 **Decision.** An interval around zero that excludes the training prediction challenges the added tagging pattern in that cohort. An interval containing both leaves the two models unresolved. Absolute calibration requires an independent estimate on the same SNP, phenotype and population scales, for example individual-level REML. Popcorn and S-LDXR estimate sharing, MAMA improves association estimation, and cov-LDSC addresses covariate adjustment. The question here is whether the resulting score predicts which SNPs carry association signal beyond EUR rescaling. [Popcorn](https://doi.org/10.1016/j.ajhg.2016.05.001), [S-LDXR](https://pmc.ncbi.nlm.nih.gov/articles/PMC7889654/), [MAMA](https://github.com/JonJala/mama) and [cov-LDSC](https://pubmed.ncbi.nlm.nih.gov/33987664/).
 
-A separate extension would estimate $h^2$ and $h^2\rho$ jointly from the within- and cross-group score components. On chr22 those components correlate 0.847, 0.813, 0.980 and 0.988 for EUR paired with AFR, EAS, SAS and AMR. A high correlation leaves little independent information for estimating $\rho$. The analogous cross-trait and annotation questions would require independent tests of genetic covariance and functional enrichment.
+A separate extension would estimate $h^2$ and $h^2\rho$ jointly from the within- and cross-group score components. On chr22 those components correlate 0.847, 0.813, 0.980 and 0.988 for EUR paired with AFR, EAS, SAS and AMR. A high correlation leaves little independent information for estimating $\rho$. Section 11 adds a statistic that supplies it. The analogous cross-trait and annotation questions would require independent tests of genetic covariance and functional enrichment.
 
-## 11. Reproducing and using the report
+## 11. What does Cochran's Q add?
 
-**Software.** PLDSC 0.1.2 includes this report and the drivers in Table 8. The analyses used the [0.1.1 source revision f47cf80](https://github.com/bvilhjal/PLDSC/tree/f47cf8031d527834d7c6243bed6a50c861cd51c2) with the research drivers recorded here, Python 3.14.6, NumPy 2.4.6 and allelign 0.3.1. Run the drivers from the repository root after installation. Figures 1–3 use the `plot` extra and can be rebuilt without downloading the GWAS files.
+Consider two independent strata E and F and a fixed-effect meta-analysis with weights $c_E^2+c_F^2=1$. The pooled statistic and the heterogeneity contrast are
 
-**Table 8. Reproduction routes and required inputs.**
+$$
+Z=c_Ez_E+c_Fz_F,\qquad D=c_Fz_E-c_Ez_F,\qquad Q=D^2. \tag{12}
+$$
+
+Equation (12) is a rotation of $(z_E,z_F)$, and $Q$ is Cochran's heterogeneity statistic. A release holding $Z$, $Q$ and the weights therefore loses only the sign of $D$. Write $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$. Substituting Equation (4) gives two moments per SNP.
+
+$$
+\begin{aligned}
+E[Z^2]&\simeq 1+c_E^2x_Eh_E^2+c_F^2x_Fh_F^2+2c_Ec_Fx_\times g,\\
+E[Q]&\simeq 1+c_F^2x_Eh_E^2+c_E^2x_Fh_F^2-2c_Ec_Fx_\times g.
+\end{aligned}\tag{13}
+$$
+
+The covariance enters the two lines with opposite signs. Their contrast identifies $g$ without relying on the small differences among the three scores. With sample-size weights the second line is $1+(\tilde N/M)(h_E^2\ell^{EE}+h_F^2\ell^{FF}-2g\ell^{EF})$, where $\tilde N=N_EN_F/(N_E+N_F)$. With identical effects in both groups the bracket is $h^2\sum_k(r^E_{jk}-r^F_{jk})^2$. Different LD alone therefore gives $E[Q]>1$.
+
+**A known-truth experiment on 1000 Genomes LD.** We took the 234,000 SNPs on chromosomes 14–22 with MAF at least 0.05 in both the EUR and EAS panels and cut them into 936 blocks of 250. LD was the panel correlation within a block and zero between blocks, so every score was known. Standardized effects had $h^2=0.3$ in both groups, and exact Gaussian statistics were combined by inverse-variance weighting (IVW). Total $N$ was 46,475, which gives a mean pooled $\chi^2$ near 1.9. All fits used free intercepts, two-step weights and a 200-group jackknife. Three rules were written into the driver before the full run. Table 8 gives the main cells.
+
+**Table 8. Recovering the genetic covariance from three inputs, 200 replicates per cell.** The SD is for $\hat g$ at $\rho=0.74$ ($g=0.222$). The remaining columns give how often a one-sided 5% jackknife test declared $\rho<1$. For $Z$ alone, 66–73 of the 200 replicates at 85% EUR had no valid correlation, and the rates use the remainder.
+
+| EUR share | Input | SD of $\hat g$ | $\rho=0.74$ | $\rho=0.9$ | $\rho=1$ |
+|:--|:--|--:|--:|--:|--:|
+| 85% | Both strata | 0.021 | 93.0% | 35.0% | 5.0% |
+| 85% | $Z$ and $Q$ | 0.037 | 90.0% | 33.5% | 4.5% |
+| 85% | $Z$ only | 0.141 | 31.5% | 34.3% | 21.4% |
+| 50% | Both strata | 0.017 | 100% | 67.0% | 4.5% |
+| 50% | $Z$ and $Q$ | 0.017 | 100% | 66.0% | 4.0% |
+| 50% | $Z$ only | 0.073 | 26.5% | 10.0% | 10.5% |
+
+Both rules for this part passed. The mean $Z$-and-$Q$ estimate of $g$ was within 2% of truth in every exact-score cell, including sparse effects (2% of SNPs causal) and the EUR–AFR pair. At $\rho=1$ the test rejected in 4.5% and 4.0% of replicates, and the mean jackknife SE was 0.96 and 1.01 of the empirical SD. In a balanced study the compression cost nothing. At 85% EUR it raised the SD of $\hat g$ by a factor of 1.7 while leaving the power to detect $\rho<1$ nearly intact.
+
+Three descriptive arms complete the picture. With identical effects, mean $Q$ was 1.05 at 85% EUR and 1.09 at 50%, and a test of mean $Q$ above one rejected in 98% and 100% of replicates. With generating LD and reference scores from disjoint halves of each panel, about 250 people each, the mean estimate was 0.297 against 0.300 and 0.214 against 0.222. When the two groups shared per-allele effects of constant variance, the standardized-scale covariance was 0.293; the $Z$-and-$Q$ fit gave 0.267 and the two-strata fit 0.315.
+
+**Cohorts as replicate measurements.** A cross-ancestry correlation is also a correlation across cohorts, health systems and case definitions. Suppose ancestry $a$ contributes $K$ independent datasets with effective-size fractions $f_c$. Each has heritability $h_a^2$ and any two share genetic covariance $\tau_a$. With $S_a=\sum_cf_c^2$, the ancestry's own meta-analysis and its Cochran statistic satisfy
+
+$$
+E[Z_a^2]\simeq 1+x_a\left[\tau_a+(h_a^2-\tau_a)S_a\right],\qquad
+E[Q_a]\simeq K-1+x_a(h_a^2-\tau_a)(1-S_a). \tag{14}
+$$
+
+The ratio $\tau_a/h_a^2$ is the genetic correlation between two datasets of one ancestry. It is a ceiling: two ancestries cannot be expected to agree better than two cohorts of the same ancestry. The usual estimate divides $g$ by the two metas' own heritabilities. The corrected estimate divides by $\sqrt{\tau_E\tau_F}$. If dataset-specific effects are exchangeable, it estimates the correlation between the effects the datasets of each ancestry share. Table 9 tests this with four EUR datasets (fractions 0.55, 0.25, 0.12 and 0.08) and two EAS datasets (0.7 and 0.3).
+
+**Table 9. Uncorrected and corrected cross-ancestry correlation, 100 replicates per cell.** Entries are medians, with the analytic expectation of the uncorrected value in parentheses. The last two columns give how often each estimate was declared below one.
+
+| EUR share | Within-ancestry | Truth | Uncorrected | Corrected | Uncorrected $<1$ | Corrected $<1$ |
+|:--|--:|--:|--:|--:|--:|--:|
+| 50% | 0.8 | 1.00 | 0.887 (0.892) | 0.992 | 72% | 6% |
+| 50% | 0.8 | 0.85 | 0.746 (0.759) | 0.848 | 99% | 74% |
+| 85% | 0.8 | 1.00 | 0.896 (0.892) | 0.999 | 36% | 17% |
+| 85% | 0.8 | 0.85 | 0.780 (0.759) | 0.892 | 73% | 26% |
+| 85% | 0.6 | 1.00 | 0.759 (0.757) | 1.035 | 79% | 11% |
+| 85% | 1.0 | 1.00 | 1.004 (1.000) | 0.994 | 6% | 10% |
+
+The third rule passed: every corrected median was within 0.05 of truth and every uncorrected median within 0.03 of its expectation. The correction costs precision. At 50% EUR the robust SD rose from 0.05 to 0.065, and at 85% from about 0.10 to between 0.12 and 0.28. At 85% EUR the corrected test rejected a true correlation of one in 10–17% of replicates, above its nominal 5%. Two further cells probe the exchangeability assumption. When two of the four EUR datasets shared a definition, the corrected median was 0.944 against a truth of one. When dataset effects were proportional with heritabilities in ratio 1.4, 0.8, 0.6 and 1.0, it was 1.017. [Simulation driver and rules](../experiments/q_heterogeneity_sim.py) and [all cells](q_heterogeneity_simulation.json).
+
+**Asthma.** The GBMI releases allow both analyses for EUR and EAS on 937,544 SNPs. For the first we rebuilt a two-ancestry meta-analysis from the strata, kept $Z$, $Q$ and the weights, and fitted Equation (13). For the second we recovered each ancestry's $Q_a$ from its released heterogeneity p-value. The dataset sizes follow exactly from the per-variant case and control counts and the direction strings: 14 EUR datasets with median $S=0.145$ and 5 EAS datasets with median $S=0.524$. No rule was stated before this analysis. A first pass used sample-size weights and suggested full agreement; the IVW fit was specified afterwards. Figure 4 and Table 10 give the estimates.
+
+![Estimates of the genetic covariance from both strata, from Z and Q and from Z alone, for two simulated mixtures and for asthma under two weightings, followed by uncorrected and corrected correlations.](heterogeneity.png)
+
+**Figure 4. Cochran's $Q$ restores most of the information about cross-ancestry covariance, and its within-ancestry counterpart bounds what cohort differences can explain.** A gives $\hat g$ divided by the truth in simulation ($\rho=0.74$) and by the two-strata estimate for asthma. B gives the correlation before and after the correction; the simulation rows have a within-ancestry correlation of 0.8. Bars are the SD (A) or robust SD (B) across replicates in simulation and jackknife standard errors for asthma. [Asthma estimates](asthma_heterogeneity.json) and [figure code](reference_figure.py).
+
+**Table 10. Asthma, EUR and EAS.** Section 6 gave a correlation of 0.755 on its own SNPs and weights.
+
+| Quantity | Estimate (SE) |
+|:--|--:|
+| $g$ from both strata | 0.1250 (0.0106) |
+| $g$ from $Z$ and $Q$, IVW meta | 0.0977 (0.0161) |
+| $g$ from $Z$ and $Q$, sample-size-weighted meta | 0.1236 (0.0230) |
+| $g$ from $Z$ only, IVW meta | 0.049 (0.057) |
+| Shared fraction $\tau/h^2$ among EUR datasets | 0.910 (0.042) |
+| Shared fraction $\tau/h^2$ among EAS datasets | 0.84 (0.20) |
+| EUR–EAS correlation, uncorrected | 0.738 (0.043) |
+| EUR–EAS correlation, both sides corrected | 0.793 (0.070) |
+
+Adding $Q$ reduced the standard error of $g$ about 3.6-fold relative to $Z$ alone under either weighting. The sample-size-weighted fit reproduced the two-strata estimate. The IVW fit was 0.027 lower (paired SE 0.012), a shortfall of 22%. IVW weights depend on each group's allele frequency. They therefore interact with any dependence of effect size on frequency, which the baseline model omits. The simulation's shared per-allele arm moved the two fits apart in the same direction. Mean $Q$ was 1.084; identical effects with different LD predict 1.049.
+
+The European datasets disagree a little: $h^2-\tau=0.014$ (SE 0.007). But a 14-dataset meta-analysis averages most of that away, and correcting the European side moved the correlation from 0.738 to 0.744. The East Asian side has five datasets, one of which dominates, and its ceiling is unresolved. Idiosyncratic differences among European biobanks therefore do not explain the shortfall from one. A difference shared by all datasets of one ancestry remains possible, whether in biology, environment or case definition, and this design cannot remove it. [Asthma driver](../experiments/gbmi_asthma_heterogeneity.py).
+
+**Limits.** The simulation's LD is known within blocks and absent between them, and every dataset reports every SNP. The correction assumes exchangeable dataset effects. The moment model does not calibrate $Q$ at single loci: at the 2,229 asthma SNPs with pooled $p<5\times10^{-8}$, mean $Q$ was 3.50 against a Gaussian conditional expectation of 1.25–1.34. Use on a pooled release still needs frequency-dependent scores for IVW weights (Section 5), a between-ancestry $Q$ separated from within-ancestry heterogeneity, and other traits under a rule stated in advance.
+
+## 12. Reproducing and using the report
+
+**Software.** PLDSC 0.1.2 includes Sections 1–10 and their drivers in Table 11. Those analyses used the [0.1.1 source revision f47cf80](https://github.com/bvilhjal/PLDSC/tree/f47cf8031d527834d7c6243bed6a50c861cd51c2) with the research drivers recorded here, Python 3.14.6, NumPy 2.4.6 and allelign 0.3.1. Section 11 was added on 20 November 2026 on the [0.1.2 revision d49f156](https://github.com/bvilhjal/PLDSC/tree/d49f156), with allelign 0.3.2 and SciPy 1.18.0 for the asthma driver. Run the drivers from the repository root after installation. Figures 1–4 use the `plot` extra and can be rebuilt without downloading the GWAS files.
+
+**Table 11. Reproduction routes and required inputs.**
 
 | Result and driver | Inputs and settings |
 |:--------------------|:--------------------------------------|
@@ -301,9 +387,11 @@ A separate extension would estimate $h^2$ and $h^2\rho$ jointly from the within-
 | [Genome-wide comparison](../experiments/multiancestry_genome_kappa.py) and [effect-model sensitivity](../experiments/multiancestry_alpha_kappa.py) | bigsnpr genotypes and SHAPEIT4 maps. Pass `--chroms` followed by 1 through 22 to the effect-model driver. The bridge adds VCF caches for chr10, 21 and 22. |
 | [Table 5 and Figure 2 asthma analysis](../experiments/gbmi_asthma_casualty.py) | Six GBMI files and genome-wide scores rebuilt from genotypes and maps. Pass `--shape-out report/asthma_score_shape.json` to save the prediction results. |
 | [Figure 3 power experiment](../experiments/score_shape_sim.py) | Synthetic Gaussian GWAS. Run with `--out report/score_shape_simulation.json`. Default seed 20261119, 1,000 replicates per cell. |
+| [Tables 8–9 simulation](../experiments/q_heterogeneity_sim.py) | bigsnpr genotypes, chromosomes 14–22. Run with `--out report/q_heterogeneity_simulation.json`. Seed 20261120, about 15 minutes. |
+| [Table 10 asthma analysis](../experiments/gbmi_asthma_heterogeneity.py) and [Figure 4](reference_figure.py) | The EUR and EAS GBMI files and genome-wide scores. Run with `--out report/asthma_heterogeneity.json`. |
 
 **Using the ordinary estimator.** Start with `pldsc h2`, `pldsc rg`, or the Python file wrappers `ldsc_h2_sumstats` and `ldsc_rg_sumstats`. Supply signed effects, standard errors, effective $N$, aligned variants and a compatible LD reference. The bundled `hm3-eur` is European and GRCh37. The CLI excludes GRCh37 long-range LD regions by default; Python file wrappers with custom references require explicit region filtering. The bundle contains 1,190,268 positive-score regression variants before region exclusions. The MHC, genome build, strand, imputation quality and per-cohort ascertainment all matter for comparisons. For disjoint case-control cohorts the sum of cohort-specific effective sizes generally differs from applying $4/(1/N_{\rm case}+1/N_{\rm control})$ to pooled totals.
 
 Allelign handles file QC and allele alignment. By default the file workflow drops ambiguous variants, filters on available MAF and INFO, and applies $z^2\leq\max(80,0.001N)$ for each trait. Inspect alignment counts and the common rows in the output. Array functions expect already aligned data in genomic order. Optional Numba compilation parallelizes bivariate jackknife deletions. Dense, quantized or low-rank reference blocks reduce different computational costs and omit LD between separate blocks. [LDSC guide](../docs/LDSC.md), [notebook](../examples/ldsc_notebook.ipynb) and [reference provenance](../pldsc/data/hm3_eur.json).
 
-**What was checked.** This review reran all five Table 2 arms at both panel sizes, the identical-LD control, the chr22 grid, the genome-wide protocol comparison, both effect-model analyses and the asthma reanalysis. The [reproduction record](reproduction.txt) contains their output and input digests. Sections 7–9 draw on the [historical experiments](../experiments/RESULTS.md) and [family derivations](../docs/METHOD.md). The [22 chromosome summaries](asthma_score_shape.json) allow the prediction errors and their paired jackknife to be recomputed. The [simulation results](score_shape_simulation.json) record coverage, power, slope variability and predictive-model selections. Independent-cohort validation and absolute calibration of asthma heritability remain open.
+**What was checked.** This review reran all five Table 2 arms at both panel sizes, the identical-LD control, the chr22 grid, the genome-wide protocol comparison, both effect-model analyses and the asthma reanalysis. The [reproduction record](reproduction.txt) contains their output and input digests. Sections 7–9 draw on the [historical experiments](../experiments/RESULTS.md) and [family derivations](../docs/METHOD.md). The [22 chromosome summaries](asthma_score_shape.json) allow the prediction errors and their paired jackknife to be recomputed. The [simulation results](score_shape_simulation.json) record coverage, power, slope variability and predictive-model selections. The Section 11 simulation was run twice with identical results, and its asthma analysis ran on scores rebuilt that day. Independent-cohort validation and absolute calibration of asthma heritability remain open.

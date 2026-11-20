@@ -33,6 +33,18 @@ its limitations. Run commands from the repository root with PLDSC installed.
   The [report](../report/methods.md#10-when-can-the-two-scores-be-distinguished) gives coverage, power and design implications.
 - [Reference-score noise](reference_score_noise.py): a known-truth simulation
   illustrating the limitations of panel plug-in slope comparisons.
+- [Cochran's Q as a second summary](q_heterogeneity_sim.py): a known-truth
+  simulation on 1000 Genomes block LD, with three rules stated in the driver.
+  It asks whether a pooled statistic with its Q recovers cross-ancestry
+  covariance, and whether within-ancestry Q corrects a cross-ancestry
+  correlation for differences between cohorts. Requires the bigsnpr genotype
+  files. Run `python experiments/q_heterogeneity_sim.py --out report/q_heterogeneity_simulation.json`
+  (about 15 minutes); `--quick` uses chr22.
+- [Asthma heterogeneity](gbmi_asthma_heterogeneity.py): the same two
+  questions on the GBMI EUR and EAS releases. Exploratory; requires SciPy,
+  the two GBMI files and the genome-wide score cache. Run
+  `python experiments/gbmi_asthma_heterogeneity.py --out report/asthma_heterogeneity.json`.
+  The [report](../report/methods.md#11-what-does-cochrans-q-add) gives both sets of results.
 
 For the chromosome 22 genotype-based analysis, fetch the sources using
 `python scripts/fetch_1000g.py --maps 22 --chrom 22 --panel --build-cache 22`.

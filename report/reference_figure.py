@@ -158,12 +158,63 @@ def simulation_figure():
     save(fig, "score_shape_power.png")
 
 
+def heterogeneity_figure():
+    sim = json.loads((HERE / "q_heterogeneity_simulation.json").read_text())
+    asthma = json.loads((HERE / "asthma_heterogeneity.json").read_text())
+    fig, axes = plt.subplots(1, 2, figsize=(7.25, 3.0))
+    fig.subplots_adjust(left=0.17, right=0.98, bottom=0.31, top=0.83, wspace=0.1)
+    rows = np.array([2, 1, 0])
+
+    # A: genetic covariance relative to truth (simulation) or to the two-strata estimate (asthma)
+    ax = axes[0]
+    frame(ax, "A   Genetic covariance", "x")
+    ax.axvline(1, ls="--", color=GREY, lw=1)
+    cells = [sim["P1 EUR-EAS share 0.5 rho 0.74 inf"], sim["P1 EUR-EAS share 0.85 rho 0.74 inf"]]
+    g = asthma["strata"]["g"]
+    real = {"strata": [g, g], "ZQ": [asthma[f"meta_{w}"]["Z_and_Q"]["g"] for w in ("inverse_variance", "sample_size")],
+            "Z": [asthma[f"meta_{w}"]["Z_only"]["g"] for w in ("inverse_variance", "sample_size")]}
+    rows_a = np.array([3, 2, 1, 0])
+    for key, label, color, marker, offset in (("strata", "Both strata", INK, "D", 0.22), ("ZQ", "Z and Q", TEAL, "o", 0),
+                                              ("Z", "Z only", RUST, "s", -0.22)):
+        x = [c[key]["g_mean"] / c[key]["g_truth"] for c in cells] + [r["estimate"] / g["estimate"] for r in real[key]]
+        err = [c[key]["g_sd"] / c[key]["g_truth"] for c in cells] + [r["se"] / g["estimate"] for r in real[key]]
+        ax.errorbar(x, rows_a + offset, xerr=err, fmt=marker, color=color, capsize=2, ms=4.3, lw=1.1, label=label)
+    ax.set(xlim=(-0.45, 1.8), ylim=(-0.55, 3.55), yticks=rows_a,
+           yticklabels=["Simulation\n50 : 50", "Simulation\n85 : 15", "Asthma\nIVW", "Asthma\nsample size"],
+           xlabel="$g$ relative to reference")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=3, frameon=False, fontsize=8.5,
+              handletextpad=0.2, columnspacing=1.0)
+
+    # B: correlation between ancestries, before and after the within-ancestry ceiling
+    ax = axes[1]
+    frame(ax, "B   Cross-ancestry correlation", "x")
+    one, two = sim["P2 share 0.5 within 0.8 ancestry 1.0"], sim["P2 share 0.5 within 0.8 ancestry 0.85"]
+    corr = asthma["correlation"]
+    for key, real_key, label, color, marker, offset in (("naive", "naive", "Uncorrected", RUST, "s", 0.14),
+                                                         ("corrected", "corrected_both_ceilings", "Corrected", TEAL, "o", -0.14)):
+        x = [one[f"{key}_median"], two[f"{key}_median"], corr[real_key]["estimate"]]
+        err = [one[f"{key}_robust_sd"], two[f"{key}_robust_sd"], corr[real_key]["se"]]
+        ax.errorbar(x, rows + offset, xerr=err, fmt=marker, color=color, capsize=2, ms=4.6, lw=1.1, label=label)
+    ax.plot([1.0, 0.85], rows[:2], "|", color=INK, ms=24, mew=1.4)
+    ax.plot([], [], "|", color=INK, ms=9, mew=1.4, label="Truth")
+    ax.set(xlim=(0.6, 1.12), ylim=(-0.5, 2.5), yticks=rows, yticklabels=[], xlabel="Genetic correlation")
+    for y, text in zip(rows, ("Simulation, truth 1.00", "Simulation, truth 0.85", "Asthma")):
+        ax.text(0.607, y + 0.36, text, fontsize=7.5, color=GREY, va="center")
+    for a in axes:
+        a.tick_params(axis="y", length=0)
+        a.spines["left"].set_visible(False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=3, frameon=False, fontsize=8.5,
+              handletextpad=0.2, columnspacing=1.0)
+    save(fig, "heterogeneity.png")
+
+
 def main():
     plt.rcParams.update({"font.size": 9, "font.family": "DejaVu Sans", "text.color": INK,
                          "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK})
     reference_figure()
     asthma_figure()
     simulation_figure()
+    heterogeneity_figure()
 
 
 if __name__ == "__main__":

@@ -7,6 +7,16 @@ version 1.0.
 
 ## [Unreleased]
 
+### Added
+
+- Report section 11 and Figure 4 on Cochran's Q: a pooled statistic with its
+  Q recovers cross-ancestry genetic covariance, and within-ancestry Q gives
+  a ceiling for a cross-ancestry correlation.
+- `experiments/q_heterogeneity_sim.py`: known-truth simulation on 1000
+  Genomes block LD with three stated rules, and its recorded results.
+- `experiments/gbmi_asthma_heterogeneity.py`: the exploratory GBMI asthma
+  analysis of the same two questions, and its recorded estimates.
+
 ## [0.1.2] - 2026-11-19
 
 ### Added
