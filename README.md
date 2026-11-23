@@ -92,7 +92,7 @@ simulations on 1000 Genomes LD the pooled statistic and Q together recovered
 the cross-ancestry genetic covariance, at 1.7 times the standard deviation of
 the two-strata estimate for an 85% EUR study (2.0 times with the three
 stratum intercepts that inverse-variance weights need); part of that loss is
-provably unavoidable ([Proposition 3](report/methods.md#11-what-does-cochrans-q-add)).
+provably unavoidable ([Supplementary Method S6, Proposition 3](report/methods.md#s6-what-cochrans-q-keeps-and-discards)).
 In asthma the fit matched the two-strata estimate under sample-size weights
 and fell 22% below it under inverse-variance weights. Refitting with three
 stratum intercepts ([experiments/q_model.py](experiments/q_model.py)), which

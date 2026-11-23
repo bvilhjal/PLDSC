@@ -7,6 +7,12 @@ cover mixed models, relatives, enrichment and family mechanisms. Section 6.1
 tests prediction on held-out asthma chromosomes. Section 10 measures power
 against known truth and specifies an independent-cohort test. Section 11 asks
 what Cochran's Q adds, in simulation and in asthma. Section 12 links the experiments and inputs.
+The main text keeps the key equations and their interpretation. The appended
+[Supplementary Methods S1–S7](methods.md#supplementary-methods) contain the
+regression details, score derivations, mixed-model identity, biological
+variance calculations, all three propositions and proofs about Q, and the
+within-ancestry heterogeneity decomposition. Both editions include the supplement;
+main-text equations are numbered (1)–(10), supplementary equations (S1)–(S11).
 The [reproduction record](reproduction.txt) contains the reviewed runs'
 numerical output and the SHA-256 digests of the empirical inputs.
 

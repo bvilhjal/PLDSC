@@ -7,6 +7,8 @@ version 1.0.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-23
+
 ### Added
 
 - Report section 11 and Figure 4 on Cochran's Q: a pooled statistic with its
@@ -39,6 +41,10 @@ version 1.0.
 
 ### Changed
 
+- Report derivations, regression details and the three Q propositions and
+  proofs now appear in Supplementary Methods S1–S7. The main text retains
+  ten key equations with intuitive explanations; the PDF and LaTeX source
+  include the supplement.
 - Report section 11 now states what Q discards, with Propositions 1-3 and
   proofs; the remaining excess-loss statement is marked as a conjecture.
   The earlier wording that Q "loses only the sign" and "identifies g" is

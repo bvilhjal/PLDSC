@@ -1,7 +1,7 @@
 # Which LD score matches a GWAS?
 
 **PLDSC methods, simulations and applications**\
-20 November 2026 · PLDSC 0.1.2
+23 November 2026 · PLDSC 0.1.3
 
 A variant can show association because it tags causal variants nearby. An LD score measures this tagging. The complication is that the same variant tags different neighbours in different populations, and a GWAS can combine those populations in several ways. PLDSC asks how much the choice of reference changes what one learns about SNP heritability from the resulting summary statistics.
 
@@ -11,14 +11,14 @@ The GBMI asthma reanalysis illustrates the distinction on a real trait. Changing
 
 A fixed-effect meta-analysis usually reports a second statistic, Cochran's $Q$, and it carries the information the pooled statistic lacks. In simulations on 1000 Genomes LD, the pooled statistic and $Q$ together recovered the cross-ancestry genetic covariance without ancestry-specific files. For asthma the same fit matched the two-strata estimate under sample-size weights. Under the inverse-variance weights that consortia use it fell 22% below it, and still 19% below (1.6 SE) when refitted with three stratum intercepts, which stop unequal European and East Asian intercepts from leaking into the covariance. Heterogeneity among the 14 European asthma datasets put their shared genetic signal at 0.91 (SE 0.04) of a dataset's heritability. Averaged over 14 datasets, that is too little to explain a EUR–EAS correlation of 0.74.
 
-Table 1 traces the argument from the association statistic to prediction on held-out chromosomes, a test in an independent cohort and the heterogeneity statistic.
+Table 1 traces the argument from the association statistic to prediction on held-out chromosomes, a test in an independent cohort and the heterogeneity statistic. The main text gives the key equations and their interpretation; [Supplementary Methods S1–S7](#supplementary-methods) collect the derivations, proofs and fitting details.
 
-**Table 1. Research questions and evidence.**
+: **Table 1. Research questions and evidence.**
 
 | Question | Evidence in this report |
 |:----------------|:------------------------|
 | What does the software estimate? | The univariate and cross-trait slopes, their scale and uncertainty. [Section 1](#1-ordinary-ldsc-and-its-estimands) |
-| Which score describes a meta-analysis? | Derivation, simulation against known truth and two reference protocols. [Sections 2–5](#2-how-a-meta-analysis-changes-the-score) |
+| Which score describes a meta-analysis? | Matched score, simulation against known truth and two reference protocols. [Sections 2–5](#2-how-a-meta-analysis-changes-the-score) |
 | Does the choice matter for a published result? | The same asthma statistics fitted with both scores, followed by a chromosome prediction test. [Section 6](#6-what-changed-in-the-gbmi-asthma-analysis) |
 | What else can create the same signal? | Mixed models, relatives, enrichment, assortative mating and parental effects. [Sections 7–9](#7-a-matched-mixed-model-score-and-the-reason-to-archive-it) |
 | How could the model be falsified? | Power and false positives against known truth, followed by a cohort-level test. [Section 10](#10-when-can-the-two-scores-be-distinguished) |
@@ -43,46 +43,33 @@ $$
 
 The free intercepts allow LD-independent shifts. Sample overlap can contribute to $a_{12}$, as can correlated confounding. Its value alone cannot separate these sources. A one-trait fit may retain a different set of SNPs from the two-trait fit and return a different marginal estimate. [Univariate LDSC](https://doi.org/10.1038/ng.3211) and [cross-trait LDSC](https://doi.org/10.1038/ng.3406).
 
-**Fitting and uncertainty.** PLDSC uses one-step iteratively reweighted regression with two weight updates by default. Let $d_j=\max(\ell_j,1)$, $\mu_{tj}$ be the fitted marginal mean floored at one, and $q_j$ the fitted cross mean. The marginal weight is $1/(2d_j\mu_{tj}^2)$. The cross weight is $1/[d_j\max(\mu_{1j}\mu_{2j}+q_j^2,10^{-6})]$. Each genomic deletion refits the weights and, for $r_g$, all three slopes. For $B$ contiguous blocks and delete-block estimates $\theta_{-b}$ with mean $\bar\theta_-$, Equation (3) gives the reported uncertainty.
+**Fitting and uncertainty.** PLDSC fits a weighted line and estimates uncertainty by leaving out contiguous genomic blocks. Each deletion refits the weights and, for $r_g$, all three slopes. This lets nearby SNPs move together rather than treating them as independent observations. The defaults use 100 blocks for one trait and 200 for two. Estimates can fall outside their population ranges; nonpositive marginal heritability makes $r_g$ undefined. [Supplementary Method S1](#s1-regression-weights-and-uncertainty) gives the weights, jackknife formula and invalid-deletion rules.
 
-$$
-\operatorname{SE}_{\rm JK}(\hat\theta)=
-\sqrt{\frac{B-1}{B}\sum_{b=1}^{B}(\theta_{-b}-\bar\theta_-)^2}. \tag{3}
-$$
-
-The defaults are 100 blocks for one trait and 200 for two. Estimates can fall outside their population ranges. A nonpositive marginal heritability makes $r_g$ undefined. An invalid deletion makes its SE undefined. A fixed cross intercept in the bivariate fit leaves the two marginal intercepts free.
-
-**The reference estimator.** An opt-in mode (`--ldsc-compat`) runs the estimator of the reference ldsc software instead: final weights held fixed in a 200-block jackknife, separate over-counting scores, no $\chi^2$ cap, a two-step fit for $h^2$ (intercept from variants with $\chi^2<30$) and one-step fits for $r_g$. ldsc applies its two-step default only to `--h2`; in `--rg` it never takes effect, so published $r_g$ estimates, and the heritabilities printed beside them, are one-step. On a committed fixture the mode agrees with ldsc's own regression code to rounding error. [Comparison with ldsc](../docs/LDSC.md#ldsc-equivalence).
+**The reference estimator.** The opt-in `--ldsc-compat` mode reproduces the reference ldsc estimator, including its two-step univariate fit and fixed-weight jackknife. On a committed fixture it agrees with ldsc's own regression code to rounding error. The default and reference estimators differ in fitting and uncertainty conventions; their details are in Supplementary Method S1 and the [LDSC guide](../docs/LDSC.md#ldsc-equivalence).
 
 **Choosing a scale.** Removing regression rows leaves $M$ fixed. For the bundled GRCh37 HapMap3 EUR scores, PLDSC defaults to $M=9{,}997{,}231$ reference variants. Published ldsc results use the common-variant count, 5,961,159. At identical fitted slopes the ratio of the two counts, 1.677, rescales both $h^2$ and $g_{12}$ and cancels in $r_g$. Binary-trait estimates require an explicit prevalence, sampling convention and conversion to report them on the liability scale. Section 12 gives the software entry points.
 
 ## 2. How a meta-analysis changes the score
 
-Consider one trait measured in independent ancestry strata. Within each stratum assume population structure is controlled, phenotypes are standardized and all panels count the same allele. At each causal variant let the standardized effects in groups $a,b$ have covariance $\rho_{ab}h_a h_b/M$, with $h_a=\sqrt{h_a^2}$. Effects at different variants are uncorrelated. Here $\rho_{ab}$ measures sharing of one trait's effects across groups. Equation (2) instead compares two traits. For stratum sizes $N_a$ and signed LD correlations $r^a_{jk}$, the building blocks are
+Consider one trait measured in independent ancestry strata. Within each stratum assume population structure is controlled, phenotypes are standardized and all panels count the same allele. Effects at different variants are uncorrelated. Write $h_a^2$ for the heritability in group $a$, $h_a=\sqrt{h_a^2}$, and $\rho_{ab}$ for the correlation of that trait's standardized effects between groups $a$ and $b$. Equation (2) instead compares two traits.
 
-$$
-\ell_j^{ab}=\sum_k r^a_{jk}r^b_{jk},\qquad
-E[z_{aj}z_{bj}]\simeq {\bf 1}_{a=b}
-+\frac{\sqrt{N_aN_b}}{M}\rho_{ab}h_a h_b\,\ell_j^{ab}. \tag{4}
-$$
+The score needs both within-group tagging and tagging shared across groups. Let $r^a_{jk}$ be the signed genotype correlation in group $a$, and define the cross-group score $\ell_j^{ab}=\sum_k r^a_{jk}r^b_{jk}$. Its diagonal is the ordinary LD score. An off-diagonal score is large when the same alleles tag the same causal variants in both groups with concordant signs.
 
-The diagonal contains ordinary LD scores. An off-diagonal term is large when the same alleles tag the same causal variants in both groups with concordant signs. Popcorn distinguishes effects per allele from effects per genotype SD. PLDSC's baseline uses the latter (genetic-impact scale). S-LDXR models per-allele effects, with allele-frequency factors in its scores. Its reported correlation cannot in general be inserted unchanged into the baseline. [Brown et al.](https://doi.org/10.1016/j.ajhg.2016.05.001) and [Shi et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7889654/). The central phenomenon of this report is already in print: in simulations of EUR- and EAS-like data, [Xue and Zhao](https://doi.org/10.1214/25-AOS2523) (Annals of Statistics, 2025, Section 5.3) found that LD scores from pooled samples bias LDSC heritability and genetic correlation, and that heritability from meta-analysed statistics is biased. What follows adds the composition-weighted score of Equation (5), its bounds and the measured size of the change, not the observation that a mismatched reference biases the slope.
+Popcorn distinguishes effects per allele from effects per genotype SD. PLDSC's baseline uses the latter (genetic-impact scale). S-LDXR models per-allele effects, with allele-frequency factors in its scores. Its reported correlation cannot in general be inserted unchanged into the baseline. [Brown et al.](https://doi.org/10.1016/j.ajhg.2016.05.001) and [Shi et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7889654/). The central phenomenon of this report is already in print: in simulations of EUR- and EAS-like data, [Xue and Zhao](https://doi.org/10.1214/25-AOS2523) (Annals of Statistics, 2025, Section 5.3) found that LD scores from pooled samples bias LDSC heritability and genetic correlation, and that heritability from meta-analysed statistics is biased. What follows gives the composition-weighted score and measures the size of the change.
 
-Let the meta-analysis report $z_j=\sum_a c_{aj}z_{aj}$, where $\sum_a c_{aj}^2=1$, and $N_j$ is the sum of contributing sample sizes at $j$. Set $\eta_a=h_a^2/h^2$ relative to a specified reference heritability $h^2$. Squaring the weighted sum and substituting Equation (4) gives
+Let the meta-analysis report $z_j=\sum_a c_{aj}z_{aj}$, where $\sum_a c_{aj}^2=1$, and $N_a$ is the effective size contributed by group $a$ at variant $j$, with total $N_j$. Set $\eta_a=h_a^2/h^2$ relative to a specified reference heritability $h^2$. The matched score in Equation (3) combines the within- and cross-group tagging with these weights:
 
 $$
 \begin{aligned}
  E[z_j^2]&\simeq 1+\frac{N_jh^2}{M} L_j,\\
  L_j&=\sum_{a,b}c_{aj}c_{bj}\frac{\sqrt{N_aN_b}}{N_j}
       \rho_{ab}\sqrt{\eta_a\eta_b}\,\ell_j^{ab}.
-\end{aligned}\tag{5}
+\end{aligned}\tag{3}
 $$
 
-For sample-size weighting $c_{aj}^2=f_a=N_a/N_j$. Two groups then contribute $f_a^2\ell^{aa}$, $f_b^2\ell^{bb}$ and $2f_af_b\rho_{ab}\ell^{ab}$ when $\eta=1$. Averaging only the two ordinary scores omits the cross term and gives the wrong weights to the other two. For inverse-variance weighting of per-allele effects (IVW), $c_{aj}^2$ is proportional to $N_a\sigma_{aj}^2$ under the simple standardized quantitative-trait model, where $\sigma_{aj}$ is the genotype SD. Availability, imputation and effective $N$ can all make actual weights vary across SNPs. Overlapping samples require a corresponding cross-stratum noise covariance in Equation (4).
+Equation (3) says that a meta-analysis tags a causal variant through every contributing group and every pair of groups. In a two-group study, simply averaging the two ordinary LD scores misses the shared tagging term and gives the wrong within-group weights. Sample-size weights depend on each group's share of participants. Inverse-variance weights for per-allele effects (IVW) also depend on genotype variance, so the composition can change from SNP to SNP. Availability, imputation and effective $N$ can change it further.
 
-**A useful bound.** For population scores with $\eta=1$ and nonnegative weights, Equation (5) gives $L_j\leq\sum_a f_a\ell_j^{aa}$ under either scheme. Cauchy–Schwarz gives the tighter intermediate bound $(\sum_a f_a\sqrt{\ell_j^{aa}})^2$ for sample-size weights. For IVW its counterpart is $(\sum_a f_a\sigma_{aj}\sqrt{\ell_j^{aa}})^2/\sum_a f_a\sigma_{aj}^2$. A bound on a score at a SNP does not determine a regression slope across SNPs.
-
-**Pooled individuals.** With exactly the group indicators as covariates, within-group centering makes the pooled in-sample tagging score equal the IVW meta score, using the same genotypes and uncorrected LD. With partial adjustment, between-group allele-frequency differences can survive in the pooled statistic. Additional covariates and continuous admixture require their actual residualization. [Pooled-score derivation, MA10–MA12](../docs/MULTI_ANCESTRY.md) and [Lin and Zeng](https://pubmed.ncbi.nlm.nih.gov/19847795/).
+The derivation, two-group formula and score bounds are in [Supplementary Method S2](#s2-deriving-the-meta-analysis-score). Those bounds constrain tagging at a SNP; they do not determine the fitted slope across SNPs. Overlapping samples require an additional cross-stratum noise covariance. Pooling individuals agrees with IVW meta-analysis under exact adjustment for group indicators, using the same genotypes and uncorrected LD. Partial adjustment can retain between-group allele-frequency differences; other covariates and continuous admixture require their actual residualization. [Pooled-score derivation, MA10–MA12](../docs/MULTI_ANCESTRY.md) and [Lin and Zeng](https://pubmed.ncbi.nlm.nih.gov/19847795/).
 
 ## 3. A wrong reference and a known-truth experiment
 
@@ -90,16 +77,16 @@ Let $x_L=(N_j/\bar N)L_j$ be the correct predictor and $x_R=(N_j/\bar N)\ell_j^R
 
 $$
 \kappa=\frac{\operatorname{Cov}_w(x_R,x_L)}{\operatorname{Var}_w(x_R)},\qquad
-b_R=s\kappa,\qquad a_R=1+s(\bar x_{L,w}-\kappa\bar x_{R,w}). \tag{6}
+b_R=s\kappa. \tag{4}
 $$
 
-Equation (6) is a population projection. Substituting a finite-panel estimate for $L$ gives a *panel plug-in* $\kappa$. The same EUR genomes can contribute errors to both predictors. A ratio close to that plug-in is therefore a weak test of recovery of the underlying $h^2$.
+Equation (4) describes a change of scale: the wrong-reference slope follows how strongly its predictor tracks the correct one across SNPs. The intercept absorbs the remaining mean difference. [Supplementary Method S3](#s3-projection-and-predictive-information) derives both coefficients and the prediction benchmark. Substituting a finite-panel estimate for $L$ gives a *panel plug-in* $\kappa$. The same EUR genomes can contribute errors to both predictors. A ratio close to that plug-in is therefore a weak test of recovery of the underlying $h^2$.
 
 PLDSC subtracts $(1-\hat r^2)/(n-2)$ from each within-panel squared correlation for unrelated individuals with only an intercept. This removes the familiar positive null floor under independent Gaussian data. Off-diagonal terms multiply signed correlations from independent panels and have no corresponding additive null floor. Noisy estimates of nonzero LD persist in both cases. In a separate control, both populations had identical block LD and perfectly correlated effects. Across 30 independent draws of two 500-person panels, the plug-in averaged 0.969 while the slopes against the **known expectation** recovered 0.917 (EUR) and 0.959 (matched) of truth. The population mismatch factor was exactly one. [Noise-control experiment](../experiments/reference_score_noise.py) and the theory of finite-reference LDSC in [Xue and Zhao](https://doi.org/10.1214/25-AOS2523).
 
 Table 2 asks whether a fitted GWAS slope recovers known heritability as the reference panel grows.
 
-**Table 2. Mean estimated heritability divided by true heritability in independent-reference simulations.** The final columns use 6,000-person panels and compare the observed ratio of mean slopes to its plug-in prediction. E and F denote simulated groups.
+: **Table 2. Mean estimated heritability divided by true heritability in independent-reference simulations.** The final columns use 6,000-person panels and compare the observed ratio of mean slopes to its plug-in prediction. E and F denote simulated groups.
 
 | GWAS composition | True $\rho$ | Weights | Matched, 400 | Matched, 6,000 | E-only / matched | Plug-in |
 |:-------|---:|:------|----:|----:|------:|---:|
@@ -117,7 +104,7 @@ At 400 reference individuals per group both original absolute-calibration checks
 
 The first empirical study uses phased 1000 Genomes phase 3 genotypes, every tenth biallelic SNP, and windows of $\pm1$ cM on a common GRCh37 map. EUR, AFR, EAS, SAS and AMR are the panel's European, African, East Asian, South Asian and admixed American superpopulation labels. These labels describe reference groups. In particular, they do not imply homogeneity within a group. The bundle has 9,654 regression candidates with full-panel minor allele frequency (MAF) at least 0.05. The corrected EUR-reference comparison retains 7,837 that are also common in EUR. The assumed GWAS reports a SNP in a group when it is polymorphic with MAF at least 0.01.
 
-Mean within-panel scores across the 9,654 candidates are 9.76 in EUR, 7.32 in AFR and 8.64 in EAS. The EUR–AFR cross score averages 5.08, compared with 6.68 for EUR–EAS. These means illustrate tagging differences. Equation (6) uses *covariance across variants* to predict a slope. Figure 1 shows the two scores for individual SNPs and how much the matched pattern changes as the EUR share declines, holding $\rho=0.8$, $\eta=1$ and the sample-size weighting scheme fixed.
+Mean within-panel scores across the 9,654 candidates are 9.76 in EUR, 7.32 in AFR and 8.64 in EAS. The EUR–AFR cross score averages 5.08, compared with 6.68 for EUR–EAS. These means illustrate tagging differences. Equation (4) uses *covariance across variants* to predict a slope. Figure 1 shows the two scores for individual SNPs and how much the matched pattern changes as the EUR share declines, holding $\rho=0.8$, $\eta=1$ and the sample-size weighting scheme fixed.
 
 ![On chromosome 22 the 75% EUR and 25% AFR score lies close to a line of slope 0.750. A matrix shows residual variation for twelve compositions.](reference_composition.png)
 
@@ -131,7 +118,7 @@ The original rule required $|\kappa-1|\geq0.10$ in at least one 75% EUR comparis
 
 A second protocol used the bigsnpr set of 2,490 people, with roughly 1.66 million common reference variants. It retained 1,190,723 EUR-common regression SNPs outside the MHC on the 22 autosomes. Table 3 compares the protocols at the original rule cell. Simplified LDSC weights downweight high-LD and high-expected-$\chi^2$ SNPs. The reported standard errors describe variation across 200 genomic blocks conditional on the panel.
 
-**Table 3. EUR-reference plug-in slopes for 75% EUR plus one other group.** Standardized effects have equal variance across SNPs and groups, with cross-group correlation 0.8.
+: **Table 3. EUR-reference plug-in slopes for 75% EUR plus one other group.** Standardized effects have equal variance across SNPs and groups, with cross-group correlation 0.8.
 
 | Other 25% | Chr22 OLS | Chr22 weighted | Autosomes OLS (SE) | Autosomes weighted |
 |:--|--:|--:|--:|--:|
@@ -146,7 +133,7 @@ The genome-wide AFR criterion ($\kappa\leq0.90$ under both fits) passed. A separ
 
 Table 4 compares the original architecture with two frequency-dependent alternatives.
 
-**Table 4. Effect-model sensitivity for 75% EUR and 25% AFR.** Both columns use bigsnpr variants, so the chromosome 22 baseline differs from Table 3. Each entry gives OLS / weighted $\pi$.
+: **Table 4. Effect-model sensitivity for 75% EUR and 25% AFR.** Both columns use bigsnpr variants, so the chromosome 22 baseline differs from Table 3. Each entry gives OLS / weighted $\pi$.
 
 | Effect model | Chr22 | All autosomes |
 |:--|--:|--:|
@@ -164,7 +151,7 @@ The reanalysis joined GRCh38 GWAS files to GRCh37 scores by rsID, excluding flag
 
 Table 5 applies that bracket to the same all-biobank statistics.
 
-**Table 5. Asthma estimates on the balanced observed scale.** The last column expresses each change from the EUR-reference fit in units of that fit's SE, the denominator fixed before analysis.
+: **Table 5. Asthma estimates on the balanced observed scale.** The last column expresses each change from the EUR-reference fit in units of that fit's SE, the denominator fixed before analysis.
 
 | Reference for all-biobank GWAS | Other pairs' $\rho$ | $\hat h^2$ (SE) | Shift / EUR SE |
 |:--|--:|--:|--:|
@@ -189,25 +176,22 @@ We returned to the same 953,596 asthma SNPs for an exploratory prediction test. 
 
 The EUR and matched fits gave 0.1329 and 0.1547. The matched score had lower error on 13 of 22 chromosomes. The pooled reduction was **0.0007%** (95% interval **$-0.020\%$ to +0.022%**). Only 0.734% of the matched predictor's weighted variation remained after rescaling EUR. The coefficient on that remainder was 0.082 (95% interval $-0.126$ to 0.290). This interval covers both zero and the marginal matched slope. The residual slope minus the marginal matched slope was $-0.073$ (95% interval $-0.283$ to 0.138).
 
-**How much improvement could one expect?** If the measured matched score described the mean exactly, with slope $b=0.1547$, its expected squared-error advantage over the best affine EUR prediction would be $b^2\operatorname{Var}_w(u)$, where $u$ is the residual score in Equation (11). On these SNPs this amounts to **0.0082%** of the observed EUR prediction error, also inside the interval. This benchmark uses the fitted slope and conditions on the reference panel. The folds share participants, phenotype definition, summary-statistic QC and reference people. Replication in a separate cohort and an independent heritability target answer different questions.
+**How much improvement could one expect?** If the measured matched score described the mean exactly, with slope $b=0.1547$, its expected squared-error advantage over the best affine EUR prediction would be $b^2\operatorname{Var}_w(u)$, where $u$ is the residual score in Equation (7). On these SNPs this amounts to **0.0082%** of the observed EUR prediction error, also inside the interval. This benchmark uses the fitted slope and conditions on the reference panel. The folds share participants, phenotype definition, summary-statistic QC and reference people. Replication in a separate cohort and an independent heritability target answer different questions.
 
 ## 7. A matched mixed-model score and the reason to archive it
 
-The original PLDSC idea starts one step earlier, with the association test itself. Let $X$ contain target-chromosome genotypes, $C$ the fixed covariates and $V_c$ the residual covariance from a genomic relationship matrix (GRM) constructed leaving chromosome $c$ out (LOCO). For fixed $V_c$, let $W=V_c^{-1}$ and form the residual precision $P_c$. Equations (7)–(8) give the score statistic and its expectation when the target effects have independent variances $\tau_k^2$ and residuals have covariance $V_c$.
+The original PLDSC idea starts one step earlier, with the association test itself. Let $X$ contain target-chromosome genotypes and $P_c$ be the residual precision operator: it removes fixed covariates and weights observations by a specified residual covariance $V_c$. The genomic relationship matrix (GRM) used for $V_c$ leaves chromosome $c$ out (LOCO). For genotype column $x_j$, define $q_j=x_j^TP_cx_j>0$ and the score statistic $z_j=x_j^TP_cy/\sqrt{q_j}$. If target effects have independent variances $\tau_k^2$ and the residual covariance is correctly specified, Equation (5) gives
 
 $$
-P_c=W-WC(C^TWC)^+C^TW,\qquad q_j=x_j^TP_cx_j,\qquad
-z_j=\frac{x_j^TP_c y}{\sqrt{q_j}}. \tag{7}
+E[z_j^2\mid X,V_c]=1+\sum_k\tau_k^2
+             \frac{(x_j^TP_c x_k)^2}{q_j}. \tag{5}
 $$
 
-$$
-E[z_j^2\mid X,V_c]=1+\sum_{k}\tau_k^2
-             \frac{(x_j^TP_c x_k)^2}{q_j}. \tag{8}
-$$
+This is the same tagging principle as ordinary LDSC, measured after the association test's adjustment. The initial one is the correctly calibrated null contribution; each causal variant adds signal according to its adjusted overlap with the tested variant. The identity conditions on the true $V_c$. Estimating or misspecifying that covariance adds uncertainty or bias. [Supplementary Method S4](#s4-the-matched-mixed-model-identity) defines the operator and proves the identity.
 
-Here $+$ denotes the Moore–Penrose inverse and $q_j>0$. Since $P_cV_cP_c=P_c$, the null contribution is exactly one. With common $\tau_k^2$, the slope on the matched row sum in (8) estimates per-variant effect variance. A whitened correlation score such as WhiLD also rescales the causal genotypes to unit norm, changing this target when their $q_k$ differ. Estimating $V_c$ from the phenotype adds uncertainty. Table 6 tests the practical value of matching the operator. [Mangin et al.](https://pubmed.ncbi.nlm.nih.gov/21878986/) and [full derivation](../docs/METHOD.md).
+With common $\tau_k^2$, the slope on the matched row sum estimates per-variant effect variance. A whitened correlation score such as WhiLD also rescales the causal genotypes to unit norm, changing this target when their $q_k$ differ. Table 6 tests the practical value of matching the operator. [Mangin et al.](https://pubmed.ncbi.nlm.nih.gov/21878986/) and [full model assumptions](../docs/METHOD.md).
 
-**Table 6. Simulations distinguish null calibration at association from the downstream windowed LDSC fit.**
+: **Table 6. Simulations distinguish null calibration at association from the downstream windowed LDSC fit.**
 
 | Experiment | Observation | Interpretation |
 |:--------|:-------------|:------------|
@@ -229,7 +213,7 @@ In a rotating LOCO analysis of chromosomes 10, 21 and 22, the mixed 1000G panel 
 
 In a simulation, a directional genetic shift along one PC and an environmental shift along the same PC gave identical mean $\chi^2$ (2.49) and identical loading coefficients (28.73). Table 7 examines alternatives with a signal in neighbouring SNPs and a separate source of noise from relatives in the LD panel.
 
-**Table 7. Simulations and panel measurements for three applications.**
+: **Table 7. Simulations and panel measurements for three applications.**
 
 | Application | Evidence | Inference |
 |:-------|:----------------|:--------------|
@@ -241,23 +225,16 @@ For a relationship matrix $A$ with covariate effects projected out to give $\til
 
 ## 9. When the right LD score still gives the wrong biological interpretation
 
-**Assortative mating.** Suppose mates sort on a phenotype $S$. In a primary-assortment model with linear conditional means and independent mate genotypes given their mating phenotypes, their cross-genotype covariance is proportional to $a a^T$, where $a_j=\operatorname{Cov}(G_j,S)$. Mendelian transmission can then induce signed associations between loci on different chromosomes. For effects $\beta$ on the trait under study, the corresponding contribution to its additive variance is
-
-$$
-V_{\rm cross}=2\sum_{j<k:\,{\rm chr}(j)\ne{\rm chr}(k)}
-                      \beta_j\beta_k r_{jk}. \tag{9}
-$$
-
-A local squared-LD score drops the cross-chromosome pairs and loses the signs that matter in Equation (9). Assortment aligns LD with the generating trait, so averaging effects independently of LD can also fail. The direction and magnitude for another trait depend on its alignment with the mating trait. Mate genotypes or a design that addresses geography and ancestry are needed to attribute a long-range covariance to assortment. [Yengo et al.](https://doi.org/10.1038/s41562-018-0476-3), [Border et al.](https://doi.org/10.1038/s41467-022-28294-9) and [directional-GPD variance estimation](https://doi.org/10.1038/s41588-025-02192-4).
+**Assortative mating.** When mates resemble each other for a heritable phenotype, transmission can create signed associations between loci on different chromosomes. A local squared-LD score omits those pairs and their signs. Assortment also aligns LD with the generating trait, so averaging effects independently of LD can fail. The consequences for another trait depend on its alignment with the mating trait. [Supplementary Method S5](#s5-biological-interpretation-of-the-slope) gives the variance expression and assumptions. Mate genotypes or a design that addresses geography and ancestry are needed to attribute long-range covariance to assortment. [Yengo et al.](https://doi.org/10.1038/s41562-018-0476-3), [Border et al.](https://doi.org/10.1038/s41467-022-28294-9) and [directional-GPD variance estimation](https://doi.org/10.1038/s41588-025-02192-4).
 
 **Parental genetic nurture.** A textbook LDSC line can occur when offspring genotypes have **zero direct effect**. Let $G_o,G_m,G_f$ denote offspring, maternal and paternal standardized genotypes. Suppose random mating, stable LD $\Sigma$ across generations, a shared allele scale and a phenotype caused by the parental environment. For parental effects $\gamma_m,\gamma_f$ and residual $\epsilon$ uncorrelated with offspring genotype,
 
 $$
  Y=G_m^T\gamma_m+G_f^T\gamma_f+\epsilon,\qquad
- \operatorname{Cov}(G_o,Y)=\Sigma(\gamma_m+\gamma_f)/2. \tag{10}
+ \operatorname{Cov}(G_o,Y)=\Sigma(\gamma_m+\gamma_f)/2. \tag{6}
 $$
 
-The marginal associations in Equation (10) coincide with a direct model whose coefficient is $(\gamma_m+\gamma_f)/2$. With isotropic coefficients on that scale and correctly calibrated residual noise, Equation (1) follows with intercept one. If both parents contribute equally and all phenotypic variance comes through nurture, offspring genotypes tag half the nurturing variance; with one contributing parent they tag a quarter. These are analytic thought experiments. The project has no empirical estimate of either fraction. [LDSC with parental environmental effects](https://doi.org/10.1002/gepi.22161) and [nontransmitted parental alleles](https://doi.org/10.1126/science.aan6877).
+The marginal associations in Equation (6) coincide with a direct model whose coefficient is $(\gamma_m+\gamma_f)/2$. With isotropic coefficients on that scale and correctly calibrated residual noise, Equation (1) follows with intercept one. If both parents contribute equally and all phenotypic variance comes through nurture, offspring genotypes tag half the nurturing variance; with one contributing parent they tag a quarter. Supplementary Method S5 shows the covariance calculation and the two fractions. These are analytic thought experiments. The project has no empirical estimate of either fraction. [LDSC with parental environmental effects](https://doi.org/10.1002/gepi.22161) and [nontransmitted parental alleles](https://doi.org/10.1126/science.aan6877).
 
 A sibling contrast removes a parental environment shared by siblings if the centered residual is uncorrelated with genotype. Sibling effects, differential parenting and assortative mating introduce other pathways. In the joint assortment-and-nurture model, the relevant tagging operator is the covariance of offspring with parental genotypes, which offspring LD alone cannot supply. A credible application here would require trios or a parent–offspring reference, a prespecified direct or indirect target and a multigenerational comparator. This is a separate study from validating multi-ancestry LD scores. [Theory and assumptions, section 15](../docs/METHOD.md) and [within-sibship GWAS](https://doi.org/10.1038/s41588-022-01062-7).
 
@@ -268,10 +245,10 @@ Residualize the matched predictor $x_L$ on an intercept and the EUR predictor $x
 $$
  u=x_L-\bar x_{L,w}-\kappa(x_R-\bar x_{R,w}),\qquad
  \theta_\perp=\frac{\operatorname{Cov}_w(u,z^2)}{\operatorname{Var}_w(u)}.
- \tag{11}
+ \tag{7}
 $$
 
-If $E[z^2]=a+b x_R$, Equation (11) gives zero. If $E[z^2]=a+s x_L$, it gives $s$. These identities require true scores and positive residual variance. Exact collinearity leaves the coefficient unidentified. For the asthma analysis the predictors include $N_j/M$, putting the coefficient in heritability units.
+If $E[z^2]=a+b x_R$, Equation (7) gives zero. If $E[z^2]=a+s x_L$, it gives $s$. These identities require true scores and positive residual variance. Exact collinearity leaves the coefficient unidentified. For the asthma analysis the predictors include $N_j/M$, putting the coefficient in heritability units.
 
 **An experiment with two known answers.** We simulated 16,384 independent two-SNP blocks. Each block had a different pair of population LD correlations. A Gaussian summary-statistic model generated the two correlated $z$ statistics from their exact joint distribution. The null GWAS followed group E LD while the candidate score used both groups. The alternative GWAS followed the matched score with $\rho=0.8$ and $s=1$. At each composition we ran 1,000 replicates, drawing new GWAS statistics and independent reference panels each time. The 32-region jackknife grouped the two SNPs of each block together. Figure 3 compares the resulting test to its targets.
 
@@ -296,51 +273,31 @@ A separate extension would estimate $h^2$ and $h^2\rho$ jointly from the within-
 Consider two independent strata E and F and a fixed-effect meta-analysis with weights $c_E^2+c_F^2=1$. The pooled statistic and the heterogeneity contrast are
 
 $$
-Z=c_Ez_E+c_Fz_F,\qquad D=c_Fz_E-c_Ez_F,\qquad Q=D^2. \tag{12}
+Z=c_Ez_E+c_Fz_F,\qquad D=c_Fz_E-c_Ez_F,\qquad Q=D^2. \tag{8}
 $$
 
-Equation (12) is a rotation of $(z_E,z_F)$, and $Q$ is Cochran's heterogeneity statistic. Write $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$, and let $a_E$, $a_F$ and $a_{EF}$ be the stratum intercepts and the cross-stratum intercept ($a_{EF}=0$ without sample overlap or shared confounding). Substituting Equation (4), the three stratum moments at a SNP are $A=E[z_E^2]\simeq a_E+x_Eh_E^2$, $B=E[z_F^2]\simeq a_F+x_Fh_F^2$ and $C=E[z_Ez_F]\simeq a_{EF}+x_\times g$, and the rotation gives
+Equation (8) separates agreement from disagreement: $Z$ is large when the strata point together, while $D$ compares them. Reporting $Q=D^2$ retains the size of that disagreement and discards its direction.
+
+Write $A=E[z_E^2]$, $B=E[z_F^2]$ and $C=E[z_Ez_F]$ for the two marginal moments and their cross moment. Under the model of Section 2, $A\simeq a_E+x_Eh_E^2$, $B\simeq a_F+x_Fh_F^2$ and $C\simeq a_{EF}+x_\times g$, where $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$. The two released moments are
 
 $$
 \begin{aligned}
 E[Z^2]&=c_E^2A+c_F^2B+2c_Ec_FC,\\
-E[Q]&=c_F^2A+c_E^2B-2c_Ec_FC,\\
-E[ZD]&=c_Ec_F(A-B)-(c_E^2-c_F^2)\,C.
-\end{aligned}\tag{13}
+E[Q]&=c_F^2A+c_E^2B-2c_Ec_FC.
+\end{aligned}\tag{9}
 $$
 
-The first two lines are what a release of $Z$, $Q$ and the weights can be regressed on. With unit intercepts they read $1+c_E^2x_Eh_E^2+c_F^2x_Fh_F^2+2c_Ec_Fx_\times g$ and $1+c_F^2x_Eh_E^2+c_E^2x_Fh_F^2-2c_Ec_Fx_\times g$. The third line is the moment the release discards. Write $k=c_E^2-c_F^2$ for the weight imbalance at a SNP, so $4c_E^2c_F^2=1-k^2$.
+The cross-ancestry covariance enters these equations with opposite signs. Jointly fitting them therefore helps separate shared signal from ancestry-specific signal. Three qualifications determine how much can be recovered. [Supplementary Method S6](#s6-what-cochrans-q-keeps-and-discards) gives the formal propositions and proofs.
 
-**Proposition 1 (what $Q$ discards).** At each SNP, $(E[Z^2],E[Q],E[ZD])$ is an invertible linear function of $(A,B,C)$, so the strata and the full rotated pair carry the same second moments. A release of $(Z,Q)$ keeps the first two as means of released statistics, but not the third. If $(z_E,z_F)$ is bivariate normal with mean zero, as under the random-effects model behind Equation (4), the joint law of $(Z,Q)$ depends on $E[ZD]$ only through its square.
+**Information is still lost.** With equal weights, $Z^2-Q=2z_Ez_F$: the two released statistics recover exactly the cross-product used to estimate $g$ from the strata. Unequal weights mix that product with the difference between the marginal signals. The missing signed moment $E[ZD]$ then carries information about $g$ (Propositions 1 and 3). Near the null, a weight share of 0.85 implies at least a 1.40-fold increase in the SD of $\hat g$ even if both heritabilities were known. Estimating them can cost more. With unequal constant weights and proportional score components, the two mean equations cannot identify all three genetic parameters.
 
-*Proof.* The matrix of Equation (13) is the action of the rotation $R=\begin{pmatrix}c_E&c_F\\c_F&-c_E\end{pmatrix}$ on the covariance $\Sigma=\begin{pmatrix}A&C\\C&B\end{pmatrix}$, $R\Sigma R^\top=\begin{pmatrix}E[Z^2]&E[ZD]\\E[ZD]&E[D^2]\end{pmatrix}$, and $R^{-1}=R$, so the map is invertible. For the second statement, $(Z,D)$ is bivariate normal with mean zero and covariance $R\Sigma R^\top$, and $(Z,-D)$ is bivariate normal with the same variances and covariance $-E[ZD]$. Since $Q=D^2=(-D)^2$, the two covariances give the same law of $(Z,Q)$. $\square$
+**Intercepts must follow the weights.** The stratum intercepts $a_E,a_F,a_{EF}$ describe LD-independent shifts, including cross-stratum noise from overlap or shared confounding. If IVW shares vary across SNPs, unequal stratum intercepts can produce a varying baseline in Equation (9). One constant per equation can then leak baseline differences into the covariance slope. Fitting the three stratum intercepts with their known weight columns addresses this problem (Proposition 2). With constant weights, the simpler two-constant form is equivalent. On the chr22 scores with asthma IVW weights and intercepts 1.076 and 0.983, the simpler fit to exact moments biased $g$ by $-9.4\%$; the three-intercept fit was exact ([tests](../tests/test_q_heterogeneity.py)).
 
-The earlier statement that a release of $Z$, $Q$ and the weights "loses only the sign of $D$" is true of each SNP's realized values but understates the loss. $E[ZD]$ no longer appears as a mean; its square enters only higher moments, as in $E[Z^2Q]-E[Z^2]E[Q]=2E[ZD]^2$. And $E[ZD]$ depends on $g$ unless $c_E=c_F$.
-
-**Proposition 2 (intercepts).** The intercept parts of the first two lines of Equation (13) are $c_E^2a_E+c_F^2a_F+2c_Ec_Fa_{EF}$ and $c_F^2a_E+c_E^2a_F-2c_Ec_Fa_{EF}$. They are constant across SNPs for all intercept values if and only if $c_E$ is constant, as with sample-size weights and a common $N$ per stratum. Under IVW weights $c_E$ varies with allele frequency, and a fit with one free constant per equation is misspecified whenever $a_E\neq a_F$ or $a_{EF}\neq0$. The three columns $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ remove the misspecification. With constant $c_E$ they span only two dimensions and the one-constant-per-equation form is equivalent.
-
-*Proof.* Direct from Equation (13); if $c_E$ is constant the three columns in the two equations are constant vectors, of rank two in the stacked design because $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ span the same space as $(1,0)$ and $(0,1)$ applied to the two equations. $\square$
-
-How much the misspecification matters depends on the LD and the weights. On the chr22 example scores, with the asthma IVW weights and stratum intercepts 1.076 and 0.983, the one-constant fit to the exact moments returns intercepts 1.060 and 0.997 and $g$ biased by $-9.4\%$; the three-intercept fit is exact ([tests](../tests/test_q_heterogeneity.py)). In the simulation below, an arm with stratum intercepts 1.08 and 1.0 on 1000 Genomes LD moved the one-constant estimate of $g$ by $-5.5\%$ and the three-intercept estimate by $-0.2\%$.
-
-**Proposition 3 (identification and efficiency).** Assume constant weights at a SNP and moments near the null, so that $Z$ and $D$ are approximately independent with unit variance and $\operatorname{Var}(Z^2)=\operatorname{Var}(D^2)=2$, $\operatorname{Var}(ZD)=1$, all three uncorrelated.
-(a) If $h_E^2$ and $h_F^2$ are known, the information on $g$ from $(Z^2,Q)$ at a SNP is $(1-k^2)\,x_\times^2$, against $x_\times^2$ from the strata; the missing $k^2x_\times^2$ is the information in $ZD$.
-(b) At balanced weights ($k=0$), $Z^2-Q=2z_Ez_F$ exactly, so the contrast is the strata's cross-product statistic and the covariance regression is the same.
-(c) If $k\neq0$ is constant and the three scores are proportional ($x_F=\beta x_E$, $x_\times=\gamma x_E$), $g$ is not identified from $E[Z^2]$ and $E[Q]$, while the strata identify it from $E[z_Ez_F]$.
-
-*Proof.* (a) The derivatives of $(E[Z^2],E[Q],E[ZD])$ in $g$ are $(2c_Ec_F,-2c_Ec_F,-k)\,x_\times$ by Equation (13). With the stated covariance, the generalized-least-squares information from the first two is $(4c_E^2c_F^2+4c_E^2c_F^2)x_\times^2/2=(1-k^2)x_\times^2$ and from $ZD$ it is $k^2x_\times^2$. Their sum, $x_\times^2$, is the information from $z_Ez_F$, whose derivative is $x_\times$ and whose variance is 1, as it must be by Proposition 1. (b) $Z^2-D^2=k(z_E^2-z_F^2)+4c_Ec_Fz_Ez_F$, and $k=0$ gives $c_E=c_F=1/\sqrt2$. (c) With unit intercepts, $E[Z^2]+E[Q]-2=x_E(h_E^2+\beta h_F^2)$ and $E[Z^2]-E[Q]=x_E\left[k(h_E^2-\beta h_F^2)+4c_Ec_F\gamma g\right]$. Two functions of $x_E$ times constants determine only two linear combinations of $(h_E^2,h_F^2,g)$; for $k\neq0$, changing $g$ by $\delta$ and $(h_E^2,\beta h_F^2)$ by $\mp2c_Ec_F\gamma\delta/k$ leaves both unchanged. The strata regress $z_Ez_F$ on $x_\times=\gamma x_E$ and identify $g$. $\square$
-
-So the contrast identifies $g$ without relying on differences among the three scores only at balanced weights. Away from balance $g$ is identified only through those differences (and, under IVW, through the variation of $c_E$ across SNPs, which Proposition 2 shows must not be confused with intercept differences). Part (a) bounds the loss from below: at a weight share of 0.85, $k=0.7$ and the SD of $\hat g$ is at least $1/\sqrt{1-0.49}=1.40$ times that from the strata. The simulated ratio below, 1.7, includes the further loss from estimating $h_E^2$ and $h_F^2$ from nearly proportional scores. *Conjecture:* the excess over the bound grows as the scores become more collinear, roughly in proportion to $k^2/(1-r^2)$ with $r$ the correlation between $c_E^2x_E-c_F^2x_F$ and $x_\times$; we have not derived it.
-
-With sample-size weights and unit intercepts, the second line of Equation (13) is
-$$
-E[Q]\simeq 1+\frac{\tilde N}{M}\left(h_E^2\ell^{EE}+h_F^2\ell^{FF}-2g\ell^{EF}\right),
-$$
-where $\tilde N=N_EN_F/(N_E+N_F)$. With identical effects in both groups the bracket is $h^2\sum_k(r^E_{jk}-r^F_{jk})^2$. Different LD alone therefore gives $E[Q]>1$.
+**Heterogeneity need not mean different effects.** Even identical standardized effects can give different marginal associations because the same variant tags different neighbours in E and F. Different LD alone can therefore raise mean $Q$ above its null value of one. Supplementary Method S6 derives the corresponding squared difference between the two LD patterns.
 
 **A known-truth experiment on 1000 Genomes LD.** We took the 234,000 SNPs on chromosomes 14–22 with MAF at least 0.05 in both the EUR and EAS panels and cut them into 936 blocks of 250. LD was the panel correlation within a block and zero between blocks, so every score was known. Standardized effects had $h^2=0.3$ in both groups, and exact Gaussian statistics were combined by inverse-variance weighting (IVW). Total $N$ was 46,475, which gives a mean pooled $\chi^2$ near 1.9. All fits used free intercepts, two-step weights and a 200-group jackknife. Three rules were written into the driver before the full run, and a fourth before the unequal-intercept arm below was first run. Table 8 gives the main cells.
 
-**Table 8. Recovering the genetic covariance from three inputs, 200 replicates per cell.** The SD is for $\hat g$ at $\rho=0.74$ ($g=0.222$). The remaining columns give how often a one-sided 5% jackknife test declared $\rho<1$. For $Z$ alone, 66–73 of the 200 replicates at 85% EUR had no valid correlation, and the rates use the remainder.
+: **Table 8. Recovering the genetic covariance from three inputs, 200 replicates per cell.** The SD is for $\hat g$ at $\rho=0.74$ ($g=0.222$). The remaining columns give how often a one-sided 5% jackknife test declared $\rho<1$. For $Z$ alone, 66–73 of the 200 replicates at 85% EUR had no valid correlation, and the rates use the remainder.
 
 | EUR share | Input | SD of $\hat g$ | $\rho=0.74$ | $\rho=0.9$ | $\rho=1$ |
 |:--|:--|--:|--:|--:|--:|
@@ -361,12 +318,12 @@ Three descriptive arms complete the picture. With identical effects, mean $Q$ wa
 
 $$
 E[Z_a^2]\simeq 1+x_a\left[\tau_a+(h_a^2-\tau_a)S_a\right],\qquad
-E[Q_a]\simeq K-1+x_a(h_a^2-\tau_a)(1-S_a). \tag{14}
+E[Q_a]\simeq K-1+x_a(h_a^2-\tau_a)(1-S_a). \tag{10}
 $$
 
-The ratio $\tau_a/h_a^2$ is the genetic correlation between two datasets of one ancestry. It is a ceiling: two ancestries cannot be expected to agree better than two cohorts of the same ancestry. The usual estimate divides $g$ by the two metas' own heritabilities. The corrected estimate divides by $\sqrt{\tau_E\tau_F}$. If dataset-specific effects are exchangeable, it estimates the correlation between the effects the datasets of each ancestry share. Table 9 tests this with four EUR datasets (fractions 0.55, 0.25, 0.12 and 0.08) and two EAS datasets (0.7 and 0.3).
+The ratio $\tau_a/h_a^2$ is the genetic correlation between two datasets of one ancestry. It measures within-ancestry agreement and helps assess how much cohort differences could attenuate the cross-ancestry comparison. Equation (10) separates the effect shared by all datasets from the dataset-specific part. A meta-analysis averages the latter down when many datasets contribute; $Q_a$ measures the disagreement that remains among them. [Supplementary Method S7](#s7-within-ancestry-heterogeneity) derives this decomposition. The usual estimate divides $g$ by the two metas' own heritabilities. The corrected estimate divides by $\sqrt{\tau_E\tau_F}$. If dataset-specific effects are exchangeable, it estimates the correlation between the effects the datasets of each ancestry share. Table 9 tests this with four EUR datasets (fractions 0.55, 0.25, 0.12 and 0.08) and two EAS datasets (0.7 and 0.3).
 
-**Table 9. Uncorrected and corrected cross-ancestry correlation, 100 replicates per cell.** Entries are medians, with the analytic expectation of the uncorrected value in parentheses. The last two columns give how often each estimate was declared below one.
+: **Table 9. Uncorrected and corrected cross-ancestry correlation, 100 replicates per cell.** Entries are medians, with the analytic expectation of the uncorrected value in parentheses. The last two columns give how often each estimate was declared below one.
 
 | EUR share | Within-ancestry | Truth | Uncorrected | Corrected | Uncorrected $<1$ | Corrected $<1$ |
 |:--|--:|--:|--:|--:|--:|--:|
@@ -379,13 +336,13 @@ The ratio $\tau_a/h_a^2$ is the genetic correlation between two datasets of one 
 
 The third rule passed: every corrected median was within 0.05 of truth and every uncorrected median within 0.03 of its expectation. The correction costs precision. At 50% EUR the robust SD rose from 0.05 to 0.065, and at 85% from about 0.10 to between 0.12 and 0.28. At 85% EUR the corrected test rejected a true correlation of one in 10–17% of replicates, above its nominal 5%. Two further cells probe the exchangeability assumption. When two of the four EUR datasets shared a definition, the corrected median was 0.944 against a truth of one. When dataset effects were proportional with heritabilities in ratio 1.4, 0.8, 0.6 and 1.0, it was 1.017. [Simulation driver and rules](../experiments/q_heterogeneity_sim.py) and [all cells](q_heterogeneity_simulation.json).
 
-**Asthma.** The GBMI releases allow both analyses for EUR and EAS on 937,544 SNPs. For the first we rebuilt a two-ancestry meta-analysis from the strata, kept $Z$, $Q$ and the weights, and fitted Equation (13). For the second we recovered each ancestry's $Q_a$ from its released heterogeneity p-value. The dataset sizes follow exactly from the per-variant case and control counts and the direction strings: 14 EUR datasets with median $S=0.145$ and 5 EAS datasets with median $S=0.524$. No rule was stated before this analysis. A first pass used sample-size weights and suggested full agreement; the IVW fit was specified afterwards. Figure 4 and Table 10 give the estimates.
+**Asthma.** The GBMI releases allow both analyses for EUR and EAS on 937,544 SNPs. For the first we rebuilt a two-ancestry meta-analysis from the strata, kept $Z$, $Q$ and the weights, and fitted Equation (9). For the second we recovered each ancestry's $Q_a$ from its released heterogeneity p-value. The dataset sizes follow exactly from the per-variant case and control counts and the direction strings: 14 EUR datasets with median $S=0.145$ and 5 EAS datasets with median $S=0.524$. No rule was stated before this analysis. A first pass used sample-size weights and suggested full agreement; the IVW fit was specified afterwards. Figure 4 and Table 10 give the estimates.
 
 ![Estimates of the genetic covariance from both strata, from Z and Q and from Z alone, for two simulated mixtures and for asthma under two weightings, followed by uncorrected and corrected correlations.](heterogeneity.png)
 
 **Figure 4. Cochran's $Q$ restores most of the information about cross-ancestry covariance, and its within-ancestry counterpart bounds what cohort differences can explain.** A gives $\hat g$ divided by the truth in simulation ($\rho=0.74$) and by the two-strata estimate for asthma; the $Z$-and-$Q$ fit has one intercept per equation. B gives the correlation before and after the correction; the simulation rows have a within-ancestry correlation of 0.8. Bars are the SD (A) or robust SD (B) across replicates in simulation and jackknife standard errors for asthma. [Asthma estimates](asthma_heterogeneity.json) and [figure code](reference_figure.py).
 
-**Table 10. Asthma, EUR and EAS.** Section 6 gave a correlation of 0.755 on its own SNPs and weights.
+: **Table 10. Asthma, EUR and EAS.** Section 6 gave a correlation of 0.755 on its own SNPs and weights.
 
 | Quantity | Estimate (SE) |
 |:--|--:|
@@ -399,7 +356,7 @@ The third rule passed: every corrected median was within 0.05 of truth and every
 | EUR–EAS correlation, uncorrected | 0.738 (0.043) |
 | EUR–EAS correlation, both sides corrected | 0.793 (0.070) |
 
-Adding $Q$ reduced the standard error of $g$ about 3.6-fold relative to $Z$ alone under either weighting. The sample-size-weighted fit reproduced the two-strata estimate. The IVW fit was 0.027 lower (paired SE 0.012), a shortfall of 22%. That fit gave each of the two equations one free intercept. Under IVW weights the weight share $c_E^2$ varies across SNPs, so unequal stratum intercepts leak into the slopes (Proposition 2 above). Refitted with the three stratum intercepts, the IVW estimate was 0.1008 (0.0187), 0.024 below the two-strata estimate (paired SE 0.015), a shortfall of 19%. The fitted intercepts were 1.061, 0.998 and 0.018, and the refit moved $g$ by only +0.003 (paired SE 0.007). The leak therefore explains little of the shortfall; with the extra intercept what remains is 1.6 standard errors from zero, and its cause is not established. Under sample-size weights the three-intercept fit gave 0.1220 (0.0233). Mean $Q$ was 1.084; identical effects with different LD predict 1.049.
+Adding $Q$ reduced the standard error of $g$ about 3.6-fold relative to $Z$ alone under either weighting. The sample-size-weighted fit reproduced the two-strata estimate. The IVW fit was 0.027 lower (paired SE 0.012), a shortfall of 22%. That fit gave each of the two equations one free intercept. Under IVW weights the weight share $c_E^2$ varies across SNPs, so unequal stratum intercepts leak into the slopes (Supplementary Method S6, Proposition 2). Refitted with the three stratum intercepts, the IVW estimate was 0.1008 (0.0187), 0.024 below the two-strata estimate (paired SE 0.015), a shortfall of 19%. The fitted intercepts were 1.061, 0.998 and 0.018, and the refit moved $g$ by only +0.003 (paired SE 0.007). The leak therefore explains little of the shortfall; with the extra intercept what remains is 1.6 standard errors from zero, and its cause is not established. Under sample-size weights the three-intercept fit gave 0.1220 (0.0233). Mean $Q$ was 1.084; identical effects with different LD predict 1.049.
 
 The European datasets disagree a little: $h^2-\tau=0.014$ (SE 0.007). But a 14-dataset meta-analysis averages most of that away, and correcting the European side moved the correlation from 0.738 to 0.744. The East Asian side has five datasets, one of which dominates, and its ceiling is unresolved. Idiosyncratic differences among European biobanks therefore do not explain the shortfall from one. A difference shared by all datasets of one ancestry remains possible, whether in biology, environment or case definition, and this design cannot remove it. [Asthma driver](../experiments/gbmi_asthma_heterogeneity.py).
 
@@ -409,7 +366,7 @@ The European datasets disagree a little: $h^2-\tau=0.014$ (SE 0.007). But a 14-d
 
 **Software.** PLDSC 0.1.2 includes Sections 1–10 and their drivers in Table 11. Those analyses used the [0.1.1 source revision f47cf80](https://github.com/bvilhjal/PLDSC/tree/f47cf8031d527834d7c6243bed6a50c861cd51c2) with the research drivers recorded here, Python 3.14.6, NumPy 2.4.6 and allelign 0.3.1. Section 11 was added on 20 November 2026 on the [0.1.2 revision d49f156](https://github.com/bvilhjal/PLDSC/tree/d49f156), with allelign 0.3.2 and SciPy 1.18.0 for the asthma driver. Figures 1–4 use the `plot` extra and can be rebuilt without downloading the GWAS files.
 
-**Table 11. Reproduction routes and required inputs.**
+: **Table 11. Reproduction routes and required inputs.**
 
 | Result and driver | Inputs and settings |
 |:--------------------|:--------------------------------------|
@@ -428,3 +385,155 @@ The European datasets disagree a little: $h^2-\tau=0.014$ (SE 0.007). But a 14-d
 Allelign handles file QC and allele alignment. By default the file workflow drops ambiguous variants, filters on available MAF and INFO, and applies $z^2\leq\max(80,0.001N)$ for each trait. Array functions expect already aligned data in genomic order. The command line refuses fits on fewer than 200,000 regression variants and declared builds that differ from the reference's, and reads ldsc `munge_sumstats` files, whose $N$ is a total sample size. For published ldsc conventions add `--ldsc-compat --m-snps 5961159`. [LDSC guide](../docs/LDSC.md), [notebook](../examples/ldsc_notebook.ipynb) and [reference provenance](../pldsc/data/hm3_eur.json).
 
 **What was checked.** This review reran all five Table 2 arms at both panel sizes, the identical-LD control, the chr22 grid, the genome-wide protocol comparison, both effect-model analyses and the asthma reanalysis. The [reproduction record](reproduction.txt) contains their output and input digests. Sections 7–9 draw on the [historical experiments](../experiments/RESULTS.md) and [family derivations](../docs/METHOD.md). The [22 chromosome summaries](asthma_score_shape.json) allow the prediction errors and their paired jackknife to be recomputed. The [simulation results](score_shape_simulation.json) record coverage, power, slope variability and predictive-model selections. The Section 11 simulation was run twice with identical results, and its asthma analysis ran on scores rebuilt that day; a rerun on 23 November with the three-intercept fits reproduced every earlier value. Independent-cohort validation and absolute calibration of asthma heritability remain open.
+
+## Supplementary Methods
+
+These methods give the mathematical and fitting details behind the main-text equations. Equations (1)–(10), Figures 1–4 and Tables 1–11 belong to the main text; supplementary equations have an S prefix.
+
+### S1. Regression weights and uncertainty
+
+**Fitting and uncertainty.** PLDSC uses one-step iteratively reweighted regression with two weight updates by default. Let $d_j=\max(\ell_j,1)$, $\mu_{tj}$ be the fitted marginal mean floored at one, and $q_j$ the fitted cross mean. The marginal weight is $1/(2d_j\mu_{tj}^2)$. The cross weight is $1/[d_j\max(\mu_{1j}\mu_{2j}+q_j^2,10^{-6})]$. Each genomic deletion refits the weights and, for $r_g$, all three slopes. For $B$ contiguous blocks and delete-block estimates $\theta_{-b}$ with mean $\bar\theta_-$, Equation (S1) gives the reported uncertainty.
+
+$$
+\operatorname{SE}_{\rm JK}(\hat\theta)=
+\sqrt{\frac{B-1}{B}\sum_{b=1}^{B}(\theta_{-b}-\bar\theta_-)^2}. \tag{S1}
+$$
+
+The defaults are 100 blocks for one trait and 200 for two. Estimates can fall outside their population ranges. A nonpositive marginal heritability makes $r_g$ undefined. An invalid deletion makes its SE undefined. A fixed cross intercept in the bivariate fit leaves the two marginal intercepts free.
+
+**The reference estimator.** An opt-in mode (`--ldsc-compat`) runs the estimator of the reference ldsc software instead: final weights held fixed in a 200-block jackknife, separate over-counting scores, no $\chi^2$ cap, a two-step fit for $h^2$ (intercept from variants with $\chi^2<30$) and one-step fits for $r_g$. ldsc applies its two-step default only to `--h2`; in `--rg` it never takes effect, so published $r_g$ estimates, and the heritabilities printed beside them, are one-step. On a committed fixture the mode agrees with ldsc's own regression code to rounding error. [Comparison with ldsc](../docs/LDSC.md#ldsc-equivalence).
+
+### S2. Deriving the meta-analysis score
+
+For each causal variant $k$, assume $\operatorname{Cov}(\beta_{ak},\beta_{bk})=\rho_{ab}h_ah_b/M$, with $h_a=\sqrt{h_a^2}$, and no covariance between effects at different variants. Independent strata have independent unit-variance sampling noise. Expanding the marginal association as a sum of tagged effects gives Equation (S2):
+
+$$
+\ell_j^{ab}=\sum_k r^a_{jk}r^b_{jk},\qquad
+E[z_{aj}z_{bj}]\simeq {\bf 1}_{a=b}
++\frac{\sqrt{N_aN_b}}{M}\rho_{ab}h_a h_b\,\ell_j^{ab}. \tag{S2}
+$$
+
+For the normalized weights in Section 2, expand $E[(\sum_ac_{aj}z_{aj})^2]$ as the sum of $c_{aj}c_{bj}E[z_{aj}z_{bj}]$ over all ordered pairs. The noise terms sum to $\sum_ac_{aj}^2=1$. Substituting $h_ah_b=h^2\sqrt{\eta_a\eta_b}$ in the remaining terms gives Equation (3). With overlapping strata, replace the indicator in Equation (S2) by their sampling-noise covariance.
+
+**Weighting schemes.** For sample-size weights, let $f_a=N_a/N_j$ and take $c_{aj}=\sqrt{f_a}$. For two groups and equal heritabilities, Equation (3) reduces to
+
+$$
+L_j=f_a^2\ell_j^{aa}+f_b^2\ell_j^{bb}
+       +2f_af_b\rho_{ab}\ell_j^{ab}. \tag{S3}
+$$
+
+For IVW of per-allele effects under the simple standardized quantitative-trait model, $c_{aj}=\sqrt{f_a}\sigma_{aj}/\sqrt{\sum_bf_b\sigma_{bj}^2}$, where $\sigma_{aj}$ is the genotype SD. Actual availability, imputation and effective sizes can change these weights across SNPs.
+
+**Score bounds.** For population scores, $|\ell_j^{ab}|\leq\sqrt{\ell_j^{aa}\ell_j^{bb}}$ by Cauchy–Schwarz. With $\eta=1$, nonnegative meta weights and a valid effect-correlation matrix, the two schemes therefore obey
+
+$$
+\begin{aligned}
+L_j^{\rm size}
+ &\leq\left(\sum_a f_a\sqrt{\ell_j^{aa}}\right)^2
+ \leq\sum_a f_a\ell_j^{aa},\\
+L_j^{\rm IVW}
+ &\leq\frac{\left(\sum_a f_a\sigma_{aj}\sqrt{\ell_j^{aa}}\right)^2}
+                  {\sum_a f_a\sigma_{aj}^2}
+ \leq\sum_a f_a\ell_j^{aa}.
+\end{aligned}\tag{S4}
+$$
+
+The last inequalities are further applications of Cauchy–Schwarz with $\sum_af_a=1$. They bound a score at a SNP, whereas a slope depends on covariance across SNPs. Equality with a pooled-individual score additionally requires exact within-group centering, the same genotypes and uncorrected LD; [MA10–MA12](../docs/MULTI_ANCESTRY.md) give that calculation.
+
+### S3. Projection and predictive information
+
+Let the correct mean be $1+sx_L$ and regress it on an intercept and $x_R$ using fixed weights $w$. The weighted normal equations give the slope in Equation (4) and the intercept in Equation (S5):
+
+$$
+b_R=s\frac{\operatorname{Cov}_w(x_R,x_L)}{\operatorname{Var}_w(x_R)}=s\kappa,
+\qquad a_R=1+s(\bar x_{L,w}-\kappa\bar x_{R,w}). \tag{S5}
+$$
+
+Write $u=x_L-\bar x_{L,w}-\kappa(x_R-\bar x_{R,w})$. The normal equations make $u$ orthogonal to both the intercept and $x_R$. Its coefficient is zero under a mean affine in $x_R$ and $s$ under a mean $1+sx_L$, proving the interpretation of Equation (7). Under that second mean, the best affine $x_R$ prediction misses $su$. If the conditional noise has mean zero, its cross term with $u$ vanishes, so
+
+$$
+\operatorname{MSE}_w(\text{best affine }x_R)
+-\operatorname{MSE}_w(1+sx_L)=s^2\operatorname{Var}_w(u). \tag{S6}
+$$
+
+Section 6.1 uses the measured predictors $N_jL_j/M$ and $N_j\ell_j/M$ and substitutes the fitted matched slope for $s$. That benchmark conditions on the measured reference scores; it is not a calibration result for population LD.
+
+### S4. The matched mixed-model identity
+
+Let $C$ contain the fixed covariates, $W=V_c^{-1}$, and $+$ denote the Moore–Penrose inverse. The residual precision, genotype norm and score statistic are
+
+$$
+P_c=W-WC(C^TWC)^+C^TW,\qquad q_j=x_j^TP_cx_j,\qquad
+z_j=\frac{x_j^TP_c y}{\sqrt{q_j}}. \tag{S7}
+$$
+
+For fixed positive-definite $V_c$, $P_cC=0$ and $P_cV_cP_c=P_c$. Write $y=C\alpha+X\beta+\epsilon$, with mean-zero independent effects of variances $\tau_k^2$ and a mean-zero residual vector independent of the effects, of covariance $V_c$. Assume $q_j>0$. Then the conditional variance of $x_j^TP_cy$ is $\sum_k\tau_k^2(x_j^TP_cx_k)^2+x_j^TP_cV_cP_cx_j$. Dividing by $q_j$ proves Equation (5), since the last term becomes one. The sum must include all modeled effects for the identity to be exact; truncating it to an LD window is an additional approximation.
+
+### S5. Biological interpretation of the slope
+
+**Assortative mating.** Suppose mates sort on a phenotype $S$. In a primary-assortment model with linear conditional means and independent mate genotypes given their mating phenotypes, their cross-genotype covariance is proportional to $a a^T$, where $a_j=\operatorname{Cov}(G_j,S)$. Mendelian transmission can then induce signed associations between loci on different chromosomes. For effects $\beta$ on the trait under study, the corresponding contribution to its additive variance is
+
+$$
+V_{\rm cross}=2\sum_{j<k:\,{\rm chr}(j)\ne{\rm chr}(k)}
+                      \beta_j\beta_k r_{jk}. \tag{S8}
+$$
+
+A local squared-LD score drops the cross-chromosome pairs and loses the signs that matter in Equation (S8). Assortment aligns LD with the generating trait, so averaging effects independently of LD can also fail. The direction and magnitude for another trait depend on its alignment with the mating trait. Mate genotypes or a design that addresses geography and ancestry are needed to attribute a long-range covariance to assortment. [Yengo et al.](https://doi.org/10.1038/s41562-018-0476-3), [Border et al.](https://doi.org/10.1038/s41467-022-28294-9) and [directional-GPD variance estimation](https://doi.org/10.1038/s41588-025-02192-4).
+
+**Parental covariance.** Under the random-mating and stable-LD assumptions of Section 9, offspring inherit half their alleles from each parent. On the shared standardized scale, $\operatorname{Cov}(G_o,G_m)=\operatorname{Cov}(G_o,G_f)=\Sigma/2$. Substituting the parental phenotype model gives Equation (6), with effective offspring coefficient $\beta_{\rm tag}=(\gamma_m+\gamma_f)/2$ despite a zero direct effect.
+
+For equal parental effects $\gamma_m=\gamma_f=\gamma$ and no other phenotypic variance, the nurturing variance is $2\gamma^T\Sigma\gamma$, whereas the tagged variance is $\gamma^T\Sigma\gamma$, giving one half. With only one contributing parent the two quantities are $\gamma^T\Sigma\gamma$ and $\gamma^T\Sigma\gamma/4$, giving one quarter. The fractions concern the variance tagged by offspring genotypes under these thought-experiment assumptions.
+
+### S6. What Cochran's Q keeps and discards
+
+Equation (8) is a rotation of $(z_E,z_F)$, and $Q$ is Cochran's heterogeneity statistic. Write $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$, and let $a_E$, $a_F$ and $a_{EF}$ be the stratum intercepts and the cross-stratum intercept ($a_{EF}=0$ without sample overlap or shared confounding). Substituting Equation (S2), the three stratum moments at a SNP are $A=E[z_E^2]\simeq a_E+x_Eh_E^2$, $B=E[z_F^2]\simeq a_F+x_Fh_F^2$ and $C=E[z_Ez_F]\simeq a_{EF}+x_\times g$, and the rotation gives
+
+$$
+\begin{aligned}
+E[Z^2]&=c_E^2A+c_F^2B+2c_Ec_FC,\\
+E[Q]&=c_F^2A+c_E^2B-2c_Ec_FC,\\
+E[ZD]&=c_Ec_F(A-B)-(c_E^2-c_F^2)\,C.
+\end{aligned}\tag{S9}
+$$
+
+The first two lines, also given in Equation (9), are what a release of $Z$, $Q$ and the weights can be regressed on. With unit intercepts they read $1+c_E^2x_Eh_E^2+c_F^2x_Fh_F^2+2c_Ec_Fx_\times g$ and $1+c_F^2x_Eh_E^2+c_E^2x_Fh_F^2-2c_Ec_Fx_\times g$. The third line is the moment the release discards. Write $k=c_E^2-c_F^2$ for the weight imbalance at a SNP, so $4c_E^2c_F^2=1-k^2$.
+
+**Proposition 1 (what $Q$ discards).** At each SNP, $(E[Z^2],E[Q],E[ZD])$ is an invertible linear function of $(A,B,C)$, so the strata and the full rotated pair carry the same second moments. A release of $(Z,Q)$ keeps the first two as means of released statistics, but not the third. If $(z_E,z_F)$ is bivariate normal with mean zero, as under the random-effects model behind Equation (S2), the joint law of $(Z,Q)$ depends on $E[ZD]$ only through its square.
+
+*Proof.* The matrix of Equation (S9) is the action of the rotation $R=\begin{pmatrix}c_E&c_F\\c_F&-c_E\end{pmatrix}$ on the covariance $\Sigma=\begin{pmatrix}A&C\\C&B\end{pmatrix}$, $R\Sigma R^\top=\begin{pmatrix}E[Z^2]&E[ZD]\\E[ZD]&E[D^2]\end{pmatrix}$, and $R^{-1}=R$, so the map is invertible. For the second statement, $(Z,D)$ is bivariate normal with mean zero and covariance $R\Sigma R^\top$, and $(Z,-D)$ is bivariate normal with the same variances and covariance $-E[ZD]$. Since $Q=D^2=(-D)^2$, the two covariances give the same law of $(Z,Q)$. $\square$
+
+The earlier statement that a release of $Z$, $Q$ and the weights "loses only the sign of $D$" is true of each SNP's realized values but understates the loss. $E[ZD]$ no longer appears as a mean; its square enters only higher moments, as in $E[Z^2Q]-E[Z^2]E[Q]=2E[ZD]^2$. And $E[ZD]$ depends on $g$ unless $c_E=c_F$.
+
+**Proposition 2 (intercepts).** The intercept parts of the first two lines of Equation (S9) are $c_E^2a_E+c_F^2a_F+2c_Ec_Fa_{EF}$ and $c_F^2a_E+c_E^2a_F-2c_Ec_Fa_{EF}$. They are constant across SNPs for all intercept values if and only if $c_E$ is constant, as with sample-size weights and a common $N$ per stratum. Under IVW weights $c_E$ varies with allele frequency, and a fit with one free constant per equation is misspecified whenever $a_E\neq a_F$ or $a_{EF}\neq0$. The three columns $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ remove the misspecification. With constant $c_E$ they span only two dimensions and the one-constant-per-equation form is equivalent.
+
+*Proof.* Direct from Equation (S9); if $c_E$ is constant the three columns in the two equations are constant vectors, of rank two in the stacked design because $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ span the same space as $(1,0)$ and $(0,1)$ applied to the two equations. $\square$
+
+How much the misspecification matters depends on the LD and the weights. On the chr22 example scores, with the asthma IVW weights and stratum intercepts 1.076 and 0.983, the one-constant fit to the exact moments returns intercepts 1.060 and 0.997 and $g$ biased by $-9.4\%$; the three-intercept fit is exact ([tests](../tests/test_q_heterogeneity.py)). In the simulation reported in Section 11, an arm with stratum intercepts 1.08 and 1.0 on 1000 Genomes LD moved the one-constant estimate of $g$ by $-5.5\%$ and the three-intercept estimate by $-0.2\%$.
+
+**Proposition 3 (identification and efficiency).** Assume constant weights at a SNP and moments near the null, so that $Z$ and $D$ are approximately independent with unit variance and $\operatorname{Var}(Z^2)=\operatorname{Var}(D^2)=2$, $\operatorname{Var}(ZD)=1$, all three uncorrelated.
+(a) If $h_E^2$ and $h_F^2$ are known, the information on $g$ from $(Z^2,Q)$ at a SNP is $(1-k^2)\,x_\times^2$, against $x_\times^2$ from the strata; the missing $k^2x_\times^2$ is the information in $ZD$.
+(b) At balanced weights ($k=0$), $Z^2-Q=2z_Ez_F$ exactly, so the contrast is the strata's cross-product statistic and the covariance regression is the same.
+(c) If $k\neq0$ is constant and the three scores are proportional ($x_F=\beta x_E$, $x_\times=\gamma x_E$), $g$ is not identified from $E[Z^2]$ and $E[Q]$, while the strata identify it from $E[z_Ez_F]$.
+
+*Proof.* (a) The derivatives of $(E[Z^2],E[Q],E[ZD])$ in $g$ are $(2c_Ec_F,-2c_Ec_F,-k)\,x_\times$ by Equation (S9). With the stated covariance, the generalized-least-squares information from the first two is $(4c_E^2c_F^2+4c_E^2c_F^2)x_\times^2/2=(1-k^2)x_\times^2$ and from $ZD$ it is $k^2x_\times^2$. Their sum, $x_\times^2$, is the information from $z_Ez_F$, whose derivative is $x_\times$ and whose variance is 1, as it must be by Proposition 1. (b) $Z^2-D^2=k(z_E^2-z_F^2)+4c_Ec_Fz_Ez_F$, and $k=0$ gives $c_E=c_F=1/\sqrt2$. (c) With unit intercepts, $E[Z^2]+E[Q]-2=x_E(h_E^2+\beta h_F^2)$ and $E[Z^2]-E[Q]=x_E\left[k(h_E^2-\beta h_F^2)+4c_Ec_F\gamma g\right]$. Two functions of $x_E$ times constants determine only two linear combinations of $(h_E^2,h_F^2,g)$; for $k\neq0$, changing $g$ by $\delta$ and $(h_E^2,\beta h_F^2)$ by $\mp2c_Ec_F\gamma\delta/k$ leaves both unchanged. The strata regress $z_Ez_F$ on $x_\times=\gamma x_E$ and identify $g$. $\square$
+
+So the contrast identifies $g$ without relying on differences among the three scores only at balanced weights. Away from balance $g$ is identified only through those differences (and, under IVW, through the variation of $c_E$ across SNPs, which Proposition 2 shows must not be confused with intercept differences). Part (a) bounds the loss from below: at a weight share of 0.85, $k=0.7$ and the SD of $\hat g$ is at least $1/\sqrt{1-0.49}=1.40$ times that from the strata. The simulated ratio in Table 8, 1.7, includes the further loss from estimating $h_E^2$ and $h_F^2$ from nearly proportional scores. *Conjecture:* the excess over the bound grows as the scores become more collinear, roughly in proportion to $k^2/(1-r^2)$ with $r$ the correlation between $c_E^2x_E-c_F^2x_F$ and $x_\times$; we have not derived it.
+
+With sample-size weights and unit intercepts, the second line of Equation (S9) is
+$$
+E[Q]\simeq 1+\frac{\tilde N}{M}\left(h_E^2\ell^{EE}+h_F^2\ell^{FF}-2g\ell^{EF}\right). \tag{S10}
+$$
+where $\tilde N=N_EN_F/(N_E+N_F)$. With identical effects in both groups the bracket is $h^2\sum_k(r^E_{jk}-r^F_{jk})^2$. Different LD alone therefore gives $E[Q]>1$.
+
+### S7. Within-ancestry heterogeneity
+
+Let ancestry $a$ have $K$ independent datasets with size fractions $f_c$, $\sum_cf_c=1$, common heritability $h_a^2$ and pairwise genetic covariance $\tau_a$. Assume unit stratum intercepts, no cross-dataset sampling covariance, the same LD score and all datasets available at each SNP. Sample-size meta weights give genetic coefficient
+
+$$
+H_a=\sum_cf_c^2h_a^2+\sum_{c\ne d}f_cf_d\tau_a
+   =\tau_a+(h_a^2-\tau_a)S_a,\qquad S_a=\sum_cf_c^2. \tag{S11}
+$$
+
+Since $E[Z_a^2]\simeq1+x_aH_a$, the first part of Equation (10) follows. Cochran's statistic is $Q_a=\sum_cz_c^2-Z_a^2$. The sum has expectation $K+x_ah_a^2$, so subtracting the meta moment gives the second part of Equation (10). The ancestry index $a$ is unrelated to the dataset index $c$.
+
+Under exchangeable dataset-specific effects, the within-ancestry shared component has variance $\tau_a$ and the dataset-specific component has variance $h_a^2-\tau_a$. Thus $g/\sqrt{\tau_E\tau_F}$ targets correlation between the shared components if cross-ancestry covariance comes from those components. The ordinary denominator $\sqrt{H_EH_F}$ also includes dataset-specific variance left in each meta-analysis. A systematic difference shared by every dataset of one ancestry remains in the shared component and is not removed by this normalization. Table 9 reports both precision loss and inflated rejection rates in some cells; the decomposition alone does not establish calibrated inference.
