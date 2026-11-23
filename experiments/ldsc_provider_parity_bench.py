@@ -33,8 +33,11 @@ def check_power():
 
 
 def compare(a, b):
-    for name, value in asdict(a).items():
-        other = asdict(b)[name]
+    a, b = asdict(a), asdict(b)
+    # PLDSC also reports gcov_se and h2_se, which the sibling results lack.
+    assert set(a) - set(b) <= {"gcov_se", "h2_se"}, set(a) - set(b)
+    for name in a.keys() & b.keys():
+        value, other = a[name], b[name]
         if value is None:
             assert other is None
         else:

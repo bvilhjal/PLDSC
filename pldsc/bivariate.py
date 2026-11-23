@@ -186,10 +186,10 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
     confounding, overlap, or LD/reference mismatch.
 
     ``ldsc_compat=True`` uses the estimator of the reference ``ldsc``
-    software instead (:func:`pldsc.ldsc_compat.ldsc_rg_compat`): two-step
-    estimators, separate ``w_ld`` scores (default ``ld_scores``), fixed-weight
-    jackknife and ldsc's ratio jackknife for rg. It requires ``m_snps`` and
-    ignores ``ncores``.
+    software instead (:func:`pldsc.ldsc_compat.ldsc_rg_compat`): one-step
+    fits as in ``ldsc --rg``, separate ``w_ld`` scores (default
+    ``ld_scores``), fixed-weight jackknife and ldsc's ratio jackknife for rg.
+    It requires ``m_snps`` and ignores ``ncores``.
     """
     b1 = _as_finite_vector(beta_hat1, "beta_hat1")
     b2 = _as_finite_vector(beta_hat2, "beta_hat2")

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 import gzip
+import inspect
 import json
 import math
 import os
@@ -102,9 +103,10 @@ def _parser():
         p.add_argument("--allow-ambiguous", action="store_true", help="retain palindromic alleles when orientation is known")
         p.add_argument("--no-chi2-cap", action="store_true", help="disable the LDSC high-chi-square filter")
         p.add_argument("--ldsc-compat", action="store_true",
-                       help="use the reference ldsc estimator (two-step at chi2 30, fixed-weight jackknife, "
-                            "200 blocks, no chi-square cap); requires an explicit --m-snps, normally the "
-                            "MAF 5-50%% count (5961159 for hm3-eur)")
+                       help="use the reference ldsc estimator as ldsc --h2 and ldsc --rg run by default "
+                            "(h2 two-step at chi2 30, rg one-step; fixed-weight jackknife, 200 blocks, no "
+                            "chi-square cap); requires an explicit --m-snps, normally the MAF 5-50%% count "
+                            "(5961159 for hm3-eur)")
         p.add_argument("--w-ld-scores",
                        help="with --ldsc-compat and --reference: .npy over-counting scores (ldsc --w-ld) in "
                             "reference row order (default: the regression scores)")
@@ -221,6 +223,14 @@ def _check_out(path):
         raise ValueError(f"--out directory {parent} is not writable")
 
 
+def _estimator_label(args):
+    if not args.ldsc_compat:
+        return "pldsc one-step (weights refit in every jackknife deletion)"
+    # ldsc uses its two-step estimator by default only for h2 with a free intercept.
+    two_step = args.analysis == "h2" and args.constrain_intercept is None
+    return f"ldsc-compatible ({'two-step at chi2 30' if two_step else 'one-step'}, fixed-weight jackknife)"
+
+
 def _m_convention(m_snps, bundled):
     if bundled is None:
         return "user-supplied (--m-snps)"
@@ -310,7 +320,14 @@ def _run(args):
                       "GRCh37 reference coordinates", file=sys.stderr)
     declared = (None if args.sumstats_build is None
                 else allelign.normalize_build(args.sumstats_build, name="--sumstats-build"))
-    build_check = allelign.check_build(declared, reference_build)
+    try:
+        build_check = allelign.check_build(declared, reference_build)
+    except allelign.BuildMismatchError as exc:
+        if "liftover" not in inspect.signature(allelign.harmonize).parameters:
+            raise
+        raise ValueError(f"{exc} Alternatively, leave out --sumstats-build: allelign {allelign.__version__} "
+                         "detects a file on the other build during alignment, lifts it over and records "
+                         "this in the alignment log.") from None
     qc_options = {"min_n_ratio": args.min_n_ratio, "min_maf": args.min_maf, "min_info": args.min_info}
     common = dict(m_snps=m_snps, n_blocks=args.n_blocks, n_iter=args.n_iter,
                   constrain_intercept=args.constrain_intercept, drop_ambiguous=not args.allow_ambiguous,
@@ -334,8 +351,7 @@ def _run(args):
         "inputs": {"sumstats": paths, "reference": args.reference, "ld_scores": args.ld_scores,
                    "ld_reference": reference_record},
         "options": {**common, "read_options": options, "qc_options": qc_options,
-                    "estimator": "ldsc-compatible (two-step, fixed-weight jackknife)" if args.ldsc_compat
-                                 else "pldsc one-step (weights refit in every jackknife deletion)",
+                    "estimator": _estimator_label(args),
                     "w_ld": (args.w_ld_scores or "regression LD scores") if args.ldsc_compat else None,
                     "ncores": args.ncores if args.analysis == "rg" else None},
         "long_range_ld": long_range_ld,

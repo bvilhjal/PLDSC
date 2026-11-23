@@ -22,9 +22,16 @@ def _data(m=160):
     return ell, n1, n2, z1, z2
 
 
+# Fields PLDSC reports that the sibling providers' results do not.
+PLDSC_ONLY_FIELDS = {"gcov_se", "h2_se"}
+
+
 def _assert_results_close(a, b):
-    for name, v in asdict(a).items():
-        other = asdict(b)[name]
+    """Compare every field of ``a`` (PLDSC) that ``b`` also has."""
+    a, b = asdict(a), asdict(b)
+    assert set(a) - set(b) <= PLDSC_ONLY_FIELDS, set(a) - set(b)
+    for name in a.keys() & b.keys():
+        v, other = a[name], b[name]
         if v is None:
             assert other is None
         else:

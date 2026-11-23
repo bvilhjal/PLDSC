@@ -16,6 +16,13 @@ No arithmetic is changed. Usage:
 The inputs are synthetic: 3,000 SNPs with per-SNP N, over-counting scores
 w_ld that differ from the regression scores, a few large chi-squares so the
 two-step estimator drops rows, and correlated z scores for rg.
+
+The cases map to ldsc's command line as follows. ``ldsc --h2`` runs the
+``twostep`` h2 case. ``ldsc --rg`` runs the ``onestep`` rg case, because
+``estimate_rg`` turns ``intercept_h2`` into a list before testing it against
+None, so its default cutoff never applies; ``ldsc --rg --two-step 30`` runs
+the ``twostep`` case. Checked through the ldsc CLI on these inputs on
+2026-11-23: r_g 0.3924 (0.0900) and 0.3284 (0.0895).
 """
 import argparse
 import sys

@@ -11,9 +11,14 @@ commit 2fdeeb3) for a single LD-score annotation:
   fitted intercept used without a floor;
 * the block jackknife with the *final weights held fixed*
   (``LstsqJackknifeFast``), 200 blocks at ``floor(linspace(0, n, B + 1))``;
-* the two-step estimator for free intercepts (intercept from rows with
-  chi-square below 30, slope on all rows with that intercept fixed), with
-  ldsc's adjustment of the step-two delete values;
+* for h2 with a free intercept, the two-step estimator (intercept from rows
+  with chi-square below 30, slope on all rows with that intercept fixed),
+  with ldsc's adjustment of the step-two delete values;
+* for rg, one-step fits, because ``ldsc --rg`` uses the two-step estimator
+  only when ``--two-step`` is given: ``estimate_rg`` turns ``intercept_h2``
+  into a list before it tests ``intercept_h2 is None``, so the default
+  cutoff of 30 never applies there. ``twostep=30`` reproduces
+  ``ldsc --rg --two-step 30``;
 * no high-chi-square cap; h2 and gcov reported from the full-data fit;
 * rg with ldsc's ratio jackknife.
 
@@ -177,7 +182,8 @@ def ldsc_h2_compat(chisq, ld_scores, n_eff, *, m_snps, w_ld=None, n_blocks=200,
     ``w_ld`` are the over-counting LD scores (ldsc ``--w-ld``); they default
     to ``ld_scores``, which is what ldsc does when the same files are passed
     to ``--ref-ld`` and ``--w-ld``. ``twostep=None`` disables the two-step
-    estimator. ``m_snps`` is required.
+    estimator, and a fixed intercept never uses it, as in
+    ``ldsc --h2 --intercept-h2``. ``m_snps`` is required.
     """
     y, ell, wl = _check(chisq, ld_scores, w_ld, "chisq")
     if np.any(y < 0.0):
@@ -206,16 +212,15 @@ def _h2_parts(y, ell, wl, N, M, nb, fixed, twostep):
 
 
 def ldsc_rg_compat(z1, z2, ld_scores, n_eff1, n_eff2, *, m_snps, w_ld=None, n_blocks=200,
-                   twostep=TWOSTEP_CUTOFF, constrain_intercept=None):
+                   twostep=None, constrain_intercept=None):
     """Genetic correlation with the reference ldsc estimator (see module docstring).
 
     ``z1`` and ``z2`` are signed z scores aligned to the same allele and in
     genomic order. Both marginal intercepts are free; ``constrain_intercept``
-    fixes the cross-trait intercept. ldsc raises an error when a fixed
-    cross-trait intercept meets its default two-step estimator; here the
-    cross-trait regression then runs without the two-step estimator and the
-    marginal fits keep it. Pass ``twostep=None`` to match ``ldsc
-    --intercept-gencov ... --two-step`` left unset for every fit.
+    fixes the cross-trait intercept. By default all three regressions are
+    one-step, as in ``ldsc --rg``; a ``twostep`` cutoff applies to all three,
+    as in ``ldsc --rg --two-step``. As in ldsc, a cutoff cannot be combined
+    with a fixed cross-trait intercept.
     """
     from .bivariate import LDSCRgResult
 
@@ -224,17 +229,18 @@ def ldsc_rg_compat(z1, z2, ld_scores, n_eff1, n_eff2, *, m_snps, w_ld=None, n_bl
     if z2.shape != z1.shape or not np.all(np.isfinite(z2)):
         raise ValueError("z2 must be finite with one value per row")
     N1, N2 = _as_n_vector(n_eff1, z1.size), _as_n_vector(n_eff2, z1.size)
-    M, nb, twostep_gc, fixed = _options(m_snps, n_blocks, twostep, constrain_intercept, z1.size)
-    _, _, twostep_h2, _ = _options(m_snps, n_blocks, twostep, None, z1.size)
-    h1, i1, d1, _, h1_se, _, _ = _h2_parts(z1 * z1, ell, wl, N1, M, nb, None, twostep_h2)
-    h2, i2, d2, _, h2_se, _, _ = _h2_parts(z2 * z2, ell, wl, N2, M, nb, None, twostep_h2)
+    if twostep is not None and constrain_intercept is not None:
+        raise ValueError("twostep is not compatible with a fixed cross-trait intercept (as in ldsc)")
+    M, nb, twostep, fixed = _options(m_snps, n_blocks, twostep, constrain_intercept, z1.size)
+    h1, i1, d1, _, h1_se, _, _ = _h2_parts(z1 * z1, ell, wl, N1, M, nb, None, twostep)
+    h2, i2, d2, _, h2_se, _, _ = _h2_parts(z2 * z2, ell, wl, N2, M, nb, None, twostep)
 
     def weights(ld, rows, rho_g, intercept):
         n1, n2, wr = (N1, N2, wl) if rows is None else (N1[rows], N2[rows], wl[rows])
         return _gencov_weights(ld, wr, n1, n2, M, h1, h2, rho_g,
                                0.0 if intercept is None else intercept, i1, i2)
 
-    step1 = None if twostep_gc is None else (z1 * z1 < twostep_gc) & (z2 * z2 < twostep_gc)
+    step1 = None if twostep is None else (z1 * z1 < twostep) & (z2 * z2 < twostep)
     gc, ic, dg, di, gc_se, ic_se, _ = _regression(z1 * z2, ell, wl, np.sqrt(N1 * N2), M, nb, fixed,
                                               step1, 0.0, weights)
     if h1 > 0.0 and h2 > 0.0:

@@ -1,5 +1,6 @@
 """End-to-end checks of command-line LDSC against the Python API."""
 import gzip
+import inspect
 import json
 import os
 from pathlib import Path
@@ -218,7 +219,15 @@ def test_cli_ldsc_compat_matches_python_and_requires_explicit_m(gwas_files):
     assert out["estimate"]["h2"] == pytest.approx(expected.estimate.h2)
     assert out["estimate"]["h2_se"] == pytest.approx(expected.estimate.h2_se)
     assert out["options"]["ldsc_compat"] is True and out["options"]["chi2_cap"] is False
-    assert out["options"]["estimator"].startswith("ldsc-compatible")
+    assert out["options"]["estimator"].startswith("ldsc-compatible (two-step")
+    # r_g follows ldsc --rg, which is one-step unless --two-step is given.
+    run = _command("rg", "--sumstats1", one, "--sumstats2", two, "--ldsc-compat", "--m-snps", "120", *common)
+    assert run.returncode == 0, run.stderr
+    out = json.loads(run.stdout)
+    expected = ldsc_rg_sumstats(one, two, reference, ell, m_snps=120, n_blocks=8, ldsc_compat=True)
+    assert out["estimate"]["rg"] == pytest.approx(expected.estimate.rg)
+    assert out["estimate"]["gcov"] == pytest.approx(expected.estimate.gcov)
+    assert out["options"]["estimator"].startswith("ldsc-compatible (one-step")
 
 
 def _munged_copy(src, dst):
@@ -262,6 +271,8 @@ def test_cli_fails_closed_on_low_coverage_build_and_out(gwas_files, tmp_path):
     run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--sumstats-build", "GRCh38",
                    "--reference-build", "GRCh37")
     assert run.returncode == 2 and "GRCh38" in run.stderr
+    if "liftover" in inspect.signature(allelign.harmonize).parameters:   # allelign >= 0.3 lifts over itself
+        assert "leave out --sumstats-build" in run.stderr
     run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--reference-build", "GRCh38")
     assert run.returncode == 2 and "long-range" in run.stderr
     existing = tmp_path / "exists.json"

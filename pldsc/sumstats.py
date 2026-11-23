@@ -125,7 +125,7 @@ def read_ldsc_munged(path, *, n_eff=None, **columns):
         raise ValueError(f"{path}: no rows with a finite Z and N")
     log = {"format": "ldsc-munged", "n_input": m + dropped, "n_dropped_missing_z_or_n": dropped,
            "columns": {f: header[i] for f, i in idx.items() if i is not None} | {"z": header[iz]},
-           "n_eff_source": "scalar" if n_eff is not None else "column"}
+           "n_eff_source": "scalar" if n_eff is not None else "column:N (total sample size, ldsc convention)"}
     return allelign.Sumstats(np.asarray(ids, dtype=object), np.full(m, "", dtype=object),
                              np.zeros(m, dtype=np.int64), np.asarray(ea, dtype=object),
                              np.asarray(oa, dtype=object), np.asarray(z, dtype=float), np.ones(m),

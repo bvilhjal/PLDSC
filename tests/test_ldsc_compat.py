@@ -3,6 +3,9 @@
 ``tests/data/ldsc_parity.npz`` holds synthetic inputs and the estimates of
 bulik/ldsc's own estimator code (commit 2fdeeb3) on them; it is written by
 ``scripts/make_ldsc_parity_fixture.py``, which documents the Python 3 port.
+Its ``onestep`` r_g case is what ``ldsc --rg`` runs by default and its
+``twostep`` case is ``ldsc --rg --two-step 30``; ``ldsc --h2`` runs the
+``twostep`` h2 case by default.
 """
 from pathlib import Path
 
@@ -21,7 +24,7 @@ def ref():
 
 
 H2_CASES = {"twostep": {}, "onestep": {"twostep": None}, "fixed": {"constrain_intercept": 1.0}}
-RG_CASES = {"twostep": {}, "onestep": {"twostep": None}, "fixed": {"constrain_intercept": 0.0, "twostep": None}}
+RG_CASES = {"twostep": {"twostep": 30.0}, "onestep": {}, "fixed": {"constrain_intercept": 0.0}}
 
 
 @pytest.mark.parametrize("case", sorted(H2_CASES))
@@ -45,7 +48,7 @@ def test_public_entry_points_dispatch_and_guard(ref):
     a = ldsc_h2(chisq, ell, N, m_snps=M, ldsc_compat=True, w_ld=ref["w_ld"])
     assert a.h2 == pytest.approx(ref["h2_twostep"][0], rel=1e-12)
     b = ldsc_rg_z(ref["z1"], ref["z2"], ell, N, ref["N2"], m_snps=M, ldsc_compat=True, w_ld=ref["w_ld"])
-    assert b.rg == pytest.approx(ref["rg_twostep"][0], rel=1e-12)
+    assert b.rg == pytest.approx(ref["rg_onestep"][0], rel=1e-12)          # ldsc --rg runs one-step
     with pytest.raises(ValueError, match="m_snps"):
         ldsc_h2(chisq, ell, N, ldsc_compat=True)
     with pytest.raises(ValueError, match="w_ld"):
@@ -64,3 +67,19 @@ def test_two_step_drops_large_chi_squares_from_the_intercept_only(ref):
     full = ldsc_h2_compat(chisq, ref["ld"], ref["N1"], m_snps=float(ref["M"]), w_ld=ref["w_ld"])
     one = ldsc_h2_compat(chisq, ref["ld"], ref["N1"], m_snps=float(ref["M"]), w_ld=ref["w_ld"], twostep=None)
     assert full.intercept != pytest.approx(one.intercept)
+
+
+def test_rg_defaults_follow_ldsc_rg_and_refuse_two_step_with_fixed_intercept(ref):
+    # ldsc --rg applies its two-step default only to --h2: estimate_rg tests
+    # ``intercept_h2 is None`` after turning it into a list. Through the ldsc
+    # CLI on this fixture (2026-11-23): --rg 0.3924, --rg --two-step 30 0.3284.
+    kw = dict(m_snps=float(ref["M"]), w_ld=ref["w_ld"])
+    default = ldsc_rg_compat(ref["z1"], ref["z2"], ref["ld"], ref["N1"], ref["N2"], **kw)
+    assert default.rg == pytest.approx(0.3924, abs=5e-5) and default.rg_se == pytest.approx(0.0900, abs=5e-5)
+    assert default.h2[0] == pytest.approx(ref["h2_onestep"][0], rel=1e-9)   # the rg log's h2 is one-step too
+    two = ldsc_rg_compat(ref["z1"], ref["z2"], ref["ld"], ref["N1"], ref["N2"], twostep=30, **kw)
+    assert two.rg == pytest.approx(0.3284, abs=5e-5)
+    assert two.h2[0] == pytest.approx(ref["h2_twostep"][0], rel=1e-9)
+    with pytest.raises(ValueError, match="fixed cross-trait intercept"):
+        ldsc_rg_compat(ref["z1"], ref["z2"], ref["ld"], ref["N1"], ref["N2"], twostep=30,
+                       constrain_intercept=0.0, **kw)

@@ -134,8 +134,12 @@ For bivariate LDSC, the same reference scores must be suitable for both
 traits. Make sure GWAS and reference use the same genome build. Declare them
 with `--sumstats-build` (e.g. `GRCh38`, `hg19`) and, for an explicit
 reference, `--reference-build` (the bundled reference is GRCh37); a declared
-mismatch is an error. PLDSC does not detect builds from the data, infer
-reference suitability or perform liftover.
+mismatch is an error. Undeclared builds are left to allelign: from version
+0.3 its alignment detects a file on the other build when it matches less than
+half of the reference, lifts it over (downloading a UCSC chain file once) and
+records this under `liftover` in the alignment log. Older allelign versions
+do neither, and such a file then fails the `--min-snps` check. PLDSC itself
+does not infer reference suitability.
 
 **Ancestry.** The scores must describe the population that produced the
 GWAS. For a GWAS or meta-analysis that pools ancestries, a single-population
@@ -172,7 +176,11 @@ fit with `allelign inspect trait1.tsv.gz`. Output of ldsc's `munge_sumstats.py`
 compressed) is also accepted: it is read as z scores with unit SE, rows with
 a missing Z or N are dropped and counted, and the parse log reports the
 format as `ldsc-munged`. Such files carry no positions, MAF or INFO, so the
-MAF and INFO filters do not apply to them. For nonstandard column names,
+MAF and INFO filters do not apply to them. Their `N` is ldsc's total sample
+size and is used as the effective N. For a case-control GWAS h² is then on
+the observed scale at the sample's case fraction φ, which is 4φ(1 − φ) times
+the balanced-scale value an effective N gives; pass a constant effective N
+with `--n-eff` (`--n-eff1`, `--n-eff2` for r_g) instead. For nonstandard column names,
 pass mappings to PLDSC; repeat the option for each field:
 
 ```bash
@@ -234,8 +242,9 @@ Suppose `reference.bim` is a sorted reference variant table and
 `reference.ldscores.npy` is a NumPy vector with one LD score for each row of
 that table, in the same order. The scores must be based on an appropriate
 reference population and compatible variants. The GWAS files must use the
-same genome build as the reference; PLDSC does not check builds or lift over
-coordinates. In this example the scores were summed over **exactly the
+same genome build as the reference. These functions do not check builds;
+allelign 0.3 or later lifts a file on the other build over during alignment
+(see above). In this example the scores were summed over **exactly the
 variants in the reference table**:
 
 ```python
@@ -395,7 +404,8 @@ Two estimators are available. Neither changes the other's defaults.
 
 | | Default (`ldsc_h2`, `ldsc_rg`, `pldsc h2/rg`) | `ldsc_compat=True`, `--ldsc-compat` | Reference `ldsc` |
 |:--|:--|:--|:--|
-| Free-intercept h² | one-step IRWLS on all rows | two-step: intercept from χ² < 30, slope on all rows | two-step at 30 |
+| Free-intercept h² | one-step IRWLS on all rows | two-step: intercept from χ² < 30, slope on all rows | `--h2`: two-step at 30 |
+| r_g and its marginal h² | one-step IRWLS | one-step | `--rg`: one-step unless `--two-step` is given |
 | Over-counting weights | regression scores | separate `w_ld` (default: regression scores) | `--w-ld` |
 | Fitted mean in the weights | floored at 1 | h² clipped to [0, 1], no floor | same as compat |
 | Jackknife | weights refit in each deletion | final weights fixed | fixed |
@@ -412,9 +422,22 @@ and on 1,159,831 bundled HapMap3 scores with simulated z. It does not
 reproduce ldsc's file handling, allele merging or `.sumstats` munging, and the
 bundle has no separate `weights_hm3_no_MHC` scores, so with `--ld-reference`
 the regression scores also serve as `w_ld` (the region filter below removes
-the MHC). With a fixed cross-trait intercept ldsc raises an error under its
-default two-step estimator; compat mode instead runs that one regression
-without it.
+the MHC).
+
+ldsc applies its default two-step cutoff to `--h2` only. In `--rg` it tests
+`intercept_h2 is None` after turning that option into a list, so the test
+always fails and every r_g regression, including the marginal h² printed in
+an r_g log, is one-step unless `--two-step` is given. Compat mode follows the
+program, not the intent: on the parity fixture `ldsc --rg` gives r_g 0.3924
+(SE 0.0900), as does `ldsc_rg_compat`, and `ldsc --rg --two-step 30` gives
+0.3284 (0.0895), as does `ldsc_rg_compat(..., twostep=30)`. As in ldsc, a
+two-step cutoff cannot be combined with a fixed cross-trait intercept.
+
+On equal inputs (`w_ld` equal to the regression scores, the same N and M, no
+χ² cap) the default estimator and ldsc's one-step fit agree to about 1e-4 in
+h², but their standard errors differ more: with 200 blocks each, 0.0592
+against 0.0512 on the parity fixture, because the default jackknife refits
+the weights in every deletion.
 
 **The M convention is the largest difference.** At a given slope h² and the
 genetic covariance scale with M. The bundled count 9,997,231 is 1.677 times
@@ -435,11 +458,14 @@ Numba 0.62+, 2026-11-23:
 | | h², 100 blocks | h², 200 blocks | r_g, 200 blocks |
 |:--|--:|--:|--:|
 | Default (one core) | 1.2 s | 2.3 s | 5.4 s |
-| `ldsc_compat=True` | — | 0.23 s | 0.70 s |
-| `bulik/ldsc` estimator code, same inputs | — | 0.32 s | 1.10 s |
+| `ldsc_compat=True` | — | 0.23 s | 0.39 s |
+| `bulik/ldsc` estimator code, same inputs | — | 0.32 s | 0.46 s |
 
-The default is therefore not faster than ldsc's estimator: its cost grows
-linearly with the number of blocks, because each deletion is a full refit.
+The r_g timings for compat mode and ldsc are for one-step fits, as
+`ldsc --rg` runs by default; with a two-step cutoff of 30 they were 0.69 s
+and 0.82 s, measured separately the same day. The default is therefore not
+faster than ldsc's estimator: its cost grows linearly with the number of
+blocks, because each deletion is a full refit.
 
 ## Interpretation and performance
 
