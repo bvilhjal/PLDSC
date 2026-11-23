@@ -39,6 +39,15 @@ Outcome (2026-11-20, 937,544 SNPs, 92 s; report/methods.md Section 11).
   B. 14 EUR datasets: ceiling 0.910 (0.042). 5 EAS datasets, one dominant:
      0.84 (0.20). EUR-EAS correlation 0.738 (0.043) uncorrected, 0.744 with
      the EUR ceiling and 0.793 (0.070) with both.
+
+Review, 2026-11-23. The Z and Q fit above has one free intercept per
+equation. Under inverse-variance weights the weight share varies across SNPs,
+so unequal EUR and EAS intercepts leak into g (q_model.py): on the chr22
+example LD with these weights and intercepts 1.076 and 0.983 the leak is
+-9.4% of g in expectation, against -22% observed here. The driver now also
+fits the three stratum intercepts ("Z_and_Q_three_intercepts"); that refit has
+not been run, because the GBMI files were not available. Until it is, the
+inverse-variance shortfall is provisional and is not attributed to a cause.
 """
 from __future__ import annotations
 
@@ -57,6 +66,7 @@ from scipy.stats import chi2
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import gbmi_asthma_casualty as G  # noqa: E402
+from q_model import zq_design  # noqa: E402
 
 N_JK, GWS = 200, 29.716785
 
@@ -201,10 +211,12 @@ def main():
         cE, cF = np.sqrt(wE / (wE + wF)), np.sqrt(wF / (wE + wF))
         Zm, Dm = cE * zE + cF * zF, cF * zE - cE * zF
         Qm = Dm ** 2
-        XZ = np.column_stack((one, zero, cE ** 2 * xE, cF ** 2 * xF, 2 * cE * cF * xX))
-        XQ = np.column_stack((zero, one, cF ** 2 * xE, cE ** 2 * xF, -2 * cE * cF * xX))
+        XZ, XQ, _ = zq_design(cE, cF, xE, xF, xX, "shared")         # the recorded 2026-11-20 form
         f0, _ = fit([(XZ, Zm ** 2, 1 / dW), (XQ, Qm, 1 / dW)], starts)
         f, d = fit([(XZ, Zm ** 2, 1 / (dW * np.maximum(XZ @ f0, 1) ** 2)), (XQ, Qm, 1 / (dW * np.maximum(XQ @ f0, 1) ** 2))], starts)
+        XZ3, XQ3, form3 = zq_design(cE, cF, xE, xF, xX, "three")
+        f30, _ = fit([(XZ3, Zm ** 2, 1 / dW), (XQ3, Qm, 1 / dW)], starts)
+        f3, d3 = fit([(XZ3, Zm ** 2, 1 / (dW * np.maximum(XZ3 @ f30, 1) ** 2)), (XQ3, Qm, 1 / (dW * np.maximum(XQ3 @ f30, 1) ** 2))], starts)
         Xz = XZ[:, [0, 2, 3, 4]]
         f0, _ = fit([(Xz, Zm ** 2, 1 / dW)], starts)
         fz, dz = fit([(Xz, Zm ** 2, 1 / (dW * np.maximum(Xz @ f0, 1) ** 2))], starts)
@@ -222,6 +234,10 @@ def main():
                "Z_and_Q": {"intercepts": [float(f[0]), float(f[1])], "h2_EUR": est(f[2], d[:, 2]), "h2_EAS": est(f[3], d[:, 3]), "g": est(f[4], d[:, 4]),
                            "correlation": est(f[4] / np.sqrt(f[2] * f[3]), d[:, 4] / np.sqrt(d[:, 2] * d[:, 3])),
                            "g_minus_strata": est(f[4] - g[1], d[:, 4] - gd[:, 1])},
+               "Z_and_Q_three_intercepts": {"intercept_form": form3, "intercepts": [float(v) for v in f3[:-3]],
+                                            "h2_EUR": est(f3[-3], d3[:, -3]), "h2_EAS": est(f3[-2], d3[:, -2]), "g": est(f3[-1], d3[:, -1]),
+                                            "g_minus_strata": est(f3[-1] - g[1], d3[:, -1] - gd[:, 1]),
+                                            "g_minus_shared_form": est(f3[-1] - f[4], d3[:, -1] - d[:, 4])},
                "Z_only": {"h2_EUR": est(fz[1], dz[:, 1]), "h2_EAS": est(fz[2], dz[:, 2]), "g": est(fz[3], dz[:, 3])},
                "mean_Z2": float(np.mean(Zm ** 2)), "mean_Q": float(Qm.mean()), "share_Q_above_3.84": float(np.mean(Qm > 3.841459)),
                "mean_Q_expected_identical_effects": float(expected_q(hE[1], hE[1], hE[1]).mean()),
@@ -230,7 +246,9 @@ def main():
                         "mean_Q_expected_identical_effects": float(expected_q(hE[1], hE[1], hE[1], True)[top].mean()),
                         "mean_Q_expected_from_strata": float(expected_q(hE[1], hF[1], g[1], True)[top].mean())}}
         out[f"meta_{label}"] = res
-        zq, zo = res["Z_and_Q"], res["Z_only"]
+        zq, zo, z3 = res["Z_and_Q"], res["Z_only"], res["Z_and_Q_three_intercepts"]
+        print(f"A. {label} meta, three stratum intercepts ({z3['intercept_form']} form): g {z3['g']['estimate']:.4f} ({z3['g']['se']:.4f}), "
+              f"difference from both strata {z3['g_minus_strata']['estimate']:.4f} ({z3['g_minus_strata']['se']:.4f})")
         print(f"A. {label} meta (median EUR weight {res['EUR_weight_share_median']:.3f}): Z and Q give g {zq['g']['estimate']:.4f} ({zq['g']['se']:.4f}), "
               f"difference from both strata {zq['g_minus_strata']['estimate']:.4f} ({zq['g_minus_strata']['se']:.4f}), "
               f"correlation {zq['correlation']['estimate']:.3f} ({zq['correlation']['se']:.3f}); Z only gives g {zo['g']['estimate']:.4f} ({zo['g']['se']:.4f}), "

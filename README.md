@@ -88,8 +88,9 @@ rotation of the two ancestry statistics. In simulations on 1000 Genomes LD
 the pooled statistic and Q together recovered the cross-ancestry genetic
 covariance, at 1.7 times the standard deviation of the two-strata estimate
 for an 85% EUR study. In asthma the fit matched the two-strata estimate
-under sample-size weights and fell 22% below it under inverse-variance
-weights. [What does Cochran's Q add?](report/methods.md#11-what-does-cochrans-q-add)
+under sample-size weights. Under inverse-variance weights it fell 22% below
+it, but that fit lets unequal stratum intercepts leak into the covariance;
+the 22% is provisional until a refit with three stratum intercepts. [What does Cochran's Q add?](report/methods.md#11-what-does-cochrans-q-add)
 
 Reproduce the chromosome 22 tables from the committed aggregate LD-score
 bundle, without downloading genotypes:

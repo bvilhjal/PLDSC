@@ -57,6 +57,14 @@ alone 6.7 times; at 50% EUR Z+Q equals the strata. A mean-Q test rejects in
 98-100% of replicates with identical effects. Shared per-allele effects bias
 g by -9% (Z+Q) and +7% (strata). The two scale cells were added after the
 first full run and carry their own seed keys, so the earlier draws are fixed.
+
+Review, 2026-11-23. Every cell above has both stratum intercepts at one, so
+it cannot show that the Z+Q fit with one free intercept per equation lets
+unequal stratum intercepts leak into g when the inverse-variance weights vary
+across SNPs (q_model.py). Each cell now also reports ZQ3, the fit with three
+stratum intercepts, and one arm has intercepts 1.08 and 1.0. Neither is in
+the recorded JSON: the 1000 Genomes download needed to rerun was not
+available when they were added.
 """
 from __future__ import annotations
 
@@ -72,6 +80,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import multiancestry_genome_kappa as GK  # noqa: E402
+from q_model import zq_design  # noqa: E402
 
 BLOCK, N_JK, H2, SEED, PI_SPARSE = 250, 200, 0.3, 20261120, 0.02
 CRIT = 1.6448536269514722
@@ -181,7 +190,13 @@ def summarise(est, truth_g):
 
 
 # ------------------------------------------------------------- part 1: Z and Q
-def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None):
+def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None, intE=1.0, intF=1.0):
+    """One Part 1 cell. ``intE``/``intF`` >= 1 add independent noise so the stratum
+    intercepts differ (intE = 1.08 is the unequal-intercept arm). ``ZQ`` is the
+    shared-intercept fit recorded on 2026-11-20; ``ZQ3`` fits the three
+    stratum intercepts (q_model.py)."""
+    if intE < 1.0 or intF < 1.0:
+        raise ValueError("stratum intercepts below one are not simulated")
     XE, XF, sdE, sdF = P["XE"], P["XF"], P["sdE"], P["sdF"]
     B = XE.shape[0]
     M = B * BLOCK
@@ -192,11 +207,11 @@ def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None):
     xE, xF, xX = NE * rEE / M, NF * rFF / M, np.sqrt(NE * NF) * rEF / M
     dW = np.maximum(rEE, 1.0)
     starts = (np.arange(N_JK) * B // N_JK) * BLOCK
-    one, zero = np.ones(M), np.zeros(M)
-    XZ = np.column_stack((one, zero, cE ** 2 * xE, cF ** 2 * xF, 2 * cE * cF * xX))
-    XQ = np.column_stack((zero, one, cF ** 2 * xE, cE ** 2 * xF, -2 * cE * cF * xX))
+    one = np.ones(M)
+    XZ, XQ, _ = zq_design(cE, cF, xE, xF, xX, "shared")
+    XZ3, XQ3, form3 = zq_design(cE, cF, xE, xF, xX, "three")
     sE3, sF3 = sdE.reshape(B, BLOCK).astype(np.float32), sdF.reshape(B, BLOCK).astype(np.float32)
-    rows = {"strata": [], "ZQ": [], "Z": []}
+    rows = {"strata": [], "ZQ": [], "ZQ3": [], "Z": []}
     meanQ, meanZ2, naive = [], [], []
     for _ in range(reps):
         u, v = rng.standard_normal((2, B, BLOCK), dtype=np.float32)
@@ -209,6 +224,9 @@ def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None):
         else:
             bE, bF = np.sqrt(hE / M) * aE, np.sqrt(hF / M) * aF
         zE, zF = draw_z(XE, bE.astype(np.float32), NE, rng), draw_z(XF, bF.astype(np.float32), NF, rng)
+        if intE > 1.0 or intF > 1.0:        # stratum-specific inflation, independent across SNPs and strata
+            zE = zE + np.sqrt(intE - 1.0) * rng.standard_normal(M)
+            zF = zF + np.sqrt(intF - 1.0) * rng.standard_normal(M)
         Z, D = cE * zE + cF * zF, cF * zE - cE * zF
         Q = D * D
         meanQ.append(Q.mean()); meanZ2.append(np.mean(Z * Z))
@@ -225,6 +243,11 @@ def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None):
         f, d = fit([(XZ, Z * Z, 1.0 / (dW * np.maximum(XZ @ f0, 1.0) ** 2)), (XQ, Q, 1.0 / (dW * np.maximum(XQ @ f0, 1.0) ** 2))], starts)
         r, vv = derived(f[2], f[3], f[4]); rd, vd = derived(d[:, 2], d[:, 3], d[:, 4])
         rows["ZQ"].append((f[4], jk_se(d[:, 4]), r, jk_se(rd), vv, jk_se(vd)))
+        # Z^2 and Q with three stratum intercepts
+        f0, _ = fit([(XZ3, Z * Z, 1.0 / dW), (XQ3, Q, 1.0 / dW)], starts)
+        f, d = fit([(XZ3, Z * Z, 1.0 / (dW * np.maximum(XZ3 @ f0, 1.0) ** 2)), (XQ3, Q, 1.0 / (dW * np.maximum(XQ3 @ f0, 1.0) ** 2))], starts)
+        r, vv = derived(f[-3], f[-2], f[-1]); rd, vd = derived(d[:, -3], d[:, -2], d[:, -1])
+        rows["ZQ3"].append((f[-1], jk_se(d[:, -1]), r, jk_se(rd), vv, jk_se(vd)))
         # Z^2 only
         Xz = XZ[:, [0, 2, 3, 4]]
         f0, _ = fit([(Xz, Z * Z, 1.0 / dW)], starts)
@@ -234,7 +257,8 @@ def part1_cell(P, shareE, rho, arch, reps, rng, *, hE=H2, hF=H2, ref=None):
     g = rho * np.sqrt(hE * hF) if arch != "allele" else rho * np.sqrt(hE * hF) * np.sum(sdE * sdF) / np.sqrt(np.sum(sdE ** 2) * np.sum(sdF ** 2))
     out = {k: summarise(v, g) for k, v in rows.items()}
     out.update(mean_Q=float(np.mean(meanQ)), mean_Z2=float(np.mean(meanZ2)), naive_Q_reject=float(np.mean(naive)),
-               N_E=float(NE), N_F=float(NF), reps=reps)
+               N_E=float(NE), N_F=float(NF), reps=reps,
+               ZQ3_intercept_form=form3, stratum_intercepts=[float(intE), float(intF)])
     return out
 
 
@@ -366,6 +390,8 @@ def main():
         run(f"P1 EUR-EAS share 0.85 rho {rho} sparse", part1_cell, P, 0.85, rho, "sparse", reps)
     run("P1 EUR-EAS share 0.85 rho 1.0 allele", part1_cell, P, 0.85, 1.0, "allele", reps)
     run("P1 EUR-EAS share 0.85 rho 1.0 inf unequal h2", part1_cell, P, 0.85, 1.0, "inf", reps, hE=0.25, hF=0.35)
+    # Unequal stratum intercepts (added 2026-11-23 after review; own seed key, not yet run).
+    run("P1 EUR-EAS share 0.85 rho 0.74 inf intercepts 1.08 1.0", part1_cell, P, 0.85, 0.74, "inf", reps_main, key=1003, intE=1.08, intF=1.0)
     # Part 2, same panels
     fE, fF = (0.55, 0.25, 0.12, 0.08), (0.7, 0.3)
     for share in (0.85, 0.5):

@@ -1089,9 +1089,12 @@ rebuilt the same day (92 s).
   rebuilt inverse-variance meta gives 0.0977 (0.0161) from Z and Q, which is
   0.027 lower (paired SE 0.012). A sample-size-weighted meta gives 0.1236
   (0.0230). Z² alone gives 0.049 (0.057).
-- **Reading.** Inverse-variance weights depend on allele frequency in each
-  group, and the baseline model has no frequency-dependent effects. The
-  simulation's per-allele arm moved the two fits apart in the same direction.
+- **Reading (revised 2026-11-23).** The Z and Q fit had one intercept per
+  equation. Under inverse-variance weights unequal stratum intercepts leak
+  into g; on the chr22 example LD with these weights and intercepts 1.076 and
+  0.983 the leak is -9.4% of g in expectation (`experiments/q_model.py`,
+  `tests/test_q_heterogeneity.py`). The 0.027 shortfall is provisional until
+  the three-intercept refit, and is not attributed to frequency dependence.
 - **Mean Q** is 1.084, against 1.049 expected with identical effects and
   1.102 from the two-strata estimates. At 2,229 pooled genome-wide
   significant SNPs it is 3.50 against a Gaussian expectation of 1.25–1.34.
