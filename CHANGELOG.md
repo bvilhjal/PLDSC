@@ -16,6 +16,49 @@ version 1.0.
   Genomes block LD with three stated rules, and its recorded results.
 - `experiments/gbmi_asthma_heterogeneity.py`: the exploratory GBMI asthma
   analysis of the same two questions, and its recorded estimates.
+- `ldsc_compat=True` for `ldsc_h2` and `ldsc_rg`, `ldsc_h2_compat`,
+  `ldsc_rg_compat` and `pldsc h2/rg --ldsc-compat`: an opt-in estimator that
+  follows the reference `ldsc` (two-step at chi-square 30, fixed-weight
+  jackknife, 200 blocks, separate `w_ld` via `--w-ld-scores`). It agrees
+  with `bulik/ldsc` commit 2fdeeb3 to about 1e-15 on the committed fixture
+  `tests/data/ldsc_parity.npz` (`scripts/make_ldsc_parity_fixture.py`).
+  Defaults are unchanged.
+- `experiments/q_model.py`: the Z-and-Q design with three stratum intercepts
+  (old shared-intercept form kept), a simulation arm with unequal intercepts
+  and a test showing that the shared form leaks -9.4% into the covariance
+  under inverse-variance weights on the chr22 bundle.
+- Command line: reads ldsc `munge_sumstats` output (SNP, A1, A2, N, Z);
+  refuses fits on fewer than `--min-snps` (default 200,000) regression SNPs
+  unless `--allow-low-coverage`; checks declared `--sumstats-build` and
+  `--reference-build` against each other and against the GRCh37 region
+  filter; checks `--out` before reading data. JSON output adds `coverage`,
+  `m_snps` (value and convention) and `build_check`; r_g output adds
+  `gcov_se` and `h2_se`.
+- A `UserWarning` when the array functions default `m_snps` to the row count.
+
+### Changed
+
+- Report section 11 now states what Q discards, with Propositions 1-3 and
+  proofs; the remaining excess-loss statement is marked as a conjecture.
+  The earlier wording that Q "loses only the sign" and "identifies g" is
+  replaced.
+- The asthma inverse-variance Z-and-Q shortfall (22%) is marked provisional
+  pending a three-intercept refit; the allele-frequency explanation is
+  withdrawn.
+- README: the multi-ancestry section leads with the null prediction result
+  and the Q result, defines the estimand, and moves the 0.133 to 0.155 shift
+  to supporting results. CLI help and docs carry an ancestry-mix caveat.
+- Wording: removed claims that the default estimator matches `ldsc` or is
+  faster than it ("Fast" dropped from the package description); documented
+  the M convention (bundled 9,997,231 versus `M_5_50` 5,961,159, a factor of
+  1.677 in h2) in `docs/LDSC.md`, with parity and timing tables.
+
+### Fixed
+
+- Citations: Popcorn authors in `CITATION.cff`; PRIOR_ART DOIs (Lin, Xing &
+  Xing 2012; Mathew, Léon & Sillanpää 2018); the Bhatia et al. title; Xue &
+  Zhao (2025, Annals of Statistics) cited as direct prior art in the report,
+  `docs/MULTI_ANCESTRY.md`, `PRIOR_ART.md` and `CITATION.cff`.
 
 ## [0.1.2] - 2026-11-19
 
