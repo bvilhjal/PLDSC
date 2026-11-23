@@ -297,16 +297,40 @@ $$
 Z=c_Ez_E+c_Fz_F,\qquad D=c_Fz_E-c_Ez_F,\qquad Q=D^2. \tag{12}
 $$
 
-Equation (12) is a rotation of $(z_E,z_F)$, and $Q$ is Cochran's heterogeneity statistic. A release holding $Z$, $Q$ and the weights therefore loses only the sign of $D$. Write $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$. Substituting Equation (4) gives two moments per SNP.
+Equation (12) is a rotation of $(z_E,z_F)$, and $Q$ is Cochran's heterogeneity statistic. Write $x_a=N_a\ell^{aa}/M$, $x_\times=\sqrt{N_EN_F}\,\ell^{EF}/M$ and $g=\rho h_Eh_F$, and let $a_E$, $a_F$ and $a_{EF}$ be the stratum intercepts and the cross-stratum intercept ($a_{EF}=0$ without sample overlap or shared confounding). Substituting Equation (4), the three stratum moments at a SNP are $A=E[z_E^2]\simeq a_E+x_Eh_E^2$, $B=E[z_F^2]\simeq a_F+x_Fh_F^2$ and $C=E[z_Ez_F]\simeq a_{EF}+x_\times g$, and the rotation gives
 
 $$
 \begin{aligned}
-E[Z^2]&\simeq 1+c_E^2x_Eh_E^2+c_F^2x_Fh_F^2+2c_Ec_Fx_\times g,\\
-E[Q]&\simeq 1+c_F^2x_Eh_E^2+c_E^2x_Fh_F^2-2c_Ec_Fx_\times g.
+E[Z^2]&=c_E^2A+c_F^2B+2c_Ec_FC,\\
+E[Q]&=c_F^2A+c_E^2B-2c_Ec_FC,\\
+E[ZD]&=c_Ec_F(A-B)-(c_E^2-c_F^2)\,C.
 \end{aligned}\tag{13}
 $$
 
-The covariance enters the two lines with opposite signs. Their contrast identifies $g$ without relying on the small differences among the three scores. With sample-size weights the second line is $1+(\tilde N/M)(h_E^2\ell^{EE}+h_F^2\ell^{FF}-2g\ell^{EF})$, where $\tilde N=N_EN_F/(N_E+N_F)$. With identical effects in both groups the bracket is $h^2\sum_k(r^E_{jk}-r^F_{jk})^2$. Different LD alone therefore gives $E[Q]>1$.
+The first two lines are what a release of $Z$, $Q$ and the weights can be regressed on. With unit intercepts they read $1+c_E^2x_Eh_E^2+c_F^2x_Fh_F^2+2c_Ec_Fx_\times g$ and $1+c_F^2x_Eh_E^2+c_E^2x_Fh_F^2-2c_Ec_Fx_\times g$. The third line is the moment the release discards. Write $k=c_E^2-c_F^2$ for the weight imbalance at a SNP, so $4c_E^2c_F^2=1-k^2$.
+
+**Proposition 1 (what $Q$ discards).** At each SNP, $(E[Z^2],E[Q],E[ZD])$ is an invertible linear function of $(A,B,C)$, so the strata and the full rotated pair carry the same second moments. A release of $(Z,Q)$ keeps the first two and loses $E[ZD]$. If $(z_E,z_F)$ is bivariate normal with mean zero, as under the random-effects model behind Equation (4), the joint law of $(Z,Q)$ depends on $E[ZD]$ only through its square.
+
+*Proof.* The matrix of Equation (13) is the action of the rotation $R=\begin{pmatrix}c_E&c_F\\c_F&-c_E\end{pmatrix}$ on the covariance $\Sigma=\begin{pmatrix}A&C\\C&B\end{pmatrix}$, $R\Sigma R^\top=\begin{pmatrix}E[Z^2]&E[ZD]\\E[ZD]&E[D^2]\end{pmatrix}$, and $R^{-1}=R$, so the map is invertible. For the second statement, $(Z,D)$ is bivariate normal with mean zero and covariance $R\Sigma R^\top$, and $(Z,-D)$ is bivariate normal with the same variances and covariance $-E[ZD]$. Since $Q=D^2=(-D)^2$, the two covariances give the same law of $(Z,Q)$. $\square$
+
+The earlier statement that a release of $Z$, $Q$ and the weights "loses only the sign of $D$" is true of each SNP's realized values but understates the loss: what is lost is the moment $E[ZD]$, and it depends on $g$ unless $c_E=c_F$.
+
+**Proposition 2 (intercepts).** The intercept parts of the first two lines of Equation (13) are $c_E^2a_E+c_F^2a_F+2c_Ec_Fa_{EF}$ and $c_F^2a_E+c_E^2a_F-2c_Ec_Fa_{EF}$. They are constant across SNPs for all intercept values if and only if $c_E$ is constant, as with sample-size weights and a common $N$ per stratum. Under IVW weights $c_E$ varies with allele frequency, and a fit with one free constant per equation is misspecified whenever $a_E\neq a_F$ or $a_{EF}\neq0$. The three columns $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ remove the misspecification. With constant $c_E$ they span only two dimensions and the one-constant-per-equation form is equivalent.
+
+*Proof.* Direct from Equation (13); if $c_E$ is constant the three columns in the two equations are constant vectors, of rank two in the stacked design because $(c_E^2,c_F^2,2c_Ec_F)$ and $(c_F^2,c_E^2,-2c_Ec_F)$ span the same space as $(1,0)$ and $(0,1)$ applied to the two equations. $\square$
+
+How much the misspecification matters depends on the LD and the weights. On the chr22 example scores, with the asthma IVW weights and stratum intercepts 1.076 and 0.983, the one-constant fit to the exact moments returns intercepts 1.060 and 0.997 and $g$ biased by $-9.4\%$; the three-intercept fit is exact ([tests](../tests/test_q_heterogeneity.py)). The simulations below had all intercepts equal to one and could not show this.
+
+**Proposition 3 (identification and efficiency).** Assume constant weights at a SNP and moments near the null, so that $Z$ and $D$ are approximately independent with unit variance and $\operatorname{Var}(Z^2)=\operatorname{Var}(D^2)=2$, $\operatorname{Var}(ZD)=1$, all three uncorrelated.
+(a) If $h_E^2$ and $h_F^2$ are known, the information on $g$ from $(Z^2,Q)$ at a SNP is $(1-k^2)\,x_\times^2$, against $x_\times^2$ from the strata; the missing $k^2x_\times^2$ is the information in $ZD$.
+(b) At balanced weights ($k=0$), $Z^2-Q=2z_Ez_F$ exactly, so the contrast is the strata's cross-product statistic and the covariance regression is the same.
+(c) If $k\neq0$ is constant and the three scores are proportional ($x_F=\beta x_E$, $x_\times=\gamma x_E$), $g$ is not identified from $E[Z^2]$ and $E[Q]$, while the strata identify it from $E[z_Ez_F]$.
+
+*Proof.* (a) The derivatives of $(E[Z^2],E[Q],E[ZD])$ in $g$ are $(2c_Ec_F,-2c_Ec_F,-k)\,x_\times$ by Equation (13). With the stated covariance, the generalized-least-squares information from the first two is $(4c_E^2c_F^2+4c_E^2c_F^2)x_\times^2/2=(1-k^2)x_\times^2$ and from $ZD$ it is $k^2x_\times^2$. Their sum, $x_\times^2$, is the information from $z_Ez_F$, whose derivative is $x_\times$ and whose variance is 1, as it must be by Proposition 1. (b) $Z^2-D^2=k(z_E^2-z_F^2)+4c_Ec_Fz_Ez_F$, and $k=0$ gives $c_E=c_F=1/\sqrt2$. (c) With unit intercepts, $E[Z^2]+E[Q]-2=x_E(h_E^2+\beta h_F^2)$ and $E[Z^2]-E[Q]=x_E\left[k(h_E^2-\beta h_F^2)+4c_Ec_F\gamma g\right]$. Two functions of $x_E$ times constants determine only two linear combinations of $(h_E^2,h_F^2,g)$; for $k\neq0$, changing $g$ by $\delta$ and $(h_E^2,\beta h_F^2)$ by $\mp2c_Ec_F\gamma\delta/k$ leaves both unchanged. The strata regress $z_Ez_F$ on $x_\times=\gamma x_E$ and identify $g$. $\square$
+
+So the contrast identifies $g$ without relying on differences among the three scores only at balanced weights. Away from balance $g$ is identified only through those differences (and, under IVW, through the variation of $c_E$ across SNPs, which Proposition 2 shows must not be confused with intercept differences). Part (a) bounds the loss from below: at a weight share of 0.85, $k=0.7$ and the SD of $\hat g$ is at least $1/\sqrt{1-0.49}=1.40$ times that from the strata. The simulated ratio below, 1.7, includes the further loss from estimating $h_E^2$ and $h_F^2$ from nearly proportional scores. *Conjecture:* the excess over the bound grows as the scores become more collinear, roughly in proportion to $k^2/(1-r^2)$ with $r$ the correlation between $c_E^2x_E-c_F^2x_F$ and $x_\times$; we have not derived it.
+
+With sample-size weights the second line of Equation (13) with unit intercepts is $1+(\tilde N/M)(h_E^2\ell^{EE}+h_F^2\ell^{FF}-2g\ell^{EF})$, where $\tilde N=N_EN_F/(N_E+N_F)$. With identical effects in both groups the bracket is $h^2\sum_k(r^E_{jk}-r^F_{jk})^2$. Different LD alone therefore gives $E[Q]>1$.
 
 **A known-truth experiment on 1000 Genomes LD.** We took the 234,000 SNPs on chromosomes 14–22 with MAF at least 0.05 in both the EUR and EAS panels and cut them into 936 blocks of 250. LD was the panel correlation within a block and zero between blocks, so every score was known. Standardized effects had $h^2=0.3$ in both groups, and exact Gaussian statistics were combined by inverse-variance weighting (IVW). Total $N$ was 46,475, which gives a mean pooled $\chi^2$ near 1.9. All fits used free intercepts, two-step weights and a 200-group jackknife. Three rules were written into the driver before the full run. Table 8 gives the main cells.
 
