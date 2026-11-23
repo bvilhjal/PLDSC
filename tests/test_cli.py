@@ -200,3 +200,20 @@ assert len(scope['rg'].reference_index) > 3000
     run = subprocess.run([sys.executable, "-c", program, str(notebook)], cwd=project / "examples",
                          text=True, capture_output=True, env=env, check=False)
     assert run.returncode == 0, run.stderr
+
+
+def test_cli_ldsc_compat_matches_python_and_requires_explicit_m(gwas_files):
+    reference, scores, one, two, ell = gwas_files
+    common = ["--reference", reference, "--ld-scores", scores, "--n-blocks", "8",
+              "--include-long-range-ld-grch37"]
+    run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", "--ldsc-compat", *common)
+    assert run.returncode == 2 and "--m-snps" in run.stderr
+    run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", "--ldsc-compat", "--m-snps", "120", *common)
+    assert run.returncode == 0, run.stderr
+    out = json.loads(run.stdout)
+    expected = ldsc_h2_sumstats(one, reference, ell, m_snps=120, n_blocks=8,
+                                read_options={"n_eff": "N_EFF"}, ldsc_compat=True)
+    assert out["estimate"]["h2"] == pytest.approx(expected.estimate.h2)
+    assert out["estimate"]["h2_se"] == pytest.approx(expected.estimate.h2_se)
+    assert out["options"]["ldsc_compat"] is True and out["options"]["chi2_cap"] is False
+    assert out["options"]["estimator"].startswith("ldsc-compatible")

@@ -151,7 +151,7 @@ def ldsc_chi2_mask(beta_hat, n_eff, *, cap=80.0, n_scale=0.001):
 
 def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
             n_blocks=200, n_iter=2, constrain_intercept=None, ncores=1,
-            _input_is_z=False):
+            ldsc_compat=False, w_ld=None, _input_is_z=False):
     """Genetic correlation by cross-trait LD Score regression.
 
     ``beta_hat1`` and ``beta_hat2`` are LDpred3-standardized marginal effects,
@@ -179,6 +179,12 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
     intercept SE is reported separately and is zero for a valid fixed
     intercept. Neither the intercept nor the fit alone identifies the cause of
     confounding, overlap, or LD/reference mismatch.
+
+    ``ldsc_compat=True`` uses the estimator of the reference ``ldsc``
+    software instead (:func:`pldsc.ldsc_compat.ldsc_rg_compat`): two-step
+    estimators, separate ``w_ld`` scores (default ``ld_scores``), fixed-weight
+    jackknife and ldsc's ratio jackknife for rg. It requires ``m_snps`` and
+    ignores ``ncores``.
     """
     b1 = _as_finite_vector(beta_hat1, "beta_hat1")
     b2 = _as_finite_vector(beta_hat2, "beta_hat2")
@@ -198,10 +204,18 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
     if constrain_intercept is not None:
         constrain_intercept = _finite_control(
             "constrain_intercept", constrain_intercept)
+    if not ldsc_compat and w_ld is not None:
+        raise ValueError("w_ld is used only with ldsc_compat=True")
 
     z1 = b1.copy() if _input_is_z else _z_from_standardized(b1, N1, "beta_hat1")
     chi1 = z1 * z1
     z2 = b2.copy() if _input_is_z else _z_from_standardized(b2, N2, "beta_hat2")
+    if ldsc_compat:
+        from .ldsc_compat import ldsc_rg_compat
+        if n_iter != 2:
+            raise ValueError("ldsc_compat uses ldsc's two weight updates; leave n_iter at 2")
+        return ldsc_rg_compat(z1, z2, ell, N1, N2, m_snps=m_snps, w_ld=w_ld,
+                              n_blocks=n_blocks, constrain_intercept=constrain_intercept)
     chi2 = z2 * z2
     cross = z1 * z2
     if not (np.all(np.isfinite(chi1)) and np.all(np.isfinite(chi2))

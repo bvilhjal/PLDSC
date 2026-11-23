@@ -160,8 +160,8 @@ def ldsc_chi2_keep(chisq, n_eff):
     return np.isfinite(chisq) & (chisq <= cap), cap
 
 
-def ldsc_h2(chisq, ld_scores, n_eff, *, m_snps=None, n_blocks=100,
-            constrain_intercept=None, n_iter=2):
+def ldsc_h2(chisq, ld_scores, n_eff, *, m_snps=None, n_blocks=None,
+            constrain_intercept=None, n_iter=2, ldsc_compat=False, w_ld=None):
     """Estimate SNP heritability by LD Score regression.
 
     Parameters
@@ -178,14 +178,24 @@ def ldsc_h2(chisq, ld_scores, n_eff, *, m_snps=None, n_blocks=100,
         the regression rows). It only rescales ``x``, hence ``h2``; pass the
         reference-panel count when the scores come from that panel, and the
         pre-exclusion count when rows were dropped from the regression only.
-    n_blocks : int, default 100
-        Contiguous delete-a-block groups. This affects SE precision and cost,
-        not the full-data point estimate.
+    n_blocks : int, optional
+        Contiguous delete-a-block groups (default 100; 200 with
+        ``ldsc_compat``). This affects SE precision and cost, not the
+        full-data point estimate.
     constrain_intercept : float, optional
         Fix the intercept (e.g. ``1.0`` to assume no confounding) instead of
         estimating it.
     n_iter : int, default 2
         Number of weight-update iterations (weights depend on the fitted mean).
+    ldsc_compat : bool, default False
+        Use the estimator of the reference ``ldsc`` software instead
+        (:func:`pldsc.ldsc_compat.ldsc_h2_compat`): two-step estimator at
+        chi-square 30, separate ``w_ld`` over-counting scores, fixed-weight
+        jackknife, 200 blocks. Requires ``m_snps``; ldsc's published results
+        use the MAF 5-50% count.
+    w_ld : array_like (m,), optional
+        Over-counting LD scores for ``ldsc_compat`` (ldsc ``--w-ld``);
+        default ``ld_scores``. Not used otherwise.
 
     Returns
     -------
@@ -212,6 +222,17 @@ def ldsc_h2(chisq, ld_scores, n_eff, *, m_snps=None, n_blocks=100,
     intercept separately. With fewer than two jackknife groups the slope SE
     is unavailable. A constrained intercept has SE zero by definition.
     """
+    if ldsc_compat:
+        from .ldsc_compat import ldsc_h2_compat
+        if n_iter != 2:
+            raise ValueError("ldsc_compat uses ldsc's two weight updates; leave n_iter at 2")
+        return ldsc_h2_compat(chisq, ld_scores, n_eff, m_snps=m_snps, w_ld=w_ld,
+                              n_blocks=200 if n_blocks is None else n_blocks,
+                              constrain_intercept=constrain_intercept)
+    if w_ld is not None:
+        raise ValueError("w_ld is used only with ldsc_compat=True")
+    if n_blocks is None:
+        n_blocks = 100
     # Validate before a malformed N or control can resemble a valid null fit.
     chisq = np.asarray(chisq, dtype=float)
     ell = np.asarray(ld_scores, dtype=float)

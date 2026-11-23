@@ -66,9 +66,19 @@ def _prepare(data, variants, read_options, qc_options, drop_ambiguous):
     return h, qc
 
 
+def _w_ld(w_ld, scores):
+    if w_ld is None:
+        return None
+    w = np.asarray(w_ld, dtype=float)
+    if w.shape != scores.shape or not np.all(np.isfinite(w)):
+        raise ValueError("w_ld must have one finite value per reference variant")
+    return w
+
+
 def ldsc_h2_sumstats(sumstats, variants, ld_scores, *, m_snps, read_options=None,
-                     qc_options=None, drop_ambiguous=True, chi2_cap=True,
-                     n_blocks=100, n_iter=2, constrain_intercept=None):
+                     qc_options=None, drop_ambiguous=True, chi2_cap=None,
+                     n_blocks=None, n_iter=2, constrain_intercept=None,
+                     ldsc_compat=False, w_ld=None):
     """Read/QC/align a GWAS and estimate SNP heritability.
 
     ``variants`` is an allelign Variants table or .bim/.pvar path; ``ld_scores``
@@ -80,23 +90,34 @@ def ldsc_h2_sumstats(sumstats, variants, ld_scores, *, m_snps, read_options=None
     See :func:`allelign.qc_sumstats` for ``qc_options`` and the returned logs.
     Reference and GWAS coordinates must use the same genome build. See
     ``docs/LDSC.md`` for inputs, examples, and interpretation.
+
+    ``ldsc_compat=True`` uses the reference ldsc estimator (see
+    :mod:`pldsc.ldsc_compat`); the chi-square cap then defaults to off, as in
+    ldsc for one-annotation h2, and ``w_ld`` (one value per reference row)
+    supplies separate over-counting scores. ``chi2_cap=None`` means on by
+    default and off with ``ldsc_compat``.
     """
     m_snps = _finite_control("m_snps", m_snps, lower=1.0)
     variants, scores = _reference(variants, ld_scores)
+    w = _w_ld(w_ld, scores)
+    if chi2_cap is None:
+        chi2_cap = not ldsc_compat
     h, qc = _prepare(sumstats, variants, read_options, qc_options, drop_ambiguous)
     z = h.beta / h.se
     keep = ldsc_chi2_keep(z * z, h.n_eff)[0] if chi2_cap else np.ones(len(h), bool)
     idx = h.var_index[keep]
     estimate = ldsc_h2(z[keep] ** 2, scores[idx], h.n_eff[keep], m_snps=m_snps,
                        n_blocks=n_blocks, n_iter=n_iter,
-                       constrain_intercept=constrain_intercept)
+                       constrain_intercept=constrain_intercept, ldsc_compat=ldsc_compat,
+                       w_ld=None if w is None else w[idx])
     return SumstatsLDSCResult(estimate, idx, (qc,), (h.log,), len(h), int((~keep).sum()))
 
 
 def ldsc_rg_sumstats(sumstats1, sumstats2, variants, ld_scores, *, m_snps,
                      read_options1=None, read_options2=None, qc_options1=None,
-                     qc_options2=None, drop_ambiguous=True, chi2_cap=True,
-                     n_blocks=200, n_iter=2, constrain_intercept=None, ncores=1):
+                     qc_options2=None, drop_ambiguous=True, chi2_cap=None,
+                     n_blocks=200, n_iter=2, constrain_intercept=None, ncores=1,
+                     ldsc_compat=False, w_ld=None):
     """QC and harmonize two GWAS files to a reference, then estimate genetic correlation.
 
     ``m_snps`` counts the variants summed in the LD scores, not the common
@@ -105,10 +126,14 @@ def ldsc_rg_sumstats(sumstats1, sumstats2, variants, ld_scores, *, m_snps,
     jackknife fits when Numba is available. ``constrain_intercept`` fixes the
     cross-trait intercept; the marginal intercepts remain free. Reference and
     GWAS coordinates must use the same genome build. See ``docs/LDSC.md``
-    for inputs, examples, and interpretation.
+    for inputs, examples, and interpretation. ``ldsc_compat``, ``w_ld`` and
+    ``chi2_cap=None`` behave as in :func:`ldsc_h2_sumstats`.
     """
     m_snps = _finite_control("m_snps", m_snps, lower=1.0)
     variants, scores = _reference(variants, ld_scores)
+    w = _w_ld(w_ld, scores)
+    if chi2_cap is None:
+        chi2_cap = not ldsc_compat
     h1, q1 = _prepare(sumstats1, variants, read_options1, qc_options1, drop_ambiguous)
     h2, q2 = _prepare(sumstats2, variants, read_options2, qc_options2, drop_ambiguous)
     idx, i, j = np.intersect1d(h1.var_index, h2.var_index, assume_unique=True, return_indices=True)
@@ -118,6 +143,7 @@ def ldsc_rg_sumstats(sumstats1, sumstats2, variants, ld_scores, *, m_snps,
             if chi2_cap else np.ones(idx.size, bool))
     estimate = ldsc_rg_z(z1[keep], z2[keep], scores[idx[keep]], n1[keep], n2[keep],
                          m_snps=m_snps, n_blocks=n_blocks, n_iter=n_iter,
-                         constrain_intercept=constrain_intercept, ncores=ncores)
+                         constrain_intercept=constrain_intercept, ncores=ncores,
+                         ldsc_compat=ldsc_compat, w_ld=None if w is None else w[idx[keep]])
     return SumstatsLDSCResult(estimate, idx[keep], (q1, q2), (h1.log, h2.log),
                               idx.size, int((~keep).sum()))

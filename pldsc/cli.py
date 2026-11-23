@@ -83,7 +83,7 @@ def _parser():
         p.add_argument("--ld-reference", metavar="NAME",
                        help="bundled LD reference (one of " + ", ".join(available_ld_references())
                             + ") instead of --reference/--ld-scores")
-        p.add_argument("--n-blocks", type=int, default=blocks, help=f"jackknife blocks (default: {blocks})")
+        p.add_argument("--n-blocks", type=int, help=f"jackknife blocks (default: {blocks}; 200 with --ldsc-compat)")
         p.add_argument("--n-iter", type=int, default=2, help="weight updates (default: 2)")
         p.add_argument("--constrain-intercept", type=float, help="fixed intercept (cross-trait for rg)")
         p.add_argument("--min-n-ratio", type=float, default=0.7, help="minimum N relative to median (default: 0.7)")
@@ -91,6 +91,13 @@ def _parser():
         p.add_argument("--min-info", type=float, default=0.7, help="minimum available INFO (default: 0.7)")
         p.add_argument("--allow-ambiguous", action="store_true", help="retain palindromic alleles when orientation is known")
         p.add_argument("--no-chi2-cap", action="store_true", help="disable the LDSC high-chi-square filter")
+        p.add_argument("--ldsc-compat", action="store_true",
+                       help="use the reference ldsc estimator (two-step at chi2 30, fixed-weight jackknife, "
+                            "200 blocks, no chi-square cap); requires an explicit --m-snps, normally the "
+                            "MAF 5-50%% count (5961159 for hm3-eur)")
+        p.add_argument("--w-ld-scores",
+                       help="with --ldsc-compat and --reference: .npy over-counting scores (ldsc --w-ld) in "
+                            "reference row order (default: the regression scores)")
         p.add_argument("--include-long-range-ld-grch37", action="store_true",
                        help="keep reference variants in allelign's GRCh37 long-range LD regions, "
                             "including the MHC (left out by default)")
@@ -185,6 +192,16 @@ def _run(args):
     else:
         paths = [args.sumstats1, args.sumstats2]
         options = [_read_options(args.column1, args.n_eff1), _read_options(args.column2, args.n_eff2)]
+    if args.ldsc_compat and args.m_snps is None:
+        raise ValueError("--ldsc-compat requires an explicit --m-snps; the reference ldsc results use "
+                         "the MAF 5-50% count (5961159 for hm3-eur)")
+    if args.w_ld_scores is not None and not (args.ldsc_compat and args.ld_reference is None):
+        raise ValueError("--w-ld-scores needs --ldsc-compat and the explicit --reference/--ld-scores inputs")
+    if args.ldsc_compat and args.no_chi2_cap:
+        raise ValueError("--ldsc-compat already leaves out the chi-square cap")
+    if args.n_blocks is None:
+        args.n_blocks = 200 if (args.ldsc_compat or args.analysis == "rg") else 100
+    w_ld = None
     explicit = (args.reference, args.ld_scores, args.m_snps)
     if args.ld_reference is not None:
         if args.reference is not None or args.ld_scores is not None:
@@ -208,6 +225,10 @@ def _run(args):
         if not isinstance(scores, np.ndarray):
             scores.close()
             raise ValueError("--ld-scores must be a single .npy vector, not an archive")
+        if args.w_ld_scores is not None:
+            w_ld = np.load(args.w_ld_scores, allow_pickle=False)
+            if not isinstance(w_ld, np.ndarray) or w_ld.shape != scores.shape:
+                raise ValueError("--w-ld-scores must be a .npy vector with one value per reference variant")
         long_range_ld = None
         if not args.include_long_range_ld_grch37:
             # Leave out reference rows, so GWAS files matched by ID need no positions.
@@ -218,24 +239,29 @@ def _run(args):
                                                   genome_build="GRCh37", include_apoe=args.include_apoe)
             variants_input = variants_input.subset(~in_region)
             scores = np.asarray(scores)[~in_region]
+            if w_ld is not None:
+                w_ld = np.asarray(w_ld)[~in_region]
             long_range_ld = {"genome_build": "GRCh37", "include_apoe": args.include_apoe,
                              "n_dropped": int(in_region.sum())}
     qc_options = {"min_n_ratio": args.min_n_ratio, "min_maf": args.min_maf, "min_info": args.min_info}
     common = dict(m_snps=m_snps, n_blocks=args.n_blocks, n_iter=args.n_iter,
                   constrain_intercept=args.constrain_intercept, drop_ambiguous=not args.allow_ambiguous,
-                  chi2_cap=not args.no_chi2_cap)
+                  chi2_cap=not (args.no_chi2_cap or args.ldsc_compat), ldsc_compat=args.ldsc_compat)
     if args.analysis == "h2":
         result = ldsc_h2_sumstats(paths[0], variants_input, scores, read_options=options[0],
-                                 qc_options=qc_options, **common)
+                                 qc_options=qc_options, w_ld=w_ld, **common)
     else:
         result = ldsc_rg_sumstats(paths[0], paths[1], variants_input, scores, read_options1=options[0],
                                   read_options2=options[1], qc_options1=qc_options, qc_options2=qc_options,
-                                  ncores=args.ncores, **common)
+                                  ncores=args.ncores, w_ld=w_ld, **common)
     return _json_safe({
         "pldsc_version": __version__, "allelign_version": allelign.__version__, "analysis": args.analysis,
         "inputs": {"sumstats": paths, "reference": args.reference, "ld_scores": args.ld_scores,
                    "ld_reference": reference_record},
         "options": {**common, "read_options": options, "qc_options": qc_options,
+                    "estimator": "ldsc-compatible (two-step, fixed-weight jackknife)" if args.ldsc_compat
+                                 else "pldsc one-step (weights refit in every jackknife deletion)",
+                    "w_ld": (args.w_ld_scores or "regression LD scores") if args.ldsc_compat else None,
                     "ncores": args.ncores if args.analysis == "rg" else None},
         "long_range_ld": long_range_ld,
         "estimate": asdict(result.estimate), "qc": result.qc, "alignment": result.alignment,
