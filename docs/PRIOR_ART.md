@@ -22,7 +22,7 @@ bar for a methods/clarification note. Per claim:
 | Claim | Sweep verdict | Closest prior art |
 |---|---|---|
 | DECOMP (spectral LD-score identity as organizing device) | **partial** (textbook + adjacent) | de Vlaming et al. 2017 (GRM-PC view of LDSC, [10.1101/211821](https://doi.org/10.1101/211821)); LDER (Song 2022, spectral LDSC, [10.1016/j.ajhg.2022.03.013](https://doi.org/10.1016/j.ajhg.2022.03.013)) |
-| UNIF (cov-LDSC/WhiLD/PC-score/`P_c` as one ladder) | **partial**; premise falsified | **Mangin 2012 is already a GLS/mixed-model-whitened operator**, not a hard projection ([10.1038/hdy.2011.73](https://doi.org/10.1038/hdy.2011.73); confirmed Lin & Chang 2012, [10.1038/hdy.2012.34](https://doi.org/10.1038/hdy.2012.34)); unification-of-estimators precedent = MQS/GEMMA (Zhou 2017, [10.1214/17-AOAS1052](https://doi.org/10.1214/17-AOAS1052)) |
+| UNIF (cov-LDSC/WhiLD/PC-score/`P_c` as one ladder) | **partial**; premise falsified | **Mangin 2012 is already a GLS/mixed-model-whitened operator**, not a hard projection ([10.1038/hdy.2011.73](https://doi.org/10.1038/hdy.2011.73); confirmed Lin, Xing & Xing 2012, [10.1038/hdy.2012.54](https://doi.org/10.1038/hdy.2012.54)); unification-of-estimators precedent = MQS/GEMMA (Zhou 2017, [10.1214/17-AOAS1052](https://doi.org/10.1214/17-AOAS1052)) |
 | ALIAS (LD-correction family co-attenuates real ancestry-aligned h²) | **OCCUPIED** | **Huang et al. 2025** states it in print for cov-LDSC/GREML/HE ([10.1093/genetics/iyaf100](https://doi.org/10.1093/genetics/iyaf100)); Sotoudeh et al. 2026 first-moment version ([10.1073/pnas.2525790123](https://doi.org/10.1073/pnas.2525790123)) |
 | GLS-OP (`P_c` LD-score whitener matched to a LOCO-LMM score) | **partial** | exact construction not in print (cov-LDSC leaves it as future work) but Mangin 2012 pre-empts the operator; g-LDSC (Xiong 2024, [10.1016/j.xhgg.2024.100272](https://doi.org/10.1016/j.xhgg.2024.100272)) pre-empts generic GLS-LDSC |
 
@@ -33,7 +33,7 @@ second-moment single-regressor aliasing identity (but the *corollary* is Huang
 2025's). **Corrections forced:** re-credit Mangin 2012 as the GLS-operator ancestor
 (not hard-projection); promote Huang 2025 to the primary ALIAS predecessor; credit
 MQS/GEMMA (unification-of-estimators), de Vlaming 2017 (GRM-PC view of LDSC), and
-the WhiLD/Mahalanobis heritability lineage (Mathew 2018 [10.1038/s41437-017-0011-8](https://doi.org/10.1038/s41437-017-0011-8);
+the WhiLD/Mahalanobis heritability lineage (Mathew, Léon & Sillanpää 2018 [10.1038/s41437-017-0023-4](https://doi.org/10.1038/s41437-017-0023-4);
 Ma & Dicker 2019, arXiv:1901.02936).
 
 ## Theory addendum (2026-07-22)
@@ -187,6 +187,15 @@ new — that belongs to Mangin/Bercovich (r²) and cov-LDSC (LD scores).
   (medRxiv 2024.11.04.24316716), **FGLS functional enrichment** (Cell HGG Adv
   2024, S2666-2477(24)00011-3), **LDSC++** (medRxiv 2025.04.07.25324946),
   **Huang 2025** (admixed-h² estimand, [10.1093/genetics/iyaf100](https://doi.org/10.1093/genetics/iyaf100)).
+- **Xue & Zhao 2025** (Annals of Statistics 53:1913–1937,
+  [10.1214/25-AOS2523](https://doi.org/10.1214/25-AOS2523)) — *direct prior art
+  for the live multi-ancestry line* (added 2026-11-23, after this archive's
+  date). Finite-reference theory for LDSC and its cross-ancestry extensions;
+  in HAPNEST simulations of EUR- and EAS-like data (their §5.3, Supplementary
+  Figures 13–14), LD scores from pooled samples underestimate h² and r_g, and
+  meta-analysed summary statistics give h² between the two population-specific
+  estimates and still biased. They do not construct a composition-weighted
+  per-SNP score (MA2) or κ, but the phenomenon is in print.
 - Efficiency: a Python-3 LDSC *platform* preprint (Dec 2025) — fast tooling alone
   is not novel. "Susceptibility of PGS to ancestry stratification" (Dec 2025) —
   adjacent to the diagnostics.

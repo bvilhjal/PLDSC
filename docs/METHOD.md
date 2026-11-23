@@ -1173,7 +1173,7 @@ benchmarked against DGREML, DONUTS/JODIE, and family GWAS.
    of the structure-aliasing remark: the confounder is environment *and* the
    genetic background correlated with structure).
 5. Bhatia et al. (2016), [Subtle stratification confounds estimates of
-   heritability from polygenic models](https://doi.org/10.1101/048181) (the
+   heritability from rare variants](https://doi.org/10.1101/048181) (the
    first-moment / signed PC-loading analogue of the §14 remark).
 6. Young et al. (2018), [Relatedness disequilibrium regression estimates
    heritability without environmental bias](https://doi.org/10.1038/s41588-018-0178-9)

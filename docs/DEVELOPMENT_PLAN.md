@@ -596,7 +596,7 @@ because the version number looks lonely.
 2. Finucane et al. (2015), [Partitioning heritability by functional annotation
    using genome-wide association summary statistics](https://doi.org/10.1038/ng.3404).
 3. Bhatia et al. (2016), [Subtle stratification confounds estimates of
-   heritability from polygenic models](https://doi.org/10.1101/048181).
+   heritability from rare variants](https://doi.org/10.1101/048181).
 4. Zhou and Stephens (2012), [Genome-wide efficient mixed-model analysis for
    association studies](https://doi.org/10.1038/ng.2310).
 5. Yang et al. (2014), [Advantages and pitfalls in the application of

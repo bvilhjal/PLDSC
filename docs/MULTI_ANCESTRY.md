@@ -408,6 +408,11 @@ AFR, SAS and AMR 0.03 or less.
 
 ## 8. Relationship to earlier work
 
+- **Direct prior art.** Xue & Zhao 2025
+  ([10.1214/25-AOS2523](https://doi.org/10.1214/25-AOS2523)) give theory for
+  LDSC with finite and cross-ancestry references and show by simulation that
+  pooled LD scores bias h² and r_g, including on meta-analysed EUR+EAS-like
+  statistics.
 - **Established components.** Popcorn and S-LDXR use cross-population moments
   on the effect scales described in §1. Proposition 2 is the LD-score analogue of
   Lin & Zeng 2010. MAMA (Turley et al. 2021) uses cross-ancestry LD scores to
@@ -419,7 +424,12 @@ AFR, SAS and AMR 0.03 or less.
   chromosome prediction result in Section 6.1 and the simulation-based power
   calculation and independent-cohort design in Section 10.
 
-  The one recorded empirical warning that LDSC underestimates h² on
+  Xue & Zhao (2025, Annals of Statistics,
+  [10.1214/25-AOS2523](https://doi.org/10.1214/25-AOS2523)) already show, in
+  HAPNEST simulations of EUR- and EAS-like data, that LD scores from pooled
+  samples bias LDSC h² and r_g and that h² from meta-analysed statistics is
+  biased; they are direct prior art for the phenomenon, though not for MA2 or
+  κ. An empirical warning that LDSC underestimates h² on
   meta-analysed summary statistics — a 2026 bioRxiv preprint, now citable
   (doi 10.64898/2026.07.05.736573, PMID 42465239; reports the phenomenon
   and one magnitude, AD 0.265 → 0.160 with imputed variants, but not MA2
