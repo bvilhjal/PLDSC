@@ -48,7 +48,7 @@ def _read_options(columns, n_eff):
 
 
 def _parser():
-    parser = argparse.ArgumentParser(prog="pldsc", description="Fast LDSC using allelign for GWAS loading and QC.")
+    parser = argparse.ArgumentParser(prog="pldsc", description="LD Score regression (h2, rg) using allelign for GWAS loading and QC.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="analysis", required=True)
     score_parser = sub.add_parser("prepare-scores", help="align LDSC text scores to a reference and write .npy")

@@ -1,4 +1,4 @@
-"""Fast univariate and bivariate LDSC and population structure research."""
+"""Univariate and bivariate LDSC and population structure research."""
 
 from .ld import effective_pair_df, local_ld_scores, residualize_genotypes
 from .multiancestry import (

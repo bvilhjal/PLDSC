@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pldsc"
 dynamic = ["version"]
-description = "Fast univariate and bivariate LD Score regression and population structure research"
+description = "Univariate and bivariate LD Score regression and population structure research"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

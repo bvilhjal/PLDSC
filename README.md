@@ -1,9 +1,11 @@
 # PLDSC
 
-PLDSC provides fast LD Score regression (LDSC) for SNP heritability and
-bivariate LDSC for genetic correlation. Its regression kernels are adapted
-from LDpred3 and bipred; optional Numba compilation accelerates block
-jackknifing. [Allelign](https://github.com/bvilhjal/allelign) loads, filters
+PLDSC provides LD Score regression (LDSC) for SNP heritability and
+bivariate LDSC for genetic correlation. Its default regression kernels are
+adapted from LDpred3 and bipred and are not the reference `ldsc` estimator;
+an opt-in `--ldsc-compat` mode reproduces that estimator and is tested
+against `ldsc`'s own code ([what differs](docs/LDSC.md#ldsc-equivalence)).
+Optional Numba compilation accelerates block jackknifing. [Allelign](https://github.com/bvilhjal/allelign) loads, filters
 and aligns GWAS summary statistics to the reference alleles.
 
 The package also includes tools and research on LD scores in structured and
@@ -52,7 +54,11 @@ JSON files include processing and alignment counts as well as the estimates.
 For real data, use reference LD scores appropriate to the populations and
 genome build, in exactly the order of the reference variants. `--m-snps` is
 the number of variants summed into each LD score, not the number of GWAS
-rows retained after filtering. Check the QC and alignment logs before
+rows retained after filtering. h² scales with it: the bundled
+`--ld-reference hm3-eur` count (9,997,231) gives h² 1.677 times that of the
+MAF 5–50% count (5,961,159) that published `ldsc` results use, so pass
+`--m-snps 5961159` to compare with them, and add `--ldsc-compat` to use
+ldsc's estimator as well. Check the QC and alignment logs before
 interpreting estimates. PLDSC does not verify genome builds or perform
 liftover.
 

@@ -1,8 +1,10 @@
-# Fast LDSC and bivariate LDSC
+# LDSC and bivariate LDSC
 
 PLDSC estimates SNP heritability with univariate LD Score regression (LDSC)
-and genetic correlation with bivariate LDSC. The implementations adapt the
-fast regression kernels from LDpred3 and bipred. Optional Numba compilation
+and genetic correlation with bivariate LDSC. The default implementations
+adapt the regression kernels of LDpred3 and bipred; they are **not** the
+estimator of the reference `ldsc` software, and their defaults differ from
+it ([LDSC equivalence](#ldsc-equivalence)). Optional Numba compilation
 accelerates the delete-block jackknife; bivariate fits can also run its blocks
 in parallel. Allelign reads, filters and harmonizes GWAS summary statistics.
 The [unified report](../report/methods.md) ([PDF](../report/methods.pdf))
@@ -357,9 +359,61 @@ or per-variant sample sizes. `ldsc_rg_z` takes signed z scores; the separate
 coefficients. Array functions default `m_snps` to the number of supplied
 rows, which is inappropriate when the LD scores sum over a larger set.
 
+## LDSC equivalence
+
+Two estimators are available. Neither changes the other's defaults.
+
+| | Default (`ldsc_h2`, `ldsc_rg`, `pldsc h2/rg`) | `ldsc_compat=True`, `--ldsc-compat` | Reference `ldsc` |
+|:--|:--|:--|:--|
+| Free-intercept h² | one-step IRWLS on all rows | two-step: intercept from χ² < 30, slope on all rows | two-step at 30 |
+| Over-counting weights | regression scores | separate `w_ld` (default: regression scores) | `--w-ld` |
+| Fitted mean in the weights | floored at 1 | h² clipped to [0, 1], no floor | same as compat |
+| Jackknife | weights refit in each deletion | final weights fixed | fixed |
+| Blocks | 100 (h²), 200 (r_g) | 200 | 200 |
+| χ² cap max(80, 0.001 N) | on in the sumstats functions and CLI | off | off for one-annotation h² and r_g |
+| M | bundled count 9,997,231 unless `--m-snps` | must be given | `M_5_50` in published runs |
+
+The compat mode agrees with the estimator code of `bulik/ldsc` (commit
+2fdeeb3, run under Python 3 with import changes only) to about 1e-15 for h²,
+intercept, r_g, genetic covariance and every SE, on the committed fixture
+`tests/data/ldsc_parity.npz` (3,000 SNPs with per-SNP N, `w_ld` different
+from the regression scores and outliers that trigger the two-step filter),
+and on 1,159,831 bundled HapMap3 scores with simulated z. It does not
+reproduce ldsc's file handling, allele merging or `.sumstats` munging, and the
+bundle has no separate `weights_hm3_no_MHC` scores, so with `--ld-reference`
+the regression scores also serve as `w_ld` (the region filter below removes
+the MHC). With a fixed cross-trait intercept ldsc raises an error under its
+default two-step estimator; compat mode instead runs that one regression
+without it.
+
+**The M convention is the largest difference.** At a given slope h² and the
+genetic covariance scale with M. The bundled count 9,997,231 is 1.677 times
+`M_5_50` = 5,961,159, so default h² from `--ld-reference hm3-eur` is 1.677
+times what the same fit gives with ldsc's convention; r_g is unchanged. In a
+review run on 2026-11-23 (not part of the test suite; regression scores used
+as `w_ld`), the 2010 GIANT height GWAS gave h² 0.325 with the default
+settings and 0.193 with ldsc's estimator and `M_5_50`, a factor of 1.68; for
+the 2010 HDL GWAS the factor was 1.19, because the two-step estimator and the
+χ² cap also matter for traits with large loci. Report which M and which
+estimator an h² used.
+
+**Speed.** The default jackknife refits the weights in every deletion; the
+compat jackknife solves one small system per block with fixed weights. Warm
+timings on 1,159,831 rows (the bundled scores with simulated z), 8 cores,
+Numba 0.62+, 2026-11-23:
+
+| | h², 100 blocks | h², 200 blocks | r_g, 200 blocks |
+|:--|--:|--:|--:|
+| Default (one core) | 1.2 s | 2.3 s | 5.4 s |
+| `ldsc_compat=True` | — | 0.23 s | 0.70 s |
+| `bulik/ldsc` estimator code, same inputs | — | 0.32 s | 1.10 s |
+
+The default is therefore not faster than ldsc's estimator: its cost grows
+linearly with the number of blocks, because each deletion is a full refit.
+
 ## Interpretation and performance
 
-Both fits use one-step iteratively reweighted regression and contiguous
+By default both fits use one-step iteratively reweighted regression and contiguous
 block-jackknife standard errors; weights are refitted within each deletion.
 The defaults are 100 blocks for h², 200 for r_g and two weight updates.
 `n_blocks` and `n_iter` can be set explicitly. Intercepts are free by default.
@@ -373,8 +427,9 @@ The estimates are not clipped: a noisy h² can be negative and r_g can exceed
 the interval [-1, 1]. r_g is NaN if a marginal h² is non-positive, and its
 SE is NaN if a required jackknife replicate is invalid or fewer than two
 blocks are available. Binary-trait h² is not automatically transformed to
-the liability scale. These one-step fits do not implement every feature of
-the original standalone LDSC software.
+the liability scale. Neither estimator implements partitioned h², liability
+conversion or ldsc's file munging; see [LDSC equivalence](#ldsc-equivalence)
+for what the compat mode does reproduce.
 
 The Numba kernels avoid materializing a separate dataset for each deletion;
 `ncores` parallelizes bivariate deletions. Compilation and cache setup affect

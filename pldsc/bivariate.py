@@ -1,7 +1,9 @@
 """Bivariate LDSC, adapted from bipred (commit fa211a1).
 
-The fast delete-block fits and their conservative singularity fallback match
-bipred. The two traits must be harmonized and sorted in genomic order.
+The delete-block fits (weights refit in every deletion) and their
+conservative singularity fallback match bipred, not the reference ldsc
+estimator; ``ldsc_compat=True`` runs the latter (:mod:`pldsc.ldsc_compat`).
+The two traits must be harmonized and sorted in genomic order.
 """
 from __future__ import annotations
 from contextlib import contextmanager
@@ -240,9 +242,11 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
         pred1 = np.maximum(i1 + h1 * x1s, 1.0)
         pred2 = np.maximum(i2 + h2 * x2s, 1.0)
         # For approximately bivariate-normal z scores,
-        # Var(z1*z2) = E[z1^2] E[z2^2] + E[z1*z2]^2. This is the
-        # Gencov.weights formula in the reference LDSC implementation; ell_w
-        # supplies its LD-overcounting factor.
+        # Var(z1*z2) = E[z1^2] E[z2^2] + E[z1*z2]^2. ldsc's Gencov.weights
+        # has the same form, but differs in detail: it clips h2 to [0, 1] and
+        # the covariance to [-1, 1], floors only the LD score, and takes the
+        # over-counting factor from separate w_ld scores. Here the marginal
+        # means are floored at one and ell_w is the regression score.
         pred_cross = np.full_like(
             cross_s, 0.0 if constrain_intercept is None else constrain_intercept)
         for _ in range(n_iter + 1):

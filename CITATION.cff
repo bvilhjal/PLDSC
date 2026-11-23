@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use pldsc, please cite the software plus the method references below; the full method landscape (Popcorn, S-LDXR, MAMA, cov-LDSC and the 2026 meta-LDSC preprint) is maintained in docs/STRATEGY.md §5 and docs/PRIOR_ART.md."
-title: "PLDSC: fast LD Score regression and population structure research"
+title: "PLDSC: LD Score regression and population structure research"
 abstract: >-
   PLDSC provides univariate and bivariate LD Score regression with optional
   Numba acceleration and allelign-backed GWAS QC and harmonization. It also

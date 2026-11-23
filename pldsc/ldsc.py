@@ -1,7 +1,15 @@
-"""Efficient univariate LDSC, adapted from LDpred3 (commit 2f5d108).
+"""Univariate LDSC, adapted from LDpred3 (commit 2f5d108).
 
-The estimand and regression weights match the original implementation. Scores
-must be built over the same M variants used in the regression scaling.
+The default fit is LDpred3's one-step iteratively reweighted regression with
+the weights refit in every jackknife deletion. It is not the estimator of the
+reference ldsc software: there is no two-step estimator, the regression
+scores double as the over-counting weights, the fitted mean is floored at
+one, and the default is 100 blocks. On equal inputs (scores, N, M, no
+chi-square cap) it agreed with ldsc's one-step fit to about 1e-4 in h2 in
+the 2026-11-23 review, not exactly. ``ldsc_compat=True`` runs the reference
+estimator (:mod:`pldsc.ldsc_compat`), which is tested to agree with ldsc's
+own code to rounding error. Scores must be built over the same M variants
+used in the regression scaling.
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -137,12 +145,15 @@ _jackknife_fits_jit = _jit(_jackknife_fits)
 
 
 #: High-chi-square exclusion for LD-score regression: drop a variant whose
-#: chi-square exceeds ``max(LDSC_CHI2_CAP, LDSC_CHI2_N_SCALE * N)``. These are
-#: the reference implementation's own numbers (``max(80, N/1000)``), and the
-#: ones ``smartpred._runner_trait_qc._QC_LDSC_PARAMETERS`` uses, so a CLI regression and
-#: a SMARTpred regression exclude the same rows. The cap matters because a
-#: handful of very large chi-squares at high LD scores dominate the slope, and
-#: the slope is the heritability.
+#: chi-square exceeds ``max(LDSC_CHI2_CAP, LDSC_CHI2_N_SCALE * N)``. The
+#: formula is ldsc's (``max(80, N/1000)``), but ldsc applies it by default only
+#: to partitioned h2; for one-annotation h2 and for rg it uses no cap unless
+#: ``--chisq-max`` is given, and relies on the two-step estimator instead.
+#: PLDSC's sumstats functions and CLI apply it by default (not with
+#: ``ldsc_compat``), as ``smartpred._runner_trait_qc._QC_LDSC_PARAMETERS`` does,
+#: so a CLI regression and a SMARTpred regression exclude the same rows. A
+#: handful of very large chi-squares at high LD scores can dominate the slope,
+#: which is the heritability.
 LDSC_CHI2_CAP = 80.0
 LDSC_CHI2_N_SCALE = 0.001
 
