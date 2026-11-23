@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import gzip
+import math
 from os import PathLike
 
 import numpy as np
@@ -54,15 +56,112 @@ def _reference(variants, ld_scores):
     return variants, scores
 
 
+_Z_COLUMNS = ("Z", "ZSCORE", "Z_SCORE")
+_MUNGED_FIELDS = {"id": ("SNP", "RSID", "ID"), "ea": ("A1",), "oa": ("A2",), "n_eff": ("N",)}
+
+
+def read_ldsc_munged(path, *, n_eff=None, **columns):
+    """Read an ldsc ``munge_sumstats.py`` file (``SNP A1 A2 [N] Z``).
+
+    Z is with respect to A1. Returns an :class:`allelign.Sumstats` whose
+    ``beta`` is Z and ``se`` is 1, so ``beta / se`` is the z score; there is
+    no allele frequency, INFO or position, so variants are matched to the
+    reference by identifier. Rows with a missing Z or N are dropped and
+    counted in ``parse_log``. ``n_eff`` (a number) replaces the N column;
+    a string names the N column. ``id``, ``ea`` and ``oa`` may name columns.
+    """
+    opener = gzip.open if str(path).endswith((".gz", ".bgz")) else open
+    with opener(path, "rt", encoding="utf-8") as stream:
+        first = stream.readline().rstrip("\r\n")
+        delim = "\t" if "\t" in first else None          # munge_sumstats writes tabs, NaN as empty
+        header = first.split(delim)
+        upper = [h.strip().upper() for h in header]
+
+        def find(field, names):
+            given = columns.get(field)
+            if given is not None:
+                if str(given).upper() not in upper:
+                    raise ValueError(f"{path}: column {given!r} not found")
+                return upper.index(str(given).upper())
+            for name in names:
+                if name in upper:
+                    return upper.index(name)
+            return None
+        idx = {f: find(f, names) for f, names in _MUNGED_FIELDS.items()}
+        if isinstance(n_eff, str):
+            if n_eff.upper() not in upper:
+                raise ValueError(f"{path}: N column {n_eff!r} not found")
+            idx["n_eff"], n_eff = upper.index(n_eff.upper()), None
+        iz = next((upper.index(n) for n in _Z_COLUMNS if n in upper), None)
+        missing = [f for f in ("id", "ea", "oa") if idx[f] is None] + (["Z"] if iz is None else [])
+        if n_eff is None and idx["n_eff"] is None:
+            missing.append("N (or a constant n_eff)")
+        if missing:
+            raise ValueError(f"{path}: not an ldsc munged file; missing {', '.join(missing)}")
+        ids, ea, oa, z, n = [], [], [], [], []
+        dropped = 0
+        for line_no, line in enumerate(stream, 2):
+            fields = line.rstrip("\r\n").split(delim)
+            if not any(f.strip() for f in fields):
+                continue
+            if len(fields) != len(header):
+                raise ValueError(f"{path}:{line_no}: expected {len(header)} fields, got {len(fields)}")
+            try:
+                zv = float(fields[iz])
+                nv = float(n_eff) if n_eff is not None else float(fields[idx["n_eff"]])
+            except ValueError:
+                dropped += 1
+                continue
+            if not (math.isfinite(zv) and math.isfinite(nv) and nv > 0):
+                dropped += 1
+                continue
+            ids.append(fields[idx["id"]].strip())
+            ea.append(fields[idx["ea"]].strip().upper())
+            oa.append(fields[idx["oa"]].strip().upper())
+            z.append(zv)
+            n.append(nv)
+    m = len(ids)
+    if m == 0:
+        raise ValueError(f"{path}: no rows with a finite Z and N")
+    log = {"format": "ldsc-munged", "n_input": m + dropped, "n_dropped_missing_z_or_n": dropped,
+           "columns": {f: header[i] for f, i in idx.items() if i is not None} | {"z": header[iz]},
+           "n_eff_source": "scalar" if n_eff is not None else "column"}
+    return allelign.Sumstats(np.asarray(ids, dtype=object), np.full(m, "", dtype=object),
+                             np.zeros(m, dtype=np.int64), np.asarray(ea, dtype=object),
+                             np.asarray(oa, dtype=object), np.asarray(z, dtype=float), np.ones(m),
+                             np.asarray(n, dtype=float), np.full(m, np.nan), np.full(m, np.nan),
+                             parse_log=log)
+
+
+def _read(path, read_options):
+    options = dict(read_options or {})
+    try:
+        return allelign.read_sumstats(path, **options)
+    except ValueError as exc:
+        if "no effect column" not in str(exc):
+            raise
+        munged = {k: v for k, v in options.items() if k in ("id", "ea", "oa", "n_eff")}
+        if len(munged) != len(options):
+            raise
+        try:
+            return read_ldsc_munged(path, **munged)
+        except ValueError as munged_exc:
+            raise ValueError(f"{exc}; nor is it an ldsc munged file ({munged_exc})") from None
+
+
 def _prepare(data, variants, read_options, qc_options, drop_ambiguous):
     if isinstance(data, (str, PathLike)):
-        data = allelign.read_sumstats(data, **(read_options or {}))
+        data = _read(data, read_options)
     elif read_options:
         raise ValueError("read_options apply only to a summary-statistics file")
     if not isinstance(data, allelign.Sumstats):
         raise TypeError("sumstats must be an allelign.Sumstats or a path")
     keep, qc = allelign.qc_sumstats(data, **(qc_options or {}))
     h = allelign.harmonize(data.subset(keep), variants, drop_ambiguous=drop_ambiguous)
+    try:
+        qc = {**qc, "reference_coverage": allelign.reference_coverage(data, variants, h)}
+    except Exception as exc:  # diagnostic only; never block a fit on it
+        qc = {**qc, "reference_coverage": {"error": str(exc)}}
     return h, qc
 
 

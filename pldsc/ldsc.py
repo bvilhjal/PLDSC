@@ -13,6 +13,7 @@ used in the regression scaling.
 """
 from __future__ import annotations
 from dataclasses import dataclass
+import warnings
 import numpy as np
 from ._numba import HAVE_NUMBA, _jit
 from ._common import _as_n_vector, _integer_at_least, _finite_control
@@ -266,6 +267,11 @@ def ldsc_h2(chisq, ld_scores, n_eff, *, m_snps=None, n_blocks=None,
     if constrain_intercept is not None:
         constrain_intercept = _finite_control("constrain_intercept",
                                               constrain_intercept)
+    if m_snps is None:
+        warnings.warn(
+            f"ldsc_h2: m_snps not given, so M defaults to the {m} regression rows. h2 scales with M; "
+            "pass the number of variants summed into each LD score (ldsc publishes M_5_50)",
+            UserWarning, stacklevel=2)
     M = float(m_snps if m_snps is not None else m)
 
     x = N * ell / M               # slope on x is h2 directly

@@ -6,6 +6,8 @@ from dataclasses import asdict
 import gzip
 import json
 import math
+import os
+from pathlib import Path
 import sys
 
 import allelign
@@ -103,6 +105,17 @@ def _parser():
                             "including the MHC (left out by default)")
         p.add_argument("--include-apoe", action="store_true",
                        help="also leave out the APOE region (GRCh37)")
+        p.add_argument("--min-snps", type=int, default=MIN_SNPS,
+                       help=f"refuse to report a fit on fewer regression SNPs (default: {MIN_SNPS:,}, the "
+                            "count below which ldsc warns); see --allow-low-coverage")
+        p.add_argument("--allow-low-coverage", action="store_true",
+                       help="report the fit even when fewer than --min-snps SNPs remain")
+        p.add_argument("--sumstats-build", metavar="BUILD",
+                       help="genome build of the GWAS coordinates (e.g. GRCh37, GRCh38); checked against the "
+                            "reference build and refused on a mismatch")
+        p.add_argument("--reference-build", metavar="BUILD",
+                       help="genome build of an explicit --reference (the bundled reference is GRCh37); "
+                            "the long-range LD filter needs GRCh37")
         p.add_argument("--out", help="write JSON to a new file (default: stdout; existing files are not overwritten)")
     return parser
 
@@ -183,7 +196,38 @@ def _json_safe(value):
     return value
 
 
+MIN_SNPS = 200_000
+
+
+def _check_out(path):
+    """Fail before fitting if --out cannot be created."""
+    if path is None:
+        return
+    target = Path(path)
+    if target.exists():
+        raise ValueError(f"--out {path} already exists; existing files are not overwritten")
+    parent = target.parent if str(target.parent) else Path(".")
+    if not parent.is_dir():
+        raise ValueError(f"--out directory {parent} does not exist")
+    if not os.access(parent, os.W_OK):
+        raise ValueError(f"--out directory {parent} is not writable")
+
+
+def _m_convention(m_snps, bundled):
+    if bundled is None:
+        return "user-supplied (--m-snps)"
+    if m_snps == bundled.m_snps_5_50:
+        return "M_5_50: MAF 5-50% variants (the published ldsc convention)"
+    if m_snps == bundled.m_snps:
+        return (f"all {bundled.m_snps:,} variants summed into the scores; h2 is "
+                f"{bundled.m_snps / bundled.m_snps_5_50:.3f} times the M_5_50 value at the same slope")
+    return "user-supplied (--m-snps)"
+
+
 def _run(args):
+    _check_out(args.out)
+    if args.min_snps < 1:
+        raise ValueError("--min-snps must be positive")
     if args.include_apoe and args.include_long_range_ld_grch37:
         raise ValueError("--include-apoe has no effect with --include-long-range-ld-grch37")
     if args.analysis == "h2":
@@ -202,6 +246,7 @@ def _run(args):
     if args.n_blocks is None:
         args.n_blocks = 200 if (args.ldsc_compat or args.analysis == "rg") else 100
     w_ld = None
+    bundled = None
     explicit = (args.reference, args.ld_scores, args.m_snps)
     if args.ld_reference is not None:
         if args.reference is not None or args.ld_scores is not None:
@@ -210,8 +255,11 @@ def _run(args):
         bundled = load_ld_reference(args.ld_reference,
                                     include_long_range_ld=args.include_long_range_ld_grch37,
                                     include_apoe=args.include_apoe)
+        if args.reference_build is not None:
+            raise ValueError("--reference-build applies to an explicit --reference; the bundle records its own")
         variants_input, scores, long_range_ld = bundled.variants, bundled.scores, bundled.long_range_ld
         m_snps = bundled.m_snps if args.m_snps is None else args.m_snps
+        reference_build = bundled.genome_build
         reference_record = {"name": bundled.name, "ancestry": bundled.ancestry,
                             "genome_build": bundled.genome_build,
                             "bundle_sha256": bundled.provenance["bundle_sha256"],
@@ -221,6 +269,8 @@ def _run(args):
             raise ValueError("give --reference, --ld-scores and --m-snps, "
                              "or name a bundled --ld-reference")
         variants_input, m_snps, reference_record = args.reference, args.m_snps, None
+        reference_build = (None if args.reference_build is None
+                           else allelign.normalize_build(args.reference_build, name="--reference-build"))
         scores = np.load(args.ld_scores, allow_pickle=False, mmap_mode="r")
         if not isinstance(scores, np.ndarray):
             scores.close()
@@ -230,6 +280,9 @@ def _run(args):
             if not isinstance(w_ld, np.ndarray) or w_ld.shape != scores.shape:
                 raise ValueError("--w-ld-scores must be a .npy vector with one value per reference variant")
         long_range_ld = None
+        if not args.include_long_range_ld_grch37 and reference_build not in (None, "GRCh37"):
+            raise ValueError(f"the long-range LD regions are GRCh37 coordinates but --reference-build is "
+                             f"{reference_build}; pass --include-long-range-ld-grch37 to skip the filter")
         if not args.include_long_range_ld_grch37:
             # Leave out reference rows, so GWAS files matched by ID need no positions.
             variants_input = allelign.read_variants(args.reference)
@@ -242,7 +295,14 @@ def _run(args):
             if w_ld is not None:
                 w_ld = np.asarray(w_ld)[~in_region]
             long_range_ld = {"genome_build": "GRCh37", "include_apoe": args.include_apoe,
-                             "n_dropped": int(in_region.sum())}
+                             "n_dropped": int(in_region.sum()),
+                             "reference_build": reference_build or "not declared; GRCh37 assumed"}
+            if reference_build is None:
+                print("pldsc: warning: --reference-build not given; the long-range LD filter assumes "
+                      "GRCh37 reference coordinates", file=sys.stderr)
+    declared = (None if args.sumstats_build is None
+                else allelign.normalize_build(args.sumstats_build, name="--sumstats-build"))
+    build_check = allelign.check_build(declared, reference_build)
     qc_options = {"min_n_ratio": args.min_n_ratio, "min_maf": args.min_maf, "min_info": args.min_info}
     common = dict(m_snps=m_snps, n_blocks=args.n_blocks, n_iter=args.n_iter,
                   constrain_intercept=args.constrain_intercept, drop_ambiguous=not args.allow_ambiguous,
@@ -254,6 +314,13 @@ def _run(args):
         result = ldsc_rg_sumstats(paths[0], paths[1], variants_input, scores, read_options1=options[0],
                                   read_options2=options[1], qc_options1=qc_options, qc_options2=qc_options,
                                   ncores=args.ncores, w_ld=w_ld, **common)
+    n_retained, n_reference = len(result.reference_index), int(np.shape(scores)[0])
+    if n_retained < args.min_snps and not args.allow_low_coverage:
+        raise ValueError(
+            f"only {n_retained:,} of {n_reference:,} reference variants ({n_retained / n_reference:.2%}) "
+            f"remain for the regression, fewer than --min-snps {args.min_snps:,}. An LDSC fit on so few "
+            "variants is unreliable. Check identifiers, alleles and genome build (the QC log's "
+            "reference_coverage names the likely cause), or pass --allow-low-coverage")
     return _json_safe({
         "pldsc_version": __version__, "allelign_version": allelign.__version__, "analysis": args.analysis,
         "inputs": {"sumstats": paths, "reference": args.reference, "ld_scores": args.ld_scores,
@@ -266,7 +333,12 @@ def _run(args):
         "long_range_ld": long_range_ld,
         "estimate": asdict(result.estimate), "qc": result.qc, "alignment": result.alignment,
         "n_common": result.n_common, "n_chi2_dropped": result.n_chi2_dropped,
-        "n_retained": len(result.reference_index),
+        "n_retained": n_retained,
+        "coverage": {"n_regression_snps": n_retained, "n_reference_variants": n_reference,
+                     "fraction": n_retained / n_reference, "min_snps": args.min_snps,
+                     "low_coverage_allowed": bool(args.allow_low_coverage and n_retained < args.min_snps)},
+        "m_snps": {"value": m_snps, "convention": _m_convention(m_snps, bundled)},
+        "build_check": build_check,
     })
 
 
@@ -281,6 +353,12 @@ def _ld_reference(args):
 def main(argv=None):
     parser = _parser()
     args = parser.parse_args(argv)
+    if args.analysis in ("h2", "rg") and args.out:
+        try:
+            _check_out(args.out)
+        except ValueError as exc:
+            print(f"pldsc: error: {exc}", file=sys.stderr)
+            return 2
     try:
         if args.analysis == "prepare-scores":
             result = _prepare_scores(args)

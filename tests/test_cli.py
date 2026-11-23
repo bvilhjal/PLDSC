@@ -49,7 +49,7 @@ def _command(*args):
 def test_cli_fits_match_python_and_record_processing(gwas_files, tmp_path):
     reference, scores, one, two, ell = gwas_files
     common = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120",
-              "--n-blocks", "8", "--no-chi2-cap", "--include-long-range-ld-grch37"]
+              "--n-blocks", "8", "--no-chi2-cap", "--include-long-range-ld-grch37", "--allow-low-coverage"]
     run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", *common)
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
@@ -84,12 +84,13 @@ def test_cli_fits_match_python_and_record_processing(gwas_files, tmp_path):
 def test_cli_leaves_out_long_range_ld_by_default(gwas_files):
     reference, scores, one, two, ell = gwas_files
     args = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120", "--n-blocks", "8",
-            "--no-chi2-cap"]
+            "--no-chi2-cap", "--allow-low-coverage"]
     run = _command("rg", "--sumstats1", one, "--sumstats2", two, *args, "--include-apoe")
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
     # The fixture puts 20 of its 120 reference variants in the MHC.
-    assert out["long_range_ld"] == {"genome_build": "GRCh37", "include_apoe": True, "n_dropped": 20}
+    assert out["long_range_ld"] == {"genome_build": "GRCh37", "include_apoe": True, "n_dropped": 20,
+                                    "reference_build": "not declared; GRCh37 assumed"}
     variants = allelign.read_variants(reference)
     keep = ~allelign.in_long_range_ld(variants.chrom, variants.pos, genome_build="GRCh37",
                                       include_apoe=True)
@@ -107,7 +108,8 @@ def test_cli_leaves_out_long_range_ld_by_default(gwas_files):
 
 def test_cli_rejects_conflicting_inputs_and_writes_strict_json(gwas_files, tmp_path):
     reference, scores, one, _, _ = gwas_files
-    common = ["h2", "--sumstats", one, "--reference", reference, "--ld-scores", scores, "--m-snps", "120"]
+    common = ["h2", "--sumstats", one, "--reference", reference, "--ld-scores", scores, "--m-snps", "120",
+              "--allow-low-coverage"]
     run = _command(*common, "--n-eff", "9000", "--column", "n_eff=N_EFF")
     assert run.returncode == 2 and "one sample-size source" in run.stderr
     run = _command(*common, "--column", "beta=BETA", "--column", "or=BETA")
@@ -134,7 +136,7 @@ def test_cli_region_filter_uses_reference_coordinates(gwas_files, tmp_path):
     ids_only.write_text("".join("\t".join(line.split("\t")[i] for i in keep_columns) + "\n"
                                 for line in lines))
     run = _command("h2", "--sumstats", ids_only, "--reference", reference, "--ld-scores", scores,
-                   "--m-snps", "120", "--n-blocks", "8", "--no-chi2-cap")
+                   "--m-snps", "120", "--n-blocks", "8", "--no-chi2-cap", "--allow-low-coverage")
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
     assert out["long_range_ld"]["n_dropped"] == 20
@@ -205,7 +207,7 @@ assert len(scope['rg'].reference_index) > 3000
 def test_cli_ldsc_compat_matches_python_and_requires_explicit_m(gwas_files):
     reference, scores, one, two, ell = gwas_files
     common = ["--reference", reference, "--ld-scores", scores, "--n-blocks", "8",
-              "--include-long-range-ld-grch37"]
+              "--include-long-range-ld-grch37", "--allow-low-coverage"]
     run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", "--ldsc-compat", *common)
     assert run.returncode == 2 and "--m-snps" in run.stderr
     run = _command("h2", "--sumstats", one, "--column", "n_eff=N_EFF", "--ldsc-compat", "--m-snps", "120", *common)
@@ -217,3 +219,69 @@ def test_cli_ldsc_compat_matches_python_and_requires_explicit_m(gwas_files):
     assert out["estimate"]["h2_se"] == pytest.approx(expected.estimate.h2_se)
     assert out["options"]["ldsc_compat"] is True and out["options"]["chi2_cap"] is False
     assert out["options"]["estimator"].startswith("ldsc-compatible")
+
+
+def _munged_copy(src, dst):
+    """Write an ldsc munge_sumstats-style copy (SNP A1 A2 N Z) of an allelign file."""
+    ss = allelign.read_sumstats(src)
+    z = ss.beta / ss.se
+    rows = ["SNP\tA1\tA2\tN\tZ"] + [f"{i}\t{a}\t{b}\t{n:.0f}\t{v:.6f}" for i, a, b, n, v
+                                     in zip(ss.id, ss.ea, ss.oa, ss.n_eff, z)]
+    rows.append(f"rs_missing\tA\tC\t{ss.n_eff[0]:.0f}\t")                # munge writes NaN as empty
+    dst.write_text("\n".join(rows) + "\n")
+
+
+def test_cli_accepts_ldsc_munged_sumstats(gwas_files, tmp_path):
+    reference, scores, one, _, _ = gwas_files
+    munged = tmp_path / "one.sumstats"
+    _munged_copy(one, munged)
+    common = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120", "--n-blocks", "8",
+              "--no-chi2-cap", "--include-long-range-ld-grch37", "--allow-low-coverage", "--min-maf", "0"]
+    a = _command("h2", "--sumstats", one, *common)
+    b = _command("h2", "--sumstats", munged, *common)
+    assert a.returncode == 0 and b.returncode == 0, (a.stderr, b.stderr)
+    a, b = json.loads(a.stdout), json.loads(b.stdout)
+    assert b["qc"][0]["sumstats_parse"]["format"] == "ldsc-munged"
+    assert b["qc"][0]["sumstats_parse"]["n_dropped_missing_z_or_n"] == 1
+    assert b["n_retained"] == a["n_retained"] == 120
+    assert b["estimate"]["h2"] == pytest.approx(a["estimate"]["h2"], rel=1e-5)
+
+
+def test_cli_fails_closed_on_low_coverage_build_and_out(gwas_files, tmp_path):
+    reference, scores, one, two, _ = gwas_files
+    base = ["--reference", reference, "--ld-scores", scores, "--m-snps", "120", "--n-blocks", "8"]
+    run = _command("h2", "--sumstats", one, *base)
+    assert run.returncode == 2 and "--min-snps" in run.stderr and "--allow-low-coverage" in run.stderr
+    run = _command("h2", "--sumstats", one, *base, "--min-snps", "50", "--reference-build", "GRCh37")
+    assert run.returncode == 0, run.stderr
+    out = json.loads(run.stdout)
+    assert out["coverage"]["n_regression_snps"] == out["n_retained"] <= 99
+    assert out["coverage"]["n_reference_variants"] == 100
+    assert out["m_snps"] == {"value": 120, "convention": "user-supplied (--m-snps)"}
+    assert out["build_check"] == {"declared": None, "reference": "GRCh37", "status": "unchecked"}
+    run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--sumstats-build", "GRCh38",
+                   "--reference-build", "GRCh37")
+    assert run.returncode == 2 and "GRCh38" in run.stderr
+    run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--reference-build", "GRCh38")
+    assert run.returncode == 2 and "long-range" in run.stderr
+    existing = tmp_path / "exists.json"
+    existing.write_text("{}")
+    run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--out", existing)
+    assert run.returncode == 2 and "already exists" in run.stderr and existing.read_text() == "{}"
+    run = _command("h2", "--sumstats", one, *base, "--allow-low-coverage", "--out", tmp_path / "no" / "x.json")
+    assert run.returncode == 2 and "does not exist" in run.stderr
+    run = _command("rg", "--sumstats1", one, "--sumstats2", two, *base, "--allow-low-coverage")
+    assert run.returncode == 0, run.stderr
+    est = json.loads(run.stdout)["estimate"]
+    assert est["gcov_se"] > 0 and len(est["h2_se"]) == 2 and all(v > 0 for v in est["h2_se"])
+
+
+def test_array_api_warns_when_m_snps_defaults_to_rows():
+    from pldsc import ldsc_h2, ldsc_rg_z
+    rng = np.random.default_rng(2)
+    ell = rng.uniform(1, 5, 400)
+    z = rng.normal(size=400) * np.sqrt(1 + 0.2 * ell)
+    with pytest.warns(UserWarning, match="m_snps"):
+        ldsc_h2(z * z, ell, 1000.0, n_blocks=10)
+    with pytest.warns(UserWarning, match="m_snps"):
+        ldsc_rg_z(z, z + rng.normal(size=400), ell, 1000.0, 1000.0, n_blocks=10)

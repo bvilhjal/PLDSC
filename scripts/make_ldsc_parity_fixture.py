@@ -65,7 +65,8 @@ def main():
                    n_blocks=200, **kw)
         gsd = 0.0 if g.gencov.constrain_intercept else float(g.gencov.intercept_se)
         out[f"rg_{name}"] = np.array([float(g.rg_ratio), float(g.rg_se), float(g.gencov.tot), float(g.gencov.intercept), gsd,
-                                      float(g.hsq1.tot), float(g.hsq2.tot)])
+                                      float(g.hsq1.tot), float(g.hsq2.tot), float(g.gencov.tot_se),
+                                      float(g.hsq1.tot_se), float(g.hsq2.tot_se)])
         print(name, out[f"h2_{name}"], out[f"rg_{name}"])
     np.savez_compressed(args.out, **out)
 

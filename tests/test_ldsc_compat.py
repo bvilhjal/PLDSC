@@ -36,7 +36,7 @@ def test_h2_matches_reference_ldsc(ref, case):
 def test_rg_matches_reference_ldsc(ref, case):
     r = ldsc_rg_compat(ref["z1"], ref["z2"], ref["ld"], ref["N1"], ref["N2"], m_snps=float(ref["M"]),
                        w_ld=ref["w_ld"], **RG_CASES[case])
-    got = [r.rg, r.rg_se, r.gcov, r.gcov_intercept, r.gcov_intercept_se, *r.h2]
+    got = [r.rg, r.rg_se, r.gcov, r.gcov_intercept, r.gcov_intercept_se, *r.h2, r.gcov_se, *r.h2_se]
     np.testing.assert_allclose(got, ref[f"rg_{case}"], rtol=1e-9, atol=1e-12)
 
 

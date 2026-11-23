@@ -226,8 +226,8 @@ def ldsc_rg_compat(z1, z2, ld_scores, n_eff1, n_eff2, *, m_snps, w_ld=None, n_bl
     N1, N2 = _as_n_vector(n_eff1, z1.size), _as_n_vector(n_eff2, z1.size)
     M, nb, twostep_gc, fixed = _options(m_snps, n_blocks, twostep, constrain_intercept, z1.size)
     _, _, twostep_h2, _ = _options(m_snps, n_blocks, twostep, None, z1.size)
-    h1, i1, d1, _, _, _, _ = _h2_parts(z1 * z1, ell, wl, N1, M, nb, None, twostep_h2)
-    h2, i2, d2, _, _, _, _ = _h2_parts(z2 * z2, ell, wl, N2, M, nb, None, twostep_h2)
+    h1, i1, d1, _, h1_se, _, _ = _h2_parts(z1 * z1, ell, wl, N1, M, nb, None, twostep_h2)
+    h2, i2, d2, _, h2_se, _, _ = _h2_parts(z2 * z2, ell, wl, N2, M, nb, None, twostep_h2)
 
     def weights(ld, rows, rho_g, intercept):
         n1, n2, wr = (N1, N2, wl) if rows is None else (N1[rows], N2[rows], wl[rows])
@@ -235,7 +235,7 @@ def ldsc_rg_compat(z1, z2, ld_scores, n_eff1, n_eff2, *, m_snps, w_ld=None, n_bl
                                0.0 if intercept is None else intercept, i1, i2)
 
     step1 = None if twostep_gc is None else (z1 * z1 < twostep_gc) & (z2 * z2 < twostep_gc)
-    gc, ic, dg, di, _, ic_se, _ = _regression(z1 * z2, ell, wl, np.sqrt(N1 * N2), M, nb, fixed,
+    gc, ic, dg, di, gc_se, ic_se, _ = _regression(z1 * z2, ell, wl, np.sqrt(N1 * N2), M, nb, fixed,
                                               step1, 0.0, weights)
     if h1 > 0.0 and h2 > 0.0:
         rg = gc / np.sqrt(h1 * h2)
@@ -247,4 +247,5 @@ def ldsc_rg_compat(z1, z2, ld_scores, n_eff1, n_eff2, *, m_snps, w_ld=None, n_bl
         rg, rg_se = float("nan"), float("nan")
     return LDSCRgResult(rg=float(rg), rg_se=rg_se, gcov=float(gc), gcov_intercept=float(ic),
                         h2=(float(h1), float(h2)), constrain_intercept=fixed,
-                        gcov_intercept_se=ic_se, n_jackknife_blocks=nb)
+                        gcov_intercept_se=ic_se, n_jackknife_blocks=nb, gcov_se=gc_se,
+                        h2_se=(h1_se, h2_se))

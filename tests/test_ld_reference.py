@@ -139,7 +139,7 @@ def bundled_gwas(tmp_path):
 def test_cli_ld_reference_fit_matches_python(bundled_gwas):
     reference, path = bundled_gwas
     run = _command("h2", "--sumstats", path, "--ld-reference", "hm3-eur",
-                   "--n-blocks", "8", "--no-chi2-cap")
+                   "--n-blocks", "8", "--no-chi2-cap", "--allow-low-coverage")
     assert run.returncode == 0, run.stderr
     out = json.loads(run.stdout)
     expected = ldsc_h2_sumstats(path, reference.variants, reference.scores,
@@ -164,7 +164,7 @@ def test_cli_ld_reference_conflicts_with_explicit_inputs(bundled_gwas, tmp_path)
 def test_cli_m_snps_overrides_the_bundled_count(bundled_gwas):
     reference, path = bundled_gwas
     runs = [_command("h2", "--sumstats", path, "--ld-reference", "hm3-eur",
-                     "--n-blocks", "8", "--no-chi2-cap", *extra)
+                     "--n-blocks", "8", "--no-chi2-cap", "--allow-low-coverage", *extra)
             for extra in ((), ("--m-snps", reference.m_snps_5_50))]
     assert all(run.returncode == 0 for run in runs), [run.stderr for run in runs]
     bundled, common = (json.loads(run.stdout) for run in runs)
@@ -174,3 +174,15 @@ def test_cli_m_snps_overrides_the_bundled_count(bundled_gwas):
     assert common["estimate"]["h2"] == pytest.approx(
         bundled["estimate"]["h2"] * reference.m_snps_5_50 / reference.m_snps)
     assert common["estimate"]["intercept"] == pytest.approx(bundled["estimate"]["intercept"])
+
+
+def test_cli_records_the_m_convention_and_refuses_a_declared_build_mismatch(bundled_gwas):
+    reference, path = bundled_gwas
+    base = ["h2", "--sumstats", path, "--ld-reference", "hm3-eur", "--n-blocks", "8", "--allow-low-coverage"]
+    out = json.loads(_command(*base).stdout)
+    assert out["m_snps"]["value"] == reference.m_snps and "1.677 times" in out["m_snps"]["convention"]
+    out = json.loads(_command(*base, "--m-snps", reference.m_snps_5_50).stdout)
+    assert out["m_snps"]["convention"].startswith("M_5_50")
+    assert out["build_check"]["reference"] == "GRCh37"
+    run = _command(*base, "--sumstats-build", "hg38")
+    assert run.returncode == 2 and "GRCh38" in run.stderr

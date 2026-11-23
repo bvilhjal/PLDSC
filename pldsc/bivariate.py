@@ -8,6 +8,7 @@ The two traits must be harmonized and sorted in genomic order.
 from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass
+import warnings
 import numpy as np
 from ._numba import HAVE_NUMBA, _set_threads
 from ._common import _as_n_vector, _finite_control, _integer_at_least
@@ -129,6 +130,8 @@ class LDSCRgResult:
     constrain_intercept: float | None = None  # value passed to ldsc_rg, or None if free
     gcov_intercept_se: float = float("nan")  # delete-a-block SE, independent of rg validity
     n_jackknife_blocks: int = 0
+    gcov_se: float = float("nan")  # delete-a-block SE of gcov
+    h2_se: tuple = (float("nan"), float("nan"))  # delete-a-block SEs of the marginal h2
 
     def __repr__(self):
         return (f"LDSCRgResult(rg={self.rg:+.3f} ± {self.rg_se:.3f}, "
@@ -198,6 +201,11 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
         raise ValueError("ld_scores must contain only positive values")
     N1 = _as_sample_size(n_eff1, "n_eff1", m)
     N2 = _as_sample_size(n_eff2, "n_eff2", m)
+    if m_snps is None and not ldsc_compat:
+        warnings.warn(
+            f"ldsc_rg: m_snps not given, so M defaults to the {m} regression rows. h2 and gcov scale "
+            "with M (rg does not); pass the number of variants summed into each LD score",
+            UserWarning, stacklevel=3 if _input_is_z else 2)
     M = float(m) if m_snps is None else _as_finite_scalar(
         m_snps, "m_snps", positive=True)
     n_blocks = _integer_at_least("n_blocks", n_blocks, 1)
@@ -270,6 +278,7 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
     nb = int(min(n_blocks, m))
     rg_jk = []
     intercept_jk = []
+    h1_jk, h2_jk, gcov_jk = [], [], []
     jackknife_valid = nb >= 2
     if nb >= 2:
         full = np.arange(m)
@@ -302,6 +311,9 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
                     jackknife_valid = False
                     break
             intercept_jk.append(ib)
+            h1_jk.append(hb1)
+            h2_jk.append(hb2)
+            gcov_jk.append(gb)
             value = gb / np.sqrt(hb1 * hb2) if hb1 > 0.0 and hb2 > 0.0 else float("nan")
             rg_jk.append(value)
 
@@ -318,7 +330,8 @@ def ldsc_rg(beta_hat1, beta_hat2, ld_scores, n_eff1, n_eff2, *, m_snps=None,
                         gcov_intercept=float(ic), h2=(float(h1), float(h2)),
                         constrain_intercept=constrain_intercept,
                         gcov_intercept_se=jackknife_se(intercept_jk),
-                        n_jackknife_blocks=nb)
+                        n_jackknife_blocks=nb, gcov_se=jackknife_se(gcov_jk),
+                        h2_se=(jackknife_se(h1_jk), jackknife_se(h2_jk)))
 
 
 
