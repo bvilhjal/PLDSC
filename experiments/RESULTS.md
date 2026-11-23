@@ -1044,7 +1044,8 @@ Data: bigsnpr 1000 Genomes genotypes, chromosomes 14–22, 234,000 SNPs with
 MAF ≥ 0.05 in both groups, in 936 blocks of 250. LD is the panel correlation
 within a block and zero between blocks, so scores are exact. h² = 0.3,
 total N 46,475, inverse-variance weights, 200-group jackknife, seed
-20261120; about 15 minutes. The rules were written into the driver before
+20261120; about 15 minutes, and about an hour since the three-intercept fits
+were added on 2026-11-23. The rules were written into the driver before
 the full run on 2026-11-20 but were not committed separately first. A second
 full run reproduced every number.
 
@@ -1057,6 +1058,15 @@ full run reproduced every number.
 - **R3 (ceiling): PASS.** With exchangeable datasets the corrected medians
   are within 0.042 of truth and the uncorrected medians within 0.021 of
   their analytic expectation.
+- **R4 (intercepts, added and run 2026-11-23): PASS.** With stratum
+  intercepts 1.08 and 1.0 (85% EUR, ρ = 0.74, g = 0.222) the three-intercept
+  fit averages 0.2216 (−0.2%; MCSE 0.0032, bound 0.0111). The one-constant
+  fit averages 0.2098 (−5.5%) and both strata 0.2203 (−0.8%).
+- **Three-intercept fit in every cell (2026-11-23 rerun).** Every value
+  recorded on 2026-11-20 was reproduced. The three-intercept mean is within
+  1.6% of truth in every exact-score cell; at ρ = 0.74 its SD of ĝ is 1.99
+  times that of both strata at 85% EUR (one constant per equation: 1.74) and
+  0.99 times at 50%.
 - Descriptive results:
   - SD of ĝ at ρ = 0.74, both strata / Z+Q / Z² only: 0.021 / 0.037 / 0.141
     at 85% EUR and 0.017 / 0.017 / 0.073 at 50%.
@@ -1089,12 +1099,16 @@ rebuilt the same day (92 s).
   rebuilt inverse-variance meta gives 0.0977 (0.0161) from Z and Q, which is
   0.027 lower (paired SE 0.012). A sample-size-weighted meta gives 0.1236
   (0.0230). Z² alone gives 0.049 (0.057).
-- **Reading (revised 2026-11-23).** The Z and Q fit had one intercept per
-  equation. Under inverse-variance weights unequal stratum intercepts leak
-  into g; on the chr22 example LD with these weights and intercepts 1.076 and
-  0.983 the leak is -9.4% of g in expectation (`experiments/q_model.py`,
-  `tests/test_q_heterogeneity.py`). The 0.027 shortfall is provisional until
-  the three-intercept refit, and is not attributed to frequency dependence.
+- **Three-intercept refit (2026-11-23, 124 s).** The fit above had one
+  intercept per equation, and under inverse-variance weights unequal stratum
+  intercepts leak into g (`experiments/q_model.py`; on the chr22 example LD
+  with intercepts 1.076 and 0.983 the leak is -9.4% of g in expectation).
+  With the three stratum intercepts fitted, the inverse-variance meta gives
+  0.1008 (0.0187), 0.024 below both strata (paired SE 0.015), with
+  intercepts 1.061, 0.998 and 0.018; the refit moved g by +0.003 (paired SE
+  0.007). The sample-size-weighted meta gives 0.1220 (0.0233). The leak
+  explains little of the shortfall, which is now 19% at 1.6 SE; its cause is
+  not established. Every value recorded on 2026-11-20 was reproduced.
 - **Mean Q** is 1.084, against 1.049 expected with identical effects and
   1.102 from the two-strata estimates. At 2,229 pooled genome-wide
   significant SNPs it is 3.50 against a Gaussian expectation of 1.25–1.34.

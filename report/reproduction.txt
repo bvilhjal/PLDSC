@@ -3,7 +3,7 @@ PLDSC report reproduction, 2026-11-19
 Analysis baseline f47cf8031d527834d7c6243bed6a50c861cd51c2.
 Python 3.14.6, NumPy 2.4.6, allelign 0.3.1, PLDSC 0.1.1, Matplotlib 3.11.1.
 The source programs and settings are linked in report/methods.md, Table 11.
-The Section 11 runs of 2026-11-20 are recorded at the end of this file.
+The Section 11 runs of 2026-11-20 and their rerun of 2026-11-23 are recorded at the end of this file.
 The two default simulation gates are evaluated in the output, independently of the process exit code.
 The genome-wide and asthma drivers ran consecutively with GK.OUT set to a new,
 empty cache directory. The asthma run used the default provenance checks.
@@ -545,8 +545,153 @@ B. EAS: 5 datasets at 0.841 of SNPs, median S2 0.524; mean Q per df 1.0015; tau 
 B. EUR-EAS correlation: naive 0.738 (0.043); EUR ceiling only 0.744 (0.044); both ceilings 0.793 (0.070); corrected minus naive 0.055 (0.057)
 done in 80s
 
-SHA-256 of the Section 11 code and distributed results
+SHA-256 of the Section 11 code and distributed results on 2026-11-20 (superseded by the rerun below)
 c815cbd91f91059ce0a84d0c114130afa5503921fd8d2f2ec0f21959683e82d8  experiments/q_heterogeneity_sim.py
 9d51fecb9042cd8946f2ffa449a17c70d29de90dc66d2b3db90f4e560d5ab0c1  experiments/gbmi_asthma_heterogeneity.py
 66219104a36f03900bc1d2a636bb66eefa9f29a88ae1c641b33e643326650723  report/q_heterogeneity_simulation.json
 9cc2e1def1c614ba3bd2475ce9f3c803e06e75d7822ca0bad50a4b3b8331d71b  report/asthma_heterogeneity.json
+
+Section 11 rerun, 2026-11-23
+============================
+
+Source revision 41255cf with the review fixes of 2026-11-23 and the drivers below.
+Python 3.14.6, NumPy 2.4.6, SciPy 1.18.0, allelign 0.3.2.
+Both drivers also fit three stratum intercepts (ZQ3, "Z_and_Q_three_intercepts"), and the
+simulation adds one arm with stratum intercepts 1.08 and 1.0 under rule R4, stated in the
+driver before the run. Every value recorded on 2026-11-20 was reproduced exactly. The asthma
+driver used --score-dir .scratch_1000g/kappa_gw_2026-11-20, the scores rebuilt on 2026-11-20.
+
+Cochran's Q simulation
+----------------------
+python experiments/q_heterogeneity_sim.py --out report/q_heterogeneity_simulation.json
+panel EUR-EAS: M=234000, total N=46475, mean scores EE/FF/EF 16.78/17.01/13.85
+panel EUR-EAS half: M=227750, total N=43709, mean scores EE/FF/EF 17.37/17.51/13.95
+panel EUR-AFR: M=240500, total N=48600, mean scores EE/FF/EF 16.50/9.23/8.66
+
+Part 1. g: mean (truth; SD; mean jackknife SE) | median rho | rejection rate of rho < 1
+EUR-EAS share 0.85 rho 1.0 inf  [reps 200, mean Z2 1.956, mean Q 1.048, mean-Q test rejects 0.98]
+  both strata     0.3015 (0.3000; 0.0220; 0.0213) | 1.004 | 0.050  (invalid rho 0)
+  Z and Q         0.3026 (0.3000; 0.0376; 0.0362) | 1.020 | 0.045  (invalid rho 0)
+  Z and Q, 3 int. 0.3035 (0.3000; 0.0428; 0.0417) | 1.027 | 0.050  (invalid rho 0)
+  Z only          0.3001 (0.3000; 0.1256; 0.1335) | 0.651 | 0.214  (invalid rho 69)
+EUR-EAS share 0.85 rho 0.9 inf  [reps 200, mean Z2 1.932, mean Q 1.071, mean-Q test rejects 1.00]
+  both strata     0.2681 (0.2700; 0.0224; 0.0211) | 0.901 | 0.350  (invalid rho 0)
+  Z and Q         0.2716 (0.2700; 0.0365; 0.0369) | 0.909 | 0.335  (invalid rho 0)
+  Z and Q, 3 int. 0.2728 (0.2700; 0.0433; 0.0429) | 0.909 | 0.312  (invalid rho 1)
+  Z only          0.2538 (0.2700; 0.1305; 0.1315) | 0.512 | 0.343  (invalid rho 66)
+EUR-EAS share 0.85 rho 0.74 inf  [reps 200, mean Z2 1.894, mean Q 1.104, mean-Q test rejects 1.00]
+  both strata     0.2210 (0.2220; 0.0210; 0.0205) | 0.742 | 0.930  (invalid rho 0)
+  Z and Q         0.2185 (0.2220; 0.0366; 0.0366) | 0.745 | 0.900  (invalid rho 0)
+  Z and Q, 3 int. 0.2184 (0.2220; 0.0418; 0.0428) | 0.744 | 0.865  (invalid rho 0)
+  Z only          0.2233 (0.2220; 0.1406; 0.1288) | 0.438 | 0.315  (invalid rho 73)
+EUR-EAS share 0.5 rho 1.0 inf  [reps 200, mean Z2 1.913, mean Q 1.094, mean-Q test rejects 1.00]
+  both strata     0.2994 (0.3000; 0.0162; 0.0163) | 0.998 | 0.045  (invalid rho 0)
+  Z and Q         0.2992 (0.3000; 0.0155; 0.0157) | 0.998 | 0.040  (invalid rho 0)
+  Z and Q, 3 int. 0.2990 (0.3000; 0.0157; 0.0157) | 1.001 | 0.035  (invalid rho 0)
+  Z only          0.2977 (0.3000; 0.0680; 0.0714) | 1.029 | 0.105  (invalid rho 0)
+EUR-EAS share 0.5 rho 0.9 inf  [reps 200, mean Z2 1.872, mean Q 1.133, mean-Q test rejects 1.00]
+  both strata     0.2702 (0.2700; 0.0168; 0.0162) | 0.908 | 0.670  (invalid rho 0)
+  Z and Q         0.2699 (0.2700; 0.0164; 0.0157) | 0.906 | 0.660  (invalid rho 0)
+  Z and Q, 3 int. 0.2698 (0.2700; 0.0164; 0.0157) | 0.908 | 0.630  (invalid rho 0)
+  Z only          0.2691 (0.2700; 0.0663; 0.0704) | 0.916 | 0.100  (invalid rho 0)
+EUR-EAS share 0.5 rho 0.74 inf  [reps 200, mean Z2 1.808, mean Q 1.198, mean-Q test rejects 1.00]
+  both strata     0.2220 (0.2220; 0.0168; 0.0158) | 0.745 | 1.000  (invalid rho 0)
+  Z and Q         0.2219 (0.2220; 0.0165; 0.0154) | 0.744 | 1.000  (invalid rho 0)
+  Z and Q, 3 int. 0.2219 (0.2220; 0.0166; 0.0155) | 0.748 | 1.000  (invalid rho 0)
+  Z only          0.2185 (0.2220; 0.0733; 0.0691) | 0.723 | 0.265  (invalid rho 0)
+EUR-EAS share 0.85 rho 1.0 sparse  [reps 100, mean Z2 1.947, mean Q 1.049, mean-Q test rejects 1.00]
+  both strata     0.2982 (0.3000; 0.0221; 0.0242) | 1.007 | 0.020  (invalid rho 0)
+  Z and Q         0.2972 (0.3000; 0.0377; 0.0405) | 1.004 | 0.030  (invalid rho 0)
+  Z and Q, 3 int. 0.2967 (0.3000; 0.0416; 0.0460) | 1.007 | 0.020  (invalid rho 0)
+  Z only          0.2989 (0.3000; 0.1391; 0.1652) | 0.522 | 0.293  (invalid rho 42)
+EUR-EAS share 0.85 rho 0.74 sparse  [reps 100, mean Z2 1.898, mean Q 1.103, mean-Q test rejects 1.00]
+  both strata     0.2239 (0.2220; 0.0236; 0.0230) | 0.740 | 0.910  (invalid rho 0)
+  Z and Q         0.2235 (0.2220; 0.0376; 0.0416) | 0.756 | 0.860  (invalid rho 0)
+  Z and Q, 3 int. 0.2250 (0.2220; 0.0466; 0.0485) | 0.767 | 0.820  (invalid rho 0)
+  Z only          0.2252 (0.2220; 0.1444; 0.1598) | 0.369 | 0.315  (invalid rho 46)
+EUR-EAS share 0.85 rho 1.0 allele  [reps 100, mean Z2 2.005, mean Q 1.050, mean-Q test rejects 1.00]
+  both strata     0.3145 (0.2934; 0.0216; 0.0215) | 0.969 | 0.100  (invalid rho 0)
+  Z and Q         0.2674 (0.2934; 0.0439; 0.0376) | 1.002 | 0.020  (invalid rho 2)
+  Z and Q, 3 int. 0.2777 (0.2934; 0.0512; 0.0439) | 1.013 | 0.010  (invalid rho 3)
+  Z only          0.2158 (0.2934; 0.1416; 0.1322) | 0.254 | 0.375  (invalid rho 76)
+EUR-EAS share 0.85 rho 1.0 inf unequal h2  [reps 100, mean Z2 1.837, mean Q 1.052, mean-Q test rejects 0.98]
+  both strata     0.2946 (0.2958; 0.0250; 0.0206) | 0.995 | 0.100  (invalid rho 0)
+  Z and Q         0.2914 (0.2958; 0.0362; 0.0359) | 0.984 | 0.040  (invalid rho 0)
+  Z and Q, 3 int. 0.2911 (0.2958; 0.0447; 0.0417) | 0.987 | 0.040  (invalid rho 0)
+  Z only          0.2814 (0.2958; 0.1252; 0.1236) | 0.616 | 0.296  (invalid rho 29)
+EUR-EAS share 0.85 rho 0.74 inf intercepts 1.08 1.0  [reps 200, mean Z2 1.968, mean Q 1.117, mean-Q test rejects 1.00]
+  both strata     0.2203 (0.2220; 0.0199; 0.0208) | 0.747 | 0.880  (invalid rho 0)
+  Z and Q         0.2098 (0.2220; 0.0392; 0.0377) | 0.732 | 0.874  (invalid rho 2)
+  Z and Q, 3 int. 0.2216 (0.2220; 0.0447; 0.0441) | 0.744 | 0.854  (invalid rho 1)
+  Z only          0.2138 (0.2220; 0.1294; 0.1322) | 0.395 | 0.373  (invalid rho 90)
+EUR-EAS share 0.85 rho 1.0 inf half-panel reference  [reps 100, mean Z2 1.950, mean Q 1.054, mean-Q test rejects 1.00]
+  both strata     0.2983 (0.3000; 0.0204; 0.0217) | 1.010 | 0.020  (invalid rho 0)
+  Z and Q         0.2970 (0.3000; 0.0362; 0.0370) | 1.015 | 0.030  (invalid rho 0)
+  Z and Q, 3 int. 0.3083 (0.3000; 0.0410; 0.0416) | 1.031 | 0.020  (invalid rho 0)
+  Z only          0.3105 (0.3000; 0.1225; 0.1349) | 0.562 | 0.242  (invalid rho 38)
+EUR-EAS share 0.85 rho 0.74 inf half-panel reference  [reps 100, mean Z2 1.892, mean Q 1.107, mean-Q test rejects 1.00]
+  both strata     0.2183 (0.2220; 0.0209; 0.0213) | 0.743 | 0.880  (invalid rho 0)
+  Z and Q         0.2140 (0.2220; 0.0378; 0.0385) | 0.734 | 0.850  (invalid rho 0)
+  Z and Q, 3 int. 0.2237 (0.2220; 0.0425; 0.0438) | 0.750 | 0.800  (invalid rho 0)
+  Z only          0.2575 (0.2220; 0.1254; 0.1321) | 0.557 | 0.250  (invalid rho 44)
+EUR-AFR share 0.85 rho 1.0 inf  [reps 100, mean Z2 1.867, mean Q 1.068, mean-Q test rejects 1.00]
+  both strata     0.2966 (0.3000; 0.0241; 0.0248) | 0.995 | 0.060  (invalid rho 0)
+  Z and Q         0.2955 (0.3000; 0.0361; 0.0397) | 1.009 | 0.050  (invalid rho 0)
+  Z and Q, 3 int. 0.2984 (0.3000; 0.0420; 0.0449) | 1.008 | 0.050  (invalid rho 0)
+  Z only          0.2897 (0.3000; 0.1131; 0.1302) | 0.718 | 0.180  (invalid rho 39)
+EUR-AFR share 0.85 rho 0.74 inf  [reps 100, mean Z2 1.827, mean Q 1.103, mean-Q test rejects 1.00]
+  both strata     0.2171 (0.2220; 0.0245; 0.0247) | 0.736 | 0.750  (invalid rho 0)
+  Z and Q         0.2181 (0.2220; 0.0413; 0.0403) | 0.750 | 0.740  (invalid rho 0)
+  Z and Q, 3 int. 0.2192 (0.2220; 0.0468; 0.0461) | 0.752 | 0.747  (invalid rho 1)
+  Z only          0.2160 (0.2220; 0.1429; 0.1283) | 0.348 | 0.483  (invalid rho 42)
+
+Part 2. median naive (expected) | median corrected (truth) | robust SD naive / corrected | declared < 1: naive / corrected
+share 0.85 within 1.0 ancestry 1.0
+  1.004 (1.000) | 0.994 (1.00) | 0.092 / 0.118 | 0.06 / 0.10
+share 0.85 within 0.8 ancestry 1.0
+  0.896 (0.892) | 0.999 (1.00) | 0.103 / 0.157 | 0.36 / 0.17
+share 0.85 within 0.8 ancestry 0.85
+  0.780 (0.759) | 0.892 (0.85) | 0.092 / 0.118 | 0.73 / 0.26
+share 0.85 within 0.6 ancestry 1.0
+  0.759 (0.757) | 1.035 (1.00) | 0.070 / 0.280 | 0.79 / 0.11
+share 0.5 within 0.8 ancestry 1.0
+  0.887 (0.892) | 0.992 (1.00) | 0.050 / 0.065 | 0.72 / 0.06
+share 0.5 within 0.8 ancestry 0.85
+  0.746 (0.759) | 0.848 (0.85) | 0.054 / 0.064 | 0.99 / 0.74
+share 0.5 within 0.8 ancestry 1.0 two EUR cohorts share a definition
+  0.864 (0.892) | 0.944 (1.00) | 0.058 / 0.074 | 0.79 / 0.21
+share 0.5 within 1.0 ancestry 1.0 EUR cohort h2 scales 1.4 0.8 0.6 1.0
+  1.007 (1.000) | 1.017 (1.00) | 0.042 / 0.054 | 0.03 / 0.05
+share 0.5 within 1.0 ancestry 0.85 EUR cohort h2 scales 1.4 0.8 0.6 1.0
+  0.852 (0.850) | 0.854 (0.85) | 0.047 / 0.053 | 0.99 / 0.84
+
+Rules: R1 PASS, R2 PASS, R3 PASS, R4 PASS (experiments/RESULTS.md).
+The full run was stopped by a session time limit after 19 of its 24 cells
+(3409 s); the other five ran with --cells 'ancestry 0\.85 EUR cohort h2
+scales|half-panel reference|EUR-AFR' (done in 499 s). Every cell draws from
+its own seed key, so the split changes no value.
+
+GBMI asthma heterogeneity
+-------------------------
+python experiments/gbmi_asthma_heterogeneity.py --score-dir .scratch_1000g/kappa_gw_2026-11-20 --out report/asthma_heterogeneity.json
+[  81s] EUR: 1099098 variants, 14 datasets, largest count residual 0.00; dataset effective N [4470, 15857, 12624, 64012, 50942, 71610, 8562, 14646, 10635, 16411, 28998, 9783, 9966, 115217]
+[ 114s] EAS: 1047777 variants, 5 datasets, largest count residual 0.00; dataset effective N [48209, 7376, 12282, 1067, 563]
+937544 SNPs, M = 1664534; median effective N 354909 and 61243
+A. both strata: h2 0.1451 (0.0104) and 0.1976 (0.0217); g 0.1250 (0.0106); correlation 0.738 (0.043)
+A. inverse_variance meta, three stratum intercepts (three form): g 0.1008 (0.0187), difference from both strata -0.0242 (0.0153)
+A. inverse_variance meta (median EUR weight 0.859): Z and Q give g 0.0977 (0.0161), difference from both strata -0.0272 (0.0123), correlation 0.696 (0.061); Z only gives g 0.0489 (0.0573), h2_EAS 0.020 (0.245)
+   mean Q 1.0840; expected 1.0487 with identical effects and 1.1024 from the strata estimates; at 2229 pooled hits mean Q 3.496 against 1.247 and 1.338
+A. sample_size meta, three stratum intercepts (three form): g 0.1220 (0.0233), difference from both strata -0.0030 (0.0204)
+A. sample_size meta (median EUR weight 0.853): Z and Q give g 0.1236 (0.0230), difference from both strata -0.0014 (0.0200), correlation 0.752 (0.077); Z only gives g 0.0622 (0.0837), h2_EAS 0.008 (0.520)
+   mean Q 1.0932; expected 1.0482 with identical effects and 1.1029 from the strata estimates; at 2192 pooled hits mean Q 3.964 against 1.313 and 1.428
+B. EUR: 14 datasets at 0.634 of SNPs, median S2 0.145; mean Q per df 0.9992; tau 0.1430 (0.0104); h2 - tau 0.0141 (0.0071); ceiling 0.910 (0.042)
+B. EAS: 5 datasets at 0.841 of SNPs, median S2 0.524; mean Q per df 1.0015; tau 0.1738 (0.0299); h2 - tau 0.0341 (0.0457); ceiling 0.836 (0.203)
+B. EUR-EAS correlation: naive 0.738 (0.043); EUR ceiling only 0.744 (0.044); both ceilings 0.793 (0.070); corrected minus naive 0.055 (0.057)
+done in 122s
+
+SHA-256 of the Section 11 code and distributed results
+d5b7cefd77ec9af5d39af0943076a0eb8ccb2c70996f8711081b771f981e6421  experiments/q_heterogeneity_sim.py
+1fdbbabdffcd131b435a0a1d6c7bc0a5a6f0566f098a74e72750da8a9014a06f  experiments/gbmi_asthma_heterogeneity.py
+c0167f23f98cb59953fd9d80e3235a9b1599d47802e9bd2b4d8441b64bd824c3  experiments/q_model.py
+5372b00fd98c83199606f043c97153728c1e6a067ac0c9246023117ffda34168  report/q_heterogeneity_simulation.json
+7764cfe02ecda7e462d43ffaea4244e1ce9194f1c857c87dea997485dd5a773a  report/asthma_heterogeneity.json

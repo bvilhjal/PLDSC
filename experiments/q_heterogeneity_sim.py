@@ -32,6 +32,10 @@ Rules, stated before the full run (2026-11-20).
   R3 ceiling. With exchangeable cohorts the median corrected correlation is
      within 0.05 of the true ancestry correlation, and the median naive
      correlation is within 0.03 of its analytic attenuated value.
+Rule added 2026-11-23, before the unequal-intercept arm was first run.
+  R4 intercepts. In the arm with stratum intercepts 1.08 and 1.0, the mean
+     three-intercept (ZQ3) estimate of g lies within max(3 Monte Carlo SE,
+     5% of g) of truth, as in R1.
 Everything else is descriptive: power, the Z^2-only fit, shared per-allele
 effects, unequal heritabilities, the EUR-AFR pair, cohorts that share a
 definition, cohorts whose effects are proportional but on different scales,
@@ -61,10 +65,9 @@ first full run and carry their own seed keys, so the earlier draws are fixed.
 Review, 2026-11-23. Every cell above has both stratum intercepts at one, so
 it cannot show that the Z+Q fit with one free intercept per equation lets
 unequal stratum intercepts leak into g when the inverse-variance weights vary
-across SNPs (q_model.py). Each cell now also reports ZQ3, the fit with three
-stratum intercepts, and one arm has intercepts 1.08 and 1.0. Neither is in
-the recorded JSON: the 1000 Genomes download needed to rerun was not
-available when they were added.
+across SNPs (q_model.py). Each cell also reports ZQ3, the fit with three
+stratum intercepts, and one arm has intercepts 1.08 and 1.0 (rule R4). Both
+were first run on 2026-11-23; the outcome is in experiments/RESULTS.md.
 """
 from __future__ import annotations
 
@@ -390,7 +393,7 @@ def main():
         run(f"P1 EUR-EAS share 0.85 rho {rho} sparse", part1_cell, P, 0.85, rho, "sparse", reps)
     run("P1 EUR-EAS share 0.85 rho 1.0 allele", part1_cell, P, 0.85, 1.0, "allele", reps)
     run("P1 EUR-EAS share 0.85 rho 1.0 inf unequal h2", part1_cell, P, 0.85, 1.0, "inf", reps, hE=0.25, hF=0.35)
-    # Unequal stratum intercepts (added 2026-11-23 after review; own seed key, not yet run).
+    # Unequal stratum intercepts (added 2026-11-23 after review; own seed key; rule R4).
     run("P1 EUR-EAS share 0.85 rho 0.74 inf intercepts 1.08 1.0", part1_cell, P, 0.85, 0.74, "inf", reps_main, key=1003, intE=1.08, intF=1.0)
     # Part 2, same panels
     fE, fF = (0.55, 0.25, 0.12, 0.08), (0.7, 0.3)

@@ -40,14 +40,16 @@ Outcome (2026-11-20, 937,544 SNPs, 92 s; report/methods.md Section 11).
      0.84 (0.20). EUR-EAS correlation 0.738 (0.043) uncorrected, 0.744 with
      the EUR ceiling and 0.793 (0.070) with both.
 
-Review, 2026-11-23. The Z and Q fit above has one free intercept per
-equation. Under inverse-variance weights the weight share varies across SNPs,
-so unequal EUR and EAS intercepts leak into g (q_model.py): on the chr22
-example LD with these weights and intercepts 1.076 and 0.983 the leak is
--9.4% of g in expectation, against -22% observed here. The driver now also
-fits the three stratum intercepts ("Z_and_Q_three_intercepts"); that refit has
-not been run, because the GBMI files were not available. Until it is, the
-inverse-variance shortfall is provisional and is not attributed to a cause.
+Three-intercept refit (2026-11-23, 937,544 SNPs, 124 s). The Z and Q fit
+above has one free intercept per equation. Under inverse-variance weights the
+weight share varies across SNPs, so unequal EUR and EAS intercepts can leak
+into g (q_model.py). With the three stratum intercepts fitted
+("Z_and_Q_three_intercepts"), g is 0.1008 (0.0187) under inverse-variance
+weights, 0.024 below both strata (paired SE 0.015), and 0.1220 (0.0233) under
+sample-size weights. The fitted intercepts are 1.061, 0.998 and 0.018. The
+leak was +0.003 (paired SE 0.007), so it accounts for little of the
+inverse-variance shortfall; what remains is 1.6 SE and its cause is not
+established. Every value recorded on 2026-11-20 was reproduced exactly.
 """
 from __future__ import annotations
 
