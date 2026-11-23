@@ -88,26 +88,38 @@ summed over 4000 reference variants. Fit h² and then r_g:
 pldsc h2 --sumstats demo-data/trait1.tsv.gz \
   --reference demo-data/reference.bim \
   --ld-scores demo-data/reference.ldscores.npy --m-snps 4000 \
-  --n-blocks 40 --out demo-data/h2.json
+  --n-blocks 40 --allow-low-coverage --out demo-data/h2.json
 
 pldsc rg --sumstats1 demo-data/trait1.tsv.gz --sumstats2 demo-data/trait2.tsv.gz \
   --reference demo-data/reference.bim \
   --ld-scores demo-data/reference.ldscores.npy --m-snps 4000 \
-  --n-blocks 40 --ncores 2 --out demo-data/rg.json
+  --n-blocks 40 --ncores 2 --allow-low-coverage --out demo-data/rg.json
 ```
 
 Both commands call allelign to load and QC the GWAS, then harmonize alleles
 against the reference. The output JSON records estimates, package versions,
 input paths, settings, per-trait QC and alignment logs, the number of common
-variants before the chi-square cap, and the number retained. An undefined
-estimate or SE is `null`. Read the full logs, for example:
+variants before the chi-square cap, and the number retained. It also records
+`coverage` (regression SNPs, reference variants and the `--min-snps`
+threshold), `m_snps` (the value used and its convention, e.g. whether it is
+the bundled count or `M_5_50`) and `build_check`; r_g output includes the
+genetic covariance SE (`gcov_se`) and both marginal h² SEs (`h2_se`). An
+undefined estimate or SE is `null`. Read the full logs, for example:
 
 ```bash
 python -m json.tool demo-data/rg.json
 ```
 
-`--out` creates a new file and refuses to overwrite an existing one. Omit it
-to write JSON to standard output; warnings go to standard error. To see all
+`--out` creates a new file and refuses to overwrite an existing one; the
+path is checked before any data are read, so a bad `--out` fails at once.
+Omit it to write JSON to standard output; warnings, such as an undeclared
+reference build, go to standard error.
+
+The commands fail closed (exit status 2) when fewer than 200,000 SNPs remain
+for the regression, the count below which ldsc warns that estimates are
+unreliable. Change the threshold with `--min-snps`, or add
+`--allow-low-coverage` to report the fit anyway, as the 4,000-variant demo
+above does. To see all
 options, run `pldsc h2 --help` or `pldsc rg --help`. `ncores` parallelizes
 bivariate jackknife fits when Numba is installed; it does not accelerate every
 part of file loading.
@@ -119,8 +131,18 @@ position within contiguous chromosome blocks; a one-dimensional `.npy` LD
 score vector with **one score in exactly the same row order**; and one or two
 GWAS files. Scores must be suitable for the GWAS populations and variant set.
 For bivariate LDSC, the same reference scores must be suitable for both
-traits. Make sure GWAS and reference use the same genome build. PLDSC cannot
-infer reference suitability or perform liftover.
+traits. Make sure GWAS and reference use the same genome build. Declare them
+with `--sumstats-build` (e.g. `GRCh38`, `hg19`) and, for an explicit
+reference, `--reference-build` (the bundled reference is GRCh37); a declared
+mismatch is an error. PLDSC does not detect builds from the data, infer
+reference suitability or perform liftover.
+
+**Ancestry.** The scores must describe the population that produced the
+GWAS. For a GWAS or meta-analysis that pools ancestries, a single-population
+reference such as `hm3-eur` mis-scales h² and the genetic covariance, and the
+quantity being estimated is a composition-weighted combination of the groups'
+heritabilities and cross-ancestry covariances, not any one population's
+heritability. See [MULTI_ANCESTRY.md](MULTI_ANCESTRY.md).
 
 Set `--m-snps` to the number of variants summed into each LD score, **not**
 the number of regression rows remaining after QC. For example, scores summed
@@ -145,7 +167,12 @@ or `.M_5_50` files, making sure it counts the variants actually summed into
 the scores. The converter does not infer `M` or verify genome builds.
 
 Allelign recognizes many GWAS layouts. Inspect its detected columns before a
-fit with `allelign inspect trait1.tsv.gz`. For nonstandard column names,
+fit with `allelign inspect trait1.tsv.gz`. Output of ldsc's `munge_sumstats.py`
+(`SNP`, `A1`, `A2`, `N`, `Z`, tab- or whitespace-delimited, optionally gzip
+compressed) is also accepted: it is read as z scores with unit SE, rows with
+a missing Z or N are dropped and counted, and the parse log reports the
+format as `ldsc-munged`. Such files carry no positions, MAF or INFO, so the
+MAF and INFO filters do not apply to them. For nonstandard column names,
 pass mappings to PLDSC; repeat the option for each field:
 
 ```bash
@@ -173,7 +200,9 @@ variants in allelign's GRCh37 long-range LD regions, including the MHC; add
 `--include-apoe` to leave out the APOE locus as well. The regions are found
 from the reference coordinates, so GWAS files matched by ID need no
 positions, and the JSON records the number of reference variants left out.
-The default assumes a GRCh37 reference and does not verify it. Add
+The default assumes a GRCh37 reference. A declared `--reference-build`
+other than GRCh37 is an error unless the regions are kept, and an undeclared
+build draws a warning. Add
 `--include-long-range-ld-grch37` to keep the regions, for example for another
 build; then filter with a build-appropriate region list using allelign in
 Python if needed.
@@ -357,7 +386,8 @@ These functions do not filter, harmonize or sort inputs. They accept scalar
 or per-variant sample sizes. `ldsc_rg_z` takes signed z scores; the separate
 `ldsc_rg` takes **LDpred3-standardized effects**, not ordinary GWAS beta
 coefficients. Array functions default `m_snps` to the number of supplied
-rows, which is inappropriate when the LD scores sum over a larger set.
+rows, which is inappropriate when the LD scores sum over a larger set, and
+issue a `UserWarning` when they do; the compat functions require it.
 
 ## LDSC equivalence
 

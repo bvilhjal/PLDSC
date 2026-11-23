@@ -49,6 +49,13 @@ def _read_options(columns, n_eff):
     return options
 
 
+ANCESTRY_CAVEAT = (
+    "The LD scores must describe the population that produced the GWAS. For a GWAS or meta-analysis that "
+    "pools ancestries, a single-population reference (such as hm3-eur) mis-scales h2 and the genetic "
+    "covariance, and the estimate is a composition-weighted quantity rather than any one population's "
+    "heritability; see docs/MULTI_ANCESTRY.md.")
+
+
 def _parser():
     parser = argparse.ArgumentParser(prog="pldsc", description="LD Score regression (h2, rg) using allelign for GWAS loading and QC.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -66,9 +73,10 @@ def _parser():
                             help="bundled reference name (default: hm3-eur; one of "
                                  + ", ".join(available_ld_references()) + ")")
     for analysis, blocks in (("h2", 100), ("rg", 200)):
-        p = sub.add_parser(analysis, help="SNP heritability" if analysis == "h2" else "genetic correlation")
+        p = sub.add_parser(analysis, help="SNP heritability" if analysis == "h2" else "genetic correlation",
+                           epilog=ANCESTRY_CAVEAT)
         if analysis == "h2":
-            p.add_argument("--sumstats", required=True, help="GWAS file, optionally gzip compressed")
+            p.add_argument("--sumstats", required=True, help="GWAS file (allelign formats or ldsc munge_sumstats SNP/A1/A2/N/Z), optionally gzip compressed")
             p.add_argument("--column", action="append", type=_column, default=[], metavar="FIELD=COLUMN")
             p.add_argument("--n-eff", type=float, help="constant effective N; overrides all file rows")
         else:
