@@ -18,8 +18,9 @@ version 1.0.
   analysis of the same two questions, and its recorded estimates.
 - `ldsc_compat=True` for `ldsc_h2` and `ldsc_rg`, `ldsc_h2_compat`,
   `ldsc_rg_compat` and `pldsc h2/rg --ldsc-compat`: an opt-in estimator that
-  follows the reference `ldsc` (two-step at chi-square 30, fixed-weight
-  jackknife, 200 blocks, separate `w_ld` via `--w-ld-scores`). It agrees
+  follows the reference `ldsc` as `ldsc --h2` and `ldsc --rg` run by default
+  (h2 two-step at chi-square 30, r_g one-step; fixed-weight jackknife, 200
+  blocks, separate `w_ld` via `--w-ld-scores`). It agrees
   with `bulik/ldsc` commit 2fdeeb3 to about 1e-15 on the committed fixture
   `tests/data/ldsc_parity.npz` (`scripts/make_ldsc_parity_fixture.py`).
   Defaults are unchanged.
@@ -42,9 +43,18 @@ version 1.0.
   proofs; the remaining excess-loss statement is marked as a conjecture.
   The earlier wording that Q "loses only the sign" and "identifies g" is
   replaced.
-- The asthma inverse-variance Z-and-Q shortfall (22%) is marked provisional
-  pending a three-intercept refit; the allele-frequency explanation is
-  withdrawn.
+- The asthma inverse-variance Z-and-Q fit was rerun with three stratum
+  intercepts: 0.1008 (0.0187), still 19% below the two-strata estimate
+  (1.6 SE). The intercept leak moved g by only +0.003, and no cause is
+  attributed; the allele-frequency explanation is withdrawn.
+  `report/asthma_heterogeneity.json` adds the three-intercept fits; every
+  earlier value is unchanged.
+- The Q simulation was rerun with the three-intercept fit in every cell and
+  the arm with stratum intercepts 1.08 and 1.0 under a new rule R4, stated
+  in the driver before the run. R4 passed: the three-intercept fit averaged
+  0.2216 against g = 0.222 (−0.2%), while one intercept per equation gave
+  0.2098 (−5.5%). At 85% EUR the extra intercepts raise the SD of g from 1.7
+  to 2.0 times that of the two strata. Every earlier value is unchanged.
 - README: the multi-ancestry section leads with the null prediction result
   and the Q result, defines the estimand, and moves the 0.133 to 0.155 shift
   to supporting results. CLI help and docs carry an ancestry-mix caveat.
@@ -55,6 +65,25 @@ version 1.0.
 
 ### Fixed
 
+- `ldsc_rg_compat` and `--ldsc-compat` r_g now default to one-step fits.
+  Reference `ldsc --rg` never applies its two-step default, because
+  `estimate_rg` tests `intercept_h2 is None` after turning it into a list;
+  the earlier default reproduced `ldsc --rg --two-step 30` instead (r_g
+  0.3284 against 0.3924 on the parity fixture). A two-step cutoff with a
+  fixed cross-trait intercept now raises an error, as in ldsc; the docs no
+  longer say that ldsc raises one by default.
+- `tests/test_ldsc_port.py::test_provider_parity` and
+  `experiments/ldsc_provider_parity_bench.py` failed with
+  `KeyError: 'gcov_se'` when bipred is installed; they now compare the fields
+  both results have.
+- The report PDF and LaTeX source are rebuilt from the edited Markdown, and
+  `report/reproduction.txt` records the current Section 11 drivers and
+  results.
+- The README and `docs/LDSC.md` said that PLDSC never detects builds or
+  lifts over; with allelign 0.3 or later, alignment does both. A declared
+  build mismatch now also names that route. The parse log of an ldsc
+  munged file names its N as the total sample size, and the docs give the
+  consequence for case-control traits.
 - Citations: Popcorn authors in `CITATION.cff`; PRIOR_ART DOIs (Lin, Xing &
   Xing 2012; Mathew, Léon & Sillanpää 2018); the Bhatia et al. title; Xue &
   Zhao (2025, Annals of Statistics) cited as direct prior art in the report,

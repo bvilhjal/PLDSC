@@ -61,9 +61,12 @@ MAF 5–50% count (5,961,159) that published `ldsc` results use, so pass
 ldsc's estimator as well. Check the QC and alignment logs before
 interpreting estimates. The command line refuses runs with fewer than
 200,000 regression SNPs (`--min-snps`, `--allow-low-coverage`) and, when
-`--sumstats-build` is given, a build that differs from the reference's;
-it does not detect builds or perform liftover. It reads allelign-supported
-files and ldsc `munge_sumstats` output (SNP, A1, A2, N, Z).
+`--sumstats-build` is given, a build that differs from the reference's.
+Without that option, allelign 0.3 or later detects a GWAS on the other build
+during alignment and lifts it over, recording this in the alignment log. It
+reads allelign-supported files and ldsc `munge_sumstats` output (SNP, A1, A2,
+N, Z); the latter's N is a total sample size, so for case-control traits see
+[the LDSC guide](docs/LDSC.md#use-your-own-files).
 
 For a GWAS that pools ancestries, a single-population reference LD score
 mis-scales h² and the genetic covariance; see
@@ -87,13 +90,14 @@ on 13 of 22 chromosomes. A fixed-effect meta-analysis also reports
 Cochran's Q, the other half of a rotation of the two ancestry statistics. In
 simulations on 1000 Genomes LD the pooled statistic and Q together recovered
 the cross-ancestry genetic covariance, at 1.7 times the standard deviation of
-the two-strata estimate for an 85% EUR study; part of that loss is provably
-unavoidable ([Proposition 3](report/methods.md#11-what-does-cochrans-q-add)).
-In asthma the fit matched the two-strata estimate under sample-size weights.
-Under inverse-variance weights it fell 22% below it, but that fit lets
-unequal stratum intercepts leak into the covariance; the 22% is provisional
-until the asthma data are refitted with the three-intercept form now in
-[experiments/q_model.py](experiments/q_model.py).
+the two-strata estimate for an 85% EUR study (2.0 times with the three
+stratum intercepts that inverse-variance weights need); part of that loss is
+provably unavoidable ([Proposition 3](report/methods.md#11-what-does-cochrans-q-add)).
+In asthma the fit matched the two-strata estimate under sample-size weights
+and fell 22% below it under inverse-variance weights. Refitting with three
+stratum intercepts ([experiments/q_model.py](experiments/q_model.py)), which
+stops unequal intercepts from leaking into the covariance, left it 19% below
+(1.6 SE), so the leak explains little of the gap.
 
 **What is being estimated.** The matched score targets the heritability of
 the meta-analysed GWAS itself: a composition-weighted combination of the
